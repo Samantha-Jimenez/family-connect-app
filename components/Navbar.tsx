@@ -1,10 +1,10 @@
 import { useState } from 'react';
 
 const navigation = [
-  { name: 'Dashboard', href: '#', current: true },
+  { name: 'Dashboard', href: '/', current: true },
   { name: 'Photos', href: '/photos', current: false },
-  { name: 'Projects', href: '#', current: false },
-  { name: 'Calendar', href: '#', current: false },
+  { name: 'Family Tree', href: '/familytree', current: false },
+  { name: 'Calendar', href: '/calendar', current: false },
 ]
 
 export default function Navbar({ signOut }: { signOut: () => void }) {
@@ -48,12 +48,12 @@ export default function Navbar({ signOut }: { signOut: () => void }) {
             </div>
           </div>
           <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
-            <button
-              type="button"
+            <a
+              href="/notifications"
               className="btn btn-circle bg-gray-800 text-gray-400 hover:text-white"
             >
               Notifications
-            </button>
+            </a>
 
             {/* Profile dropdown */}
             <div className="relative ml-3">
@@ -66,12 +66,12 @@ export default function Navbar({ signOut }: { signOut: () => void }) {
               </div>
               <ul tabIndex={0} className={`absolute right-0 z-10 mt-2 w-48 bg-white rounded-md shadow-lg menu dropdown-content rounded-box w-52 p-2 ${isDropdownOpen ? '' : 'hidden'}`}>
                 <li>
-                  <a href="#" className="rounded block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <a href="/profile" className="rounded block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                     Your Profile
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="rounded block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <a href="/settings" className="rounded block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                     Settings
                   </a>
                 </li>
