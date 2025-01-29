@@ -1,8 +1,7 @@
 "use client"
 import { AttributeValue } from '@aws-sdk/client-dynamodb';
-import React, { useEffect, useState } from 'react'
-import { getUserData, saveUserToDB } from '../hooks/dynamoDB';
-import { getCurrentUser } from 'aws-amplify/auth';
+import React, { useState } from 'react'
+import { saveUserToDB } from '../hooks/dynamoDB';
 
 const Settings = () => {
   const [username, setUsername] = useState('');
@@ -14,22 +13,7 @@ const Settings = () => {
     saveUserToDB(name, username, birthday);
   };
 
-  const [userData, setUserData] = useState<Record<string, AttributeValue> | null>(null);
-
-  useEffect(() => {
-    async function fetchUserData() {
-      try {
-        const user = await getCurrentUser();
-        const userData = await getUserData(user.userId);
-        setUserData(userData);
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-      }
-    }
-    fetchUserData();
-  }, []);
-
-  console.log(userData);
+  const [userData] = useState<Record<string, AttributeValue> | null>(null);
 
   return (
     <form onSubmit={handleSubmit}>

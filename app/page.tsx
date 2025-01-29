@@ -1,36 +1,35 @@
 "use client";
-import Image from "next/image";
+// import Image from "next/image";
 import { AuthProvider } from "react-oidc-context";
 import { Amplify } from "aws-amplify";
-import { getCurrentUser } from '@aws-amplify/auth';
+// import { getCurrentUser } from '@aws-amplify/auth';
 import awsconfig from "../aws-exports";
 import { Authenticator } from "@aws-amplify/ui-react";
 import { cognitoAuthConfig } from "../cognitoConfig";
 import Navbar from "@/components/Navbar";
-import { AttributeValue } from "@aws-sdk/client-dynamodb";
-import { getUserData } from "../app/hooks/dynamoDB";
+// import { getUserData } from "../app/hooks/dynamoDB";
 import { useState } from "react";
-import { useEffect } from "react";
+// import { useEffect } from "react";
 
 // const dynamoDB = new DynamoDBClient({ region: "us-east-1" });
 
 Amplify.configure(awsconfig);
 
 export default function Home() {
-  const [userData, setUserData] = useState<Record<string, AttributeValue> | null>(null);
+  const [userData] = useState<{ name?: { S: string } } | null>(null);
 
-  useEffect(() => {
-    async function fetchUserData() {
-      try {
-        const user = await getCurrentUser();
-        const userData = await getUserData(user.userId);
-        setUserData(userData);
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-      }
-    }
-    fetchUserData();
-  }, []);
+  // useEffect(() => {
+  //   async function fetchUserData() {
+  //     try {
+  //       const user = await getCurrentUser();
+  //       const userData = await getUserData(user.userId);
+  //       setUserData(userData);
+  //     } catch (error) {
+  //       console.error("Error fetching user data:", error);
+  //     }
+  //   }
+  //   fetchUserData();
+  // }, []);
 
   // async function handleLogin() {
   //   try {
@@ -48,7 +47,20 @@ export default function Home() {
   return (
     <>
       <AuthProvider {...cognitoAuthConfig}>
-        <Authenticator signUpAttributes={["email"]} className="grid items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)] bg-gray-100">
+        <Authenticator
+          signUpAttributes={["email"]}
+          className="grid items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)] bg-gray-100"
+          components={{
+            SignIn: {
+              Header: () => (
+                <h3 className="text-2xl font-bold text-center mb-4">
+                  Sign in to your account
+                </h3>
+              ),
+            },
+            Footer: () => null,
+          }}
+        >
           {({ signOut, user }) => (
             <>
             <Navbar signOut={() => signOut?.()} />
@@ -80,13 +92,13 @@ export default function Home() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <Image
+                    {/* <Image
                       className="dark:invert"
                       src="/vercel.svg"
                       alt="Vercel logomark"
                       width={20}
                       height={20}
-                    />
+                    /> */}
                     Deploy now
                   </a>
                   <a
@@ -106,13 +118,13 @@ export default function Home() {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <Image
+                  {/* <Image
                     aria-hidden
                     src="/file.svg"
                     alt="File icon"
                     width={16}
                     height={16}
-                  />
+                  /> */}
                   Learn
                 </a>
                 <a
@@ -121,13 +133,13 @@ export default function Home() {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <Image
+                  {/* <Image
                     aria-hidden
                     src="/window.svg"
                     alt="Window icon"
                     width={16}
                     height={16}
-                  />
+                  /> */}
                   Examples
                 </a>
                 <a
@@ -136,13 +148,13 @@ export default function Home() {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <Image
+                  {/* <Image
                     aria-hidden
                     src="/globe.svg"
                     alt="Globe icon"
                     width={16}
                     height={16}
-                  />
+                  /> */}
                   Go to nextjs.org →
                 </a>
               </footer>
