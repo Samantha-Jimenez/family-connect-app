@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { useState } from 'react';
 
 const navigation = [
@@ -26,7 +27,7 @@ export default function Navbar({ signOut }: { signOut: () => void }) {
           </div>
           <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
             <div className="flex shrink-0 items-center">
-              <img
+              <Image
                 alt="Your Company"
                 src="https://tailwindui.com/plus/img/logos/mark.svg?color=indigo&shade=500"
                 className="h-8 w-auto"
