@@ -40,10 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# config
-/app/aws-exports.js
-/cognitoConfig.ts
-
 # amplify
 .amplify
 amplify_outputs*

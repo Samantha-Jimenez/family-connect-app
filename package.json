@@ -13,6 +13,7 @@
     "@aws-sdk/client-dynamodb": "^3.734.0",
     "aws-amplify": "^6.12.2",
     "core-js": "^3.40.0",
+    "dotenv": "^16.4.7",
     "glob": "^11.0.1",
     "lru-cache": "^11.0.2",
     "next": "15.1.6",

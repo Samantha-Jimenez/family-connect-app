@@ -3,7 +3,7 @@ import Image from "next/image";
 import { AuthProvider } from "react-oidc-context";
 import { Amplify } from "aws-amplify";
 import { getCurrentUser } from '@aws-amplify/auth';
-import awsconfig from "./aws-exports";
+import awsconfig from "../aws-exports";
 import { Authenticator } from "@aws-amplify/ui-react";
 import { cognitoAuthConfig } from "../cognitoConfig";
 import Navbar from "@/components/Navbar";
