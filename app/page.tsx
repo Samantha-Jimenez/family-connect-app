@@ -2,14 +2,47 @@
 import Image from "next/image";
 import { AuthProvider } from "react-oidc-context";
 import { Amplify } from "aws-amplify";
-import awsconfig from "../aws-exports";
+import { getCurrentUser, signIn } from '@aws-amplify/auth';
+import awsconfig from "./aws-exports";
 import { Authenticator } from "@aws-amplify/ui-react";
 import { cognitoAuthConfig } from "../cognitoConfig";
 import Navbar from "@/components/Navbar";
+import { DynamoDBClient, PutItemCommand, Record, AttributeValue } from "@aws-sdk/client-dynamodb";
+import { saveUserToDB, getUserData } from "../app/hooks/dynamoDB";
+import { useState } from "react";
+import { useEffect } from "react";
+
+const dynamoDB = new DynamoDBClient({ region: "us-east-1" });
 
 Amplify.configure(awsconfig);
 
 export default function Home() {
+  const [userData, setUserData] = useState<Record<string, AttributeValue> | null>(null);
+
+  useEffect(() => {
+    async function fetchUserData() {
+      try {
+        const user = await getCurrentUser();
+        const userData = await getUserData(user.userId);
+        setUserData(userData);
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    }
+    fetchUserData();
+  }, []);
+
+  async function handleLogin() {
+    try {
+      const user = await signIn({ username: "username", password: "password" });
+      console.log("User logged in:", user);
+
+      await saveUserToDB();
+    } catch (error) {
+      console.error("Error logging in:", error);
+    }
+  }
+
   return (
     <>
       <AuthProvider {...cognitoAuthConfig}>
@@ -20,7 +53,7 @@ export default function Home() {
             <div className="grid items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)] bg-gray-100">
               <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
                 <h1 className="text-4xl font-bold text-blue-600">Welcome to Our Family Tree</h1>
-                {user && <p className="text-lg text-center sm:text-left text-gray-700">Hello, {user.username}!</p>}
+                {user && <p className="text-lg text-center sm:text-left text-gray-700">Hello, {userData?.name}!</p>}
                 <button 
                   onClick={signOut} 
                   className="mt-4 rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-red-500 text-white gap-2 hover:bg-red-600 text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 shadow-lg"
