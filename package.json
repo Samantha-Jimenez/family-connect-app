@@ -12,15 +12,21 @@
     "@aws-amplify/ui-react": "^6.9.1",
     "@aws-sdk/client-dynamodb": "^3.734.0",
     "aws-amplify": "^6.12.2",
+    "core-js": "^3.40.0",
+    "glob": "^11.0.1",
+    "lru-cache": "^11.0.2",
     "next": "15.1.6",
     "oidc-client-ts": "^3.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-oidc-context": "^3.2.0"
+    "react-oidc-context": "^3.2.0",
+    "rimraf": "^6.0.1"
   },
   "devDependencies": {
     "@aws-amplify/backend": "^1.14.0",
     "@aws-amplify/backend-cli": "^1.4.8",
+    "@babel/plugin-transform-class-properties": "^7.25.9",
+    "@babel/plugin-transform-object-rest-spread": "^7.25.9",
     "@eslint/eslintrc": "^3",
     "@types/node": "^20",
     "@types/react": "^19",
