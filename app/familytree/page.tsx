@@ -1,5 +1,4 @@
 import React from "react";
-import Image from "next/image";
 
 const familyTreeData = {
   name: "Grandparent",
@@ -32,9 +31,7 @@ const FamilyMember = ({ member }: { member: FamilyMemberProps }) => {
       {/* Profile Card */}
       <div className="bg-white shadow-lg p-4 rounded-lg text-center w-36">
         <div className="avatar">
-          <div className="w-16 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
-            <Image src={`https://api.dicebear.com/7.x/identicon/svg?seed=${member.name}`} alt={member.name} width={64} height={64} />
-          </div>
+          <span className="icon-[mdi--person-circle-outline] w-16 h-16"></span>
         </div>
         <p className="font-bold text-gray-800 mt-2">{member.name}</p>
       </div>

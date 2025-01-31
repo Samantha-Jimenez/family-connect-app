@@ -11,12 +11,12 @@ export default function UserInfoCard() {
 
   return (
     <div className="rounded-3xl">
-      <div className="bg-[#fff7ed] rounded-2xl p-8 transition-all duration-300 shadow-lg">
+      <div className="bg-white rounded-3xl p-8 transition-all duration-300 shadow-lg">
         <div className="flex flex-col md:flex-row">
           {/* Left Column - Avatar and Basic Info */}
           <div className="md:w-1/3 text-center mb-8 md:mb-0">
             <div className="avatar mb-4">
-              <div className="w-48 h-48 mx-auto rounded-full ring ring-[#914F2F] ring-offset-[#FAE5C0] ring-offset-2 shadow-md transition-transform duration-300 hover:scale-105">
+              <div className="w-48 h-48 mx-auto rounded-full shadow-lg">
                 <Image 
                   src={avatar.src} 
                   alt="User Avatar"
@@ -26,31 +26,31 @@ export default function UserInfoCard() {
                 />
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-[#5D3A1A] mb-2">
+            <h1 className="text-2xl font-bold text-[#5D3A1A]">
               {user?.signInDetails?.loginId || 'Guest User'}
             </h1>
             <p className="text-[#7B4F2B] italic">Samantha Jimenez</p>
-            <button className="mt-4 bg-[#914F2F] hover:bg-[#7B4F2B] text-white px-6 py-2 rounded-full shadow-md transition-colors duration-300">
+            <button className="btn btn-outline mt-2 bg-[#914F2F] text-white border-0 w-full">
               Edit Profile
             </button>
           </div>
 
           {/* Right Column - Details */}
           <div className="md:w-2/3 md:pl-8">
-            <h2 className="text-xl font-semibold text-[#5D3A1A] mb-4">About Me</h2>
-            <p className="text-[#7B4F2B] mb-6">
+            <h2 className="text-xl font-semibold text-black mb-2">About Me</h2>
+            <p className="text-gray-500 mb-6">
               Share your story with your family members. Click edit to add your bio.
             </p>
 
-            <h2 className="text-xl font-semibold text-[#5D3A1A] mb-4">Family Role</h2>
+            <h2 className="text-xl font-semibold text-black mb-2">Family Role</h2>
             <div className="flex flex-wrap gap-2 mb-6">
-              <span className="bg-[#FAE5C0] text-[#914F2F] px-3 py-1 rounded-full text-sm">Child</span>
-              <span className="bg-[#FAE5C0] text-[#914F2F] px-3 py-1 rounded-full text-sm">Sibling</span>
-              <span className="bg-[#FAE5C0] text-[#914F2F] px-3 py-1 rounded-full text-sm">Cousin</span>
+              <span className="bg-[#FAE5C0] text-gray-500 px-3 py-1 rounded-full text-sm">Child</span>
+              <span className="bg-[#FAE5C0] text-gray-500 px-3 py-1 rounded-full text-sm">Sibling</span>
+              <span className="bg-[#FAE5C0] text-gray-500 px-3 py-1 rounded-full text-sm">Cousin</span>
             </div>
 
-            <h2 className="text-xl font-semibold text-[#5D3A1A] mb-4">Contact Information</h2>
-            <ul className="space-y-2 text-[#7B4F2B]">
+            <h2 className="text-xl font-semibold text-black mb-2">Contact Information</h2>
+            <ul className="space-y-2 text-gray-500">
               <li className="flex items-center">
                 <span className="icon-[mdi--email] w-5 h-5 mr-2 text-[#914F2F]" />
                 SamanthaB.Jimenez@gmail.com
