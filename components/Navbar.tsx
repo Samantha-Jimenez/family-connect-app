@@ -11,6 +11,7 @@ const navigation = [
 
 export default function Navbar({ signOut, username }: { signOut: () => void, username: string }) {
   const [isDropdownOpen, setDropdownOpen] = useState(false);
+  const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -44,6 +45,11 @@ export default function Navbar({ signOut, username }: { signOut: () => void, use
     setDropdownOpen(!isDropdownOpen);
   };
 
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!isMobileMenuOpen);
+    setDropdownOpen(false);
+  };
+
   const handleSignOut = () => {
     signOut();
     router.push('/');
@@ -55,7 +61,7 @@ export default function Navbar({ signOut, username }: { signOut: () => void, use
         <div className="relative flex h-16 items-center justify-between">
           <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
             {/* Mobile menu button */}
-            <button className="btn btn-square">
+            <button className="btn btn-square" onClick={toggleMobileMenu}>
               Menu
             </button>
           </div>
@@ -129,7 +135,7 @@ export default function Navbar({ signOut, username }: { signOut: () => void, use
         </div>
       </div>
 
-      <div className="sm:hidden">
+      <div className={`sm:hidden ${isMobileMenuOpen ? 'block' : 'hidden'}`}>
         <div className="space-y-1 px-2 pt-2 pb-3">
           {updatedNavigation.map((item) => (
             <a
@@ -154,20 +160,27 @@ export default function Navbar({ signOut, username }: { signOut: () => void, use
         <div className="drawer-side z-[31]">
           <label htmlFor="my-drawer-4" aria-label="close sidebar" className="drawer-overlay"></label>
           <div className="bg-base-200 text-base-content min-h-full w-80">
-            <h1 className="text-2xl font-bold px-4 pt-4">Notifications</h1>
+            <button 
+              onClick={() => document.getElementById('my-drawer-4')?.click()} 
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              aria-label="Close notifications drawer"
+            >
+              &times; {/* This represents the "X" */}
+            </button>
+            <h1 className="text-2xl font-bold px-8 pt-6 text-gray-300">Notifications</h1>
             <ul className="menu p-4">
               <li>
-                <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                <a className="block px-4 py-2 text-sm text-gray-400">
                   Notification 1
                 </a>
               </li>
               <li>
-                <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                <a className="block px-4 py-2 text-sm text-gray-400">
                   Notification 2
                 </a>
               </li>
               <li>
-                <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                <a className="block px-4 py-2 text-sm text-gray-400">
                   Notification 3
                 </a>
               </li>
