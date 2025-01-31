@@ -1,7 +1,6 @@
 "use client";
 
 import { Amplify } from "aws-amplify";
-import { useAuthenticator } from "@aws-amplify/ui-react";
 import awsconfig from "../aws-exports";
 import { AuthProvider } from '../context/AuthContext';
 import UserInfoCard from "@/components/UserInfoCard";
@@ -15,7 +14,6 @@ import CallToAction from "@/components/CallToAction";
 Amplify.configure(awsconfig);
 
 export default function Home() {
-  const { user, signOut } = useAuthenticator();
 
   return (
     <AuthProvider>

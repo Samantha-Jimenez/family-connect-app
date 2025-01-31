@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 
 const familyTreeData = {
   name: "Grandparent",
@@ -20,14 +21,19 @@ const familyTreeData = {
   ],
 };
 
-const FamilyMember = ({ member }: { member: any }) => {
+type FamilyMemberProps = {
+  name: string;
+  children?: FamilyMemberProps[];
+};
+
+const FamilyMember = ({ member }: { member: FamilyMemberProps }) => {
   return (
     <div className="flex flex-col items-center relative">
       {/* Profile Card */}
       <div className="bg-white shadow-lg p-4 rounded-lg text-center w-36">
         <div className="avatar">
           <div className="w-16 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
-            <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=${member.name}`} alt={member.name} />
+            <Image src={`https://api.dicebear.com/7.x/identicon/svg?seed=${member.name}`} alt={member.name} width={64} height={64} />
           </div>
         </div>
         <p className="font-bold text-gray-800 mt-2">{member.name}</p>
@@ -38,10 +44,10 @@ const FamilyMember = ({ member }: { member: any }) => {
         <div className="flex flex-col items-center mt-4">
           <div className="w-0.5 bg-gray-400 h-8"></div>
           <div className="flex flex-wrap justify-center gap-4">
-            {member.children.map((child: any, index: number) => (
+            {member.children && member.children.map((child: FamilyMemberProps, index: number) => (
               <div key={index} className="relative">
                 <FamilyMember member={child} />
-                {index !== member.children.length - 1 && (
+                {member.children && index !== member.children.length - 1 && (
                   <div className="hidden md:block absolute left-full top-1/2 w-8 border-t border-gray-400"></div>
                 )}
               </div>

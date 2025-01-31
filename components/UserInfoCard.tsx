@@ -1,13 +1,13 @@
 "use client";
 import { useAuthenticator } from "@aws-amplify/ui-react";
-import { useState } from "react";
+import Image from "next/image";
 import avatar from '../public/avatar.jpeg';
 
 export default function UserInfoCard() {
   const { user } = useAuthenticator();
   
   // Generate a consistent avatar seed using username instead of id
-  const avatarSeed = user?.signInDetails?.loginId || 'default';
+//   const avatarSeed = user?.signInDetails?.loginId || 'default';
 
   return (
     <div className="rounded-3xl">
@@ -17,7 +17,7 @@ export default function UserInfoCard() {
           <div className="md:w-1/3 text-center mb-8 md:mb-0">
             <div className="avatar mb-4">
               <div className="w-48 h-48 mx-auto rounded-full ring ring-[#914F2F] ring-offset-[#FAE5C0] ring-offset-2 shadow-md transition-transform duration-300 hover:scale-105">
-                <img 
+                <Image 
                   src={avatar.src} 
                   alt="User Avatar"
                   className="rounded-full"
