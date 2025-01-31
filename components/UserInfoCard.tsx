@@ -21,13 +21,15 @@ export default function UserInfoCard() {
                   src={avatar.src} 
                   alt="User Avatar"
                   className="rounded-full"
+                  width={192}
+                  height={192}
                 />
               </div>
             </div>
             <h1 className="text-2xl font-bold text-[#5D3A1A] mb-2">
               {user?.signInDetails?.loginId || 'Guest User'}
             </h1>
-            <p className="text-[#7B4F2B] italic">Family Member</p>
+            <p className="text-[#7B4F2B] italic">Samantha Jimenez</p>
             <button className="mt-4 bg-[#914F2F] hover:bg-[#7B4F2B] text-white px-6 py-2 rounded-full shadow-md transition-colors duration-300">
               Edit Profile
             </button>
@@ -42,7 +44,7 @@ export default function UserInfoCard() {
 
             <h2 className="text-xl font-semibold text-[#5D3A1A] mb-4">Family Role</h2>
             <div className="flex flex-wrap gap-2 mb-6">
-              <span className="bg-[#FAE5C0] text-[#914F2F] px-3 py-1 rounded-full text-sm">Parent</span>
+              <span className="bg-[#FAE5C0] text-[#914F2F] px-3 py-1 rounded-full text-sm">Child</span>
               <span className="bg-[#FAE5C0] text-[#914F2F] px-3 py-1 rounded-full text-sm">Sibling</span>
               <span className="bg-[#FAE5C0] text-[#914F2F] px-3 py-1 rounded-full text-sm">Cousin</span>
             </div>
@@ -51,15 +53,15 @@ export default function UserInfoCard() {
             <ul className="space-y-2 text-[#7B4F2B]">
               <li className="flex items-center">
                 <span className="icon-[mdi--email] w-5 h-5 mr-2 text-[#914F2F]" />
-                {user?.signInDetails?.loginId || 'email@example.com'}
+                SamanthaB.Jimenez@gmail.com
               </li>
               <li className="flex items-center">
                 <span className="icon-[mdi--phone] w-5 h-5 mr-2 text-[#914F2F]" />
-                Add your phone number
+                (516) 637-4533
               </li>
               <li className="flex items-center">
                 <span className="icon-[mdi--map-marker] w-5 h-5 mr-2 text-[#914F2F]" />
-                Add your location
+                Miami, NY
               </li>
             </ul>
           </div>
