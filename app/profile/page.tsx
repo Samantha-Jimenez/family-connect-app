@@ -1,29 +1,46 @@
 "use client"
 import { useAuthenticator } from "@aws-amplify/ui-react";
 import { useEffect, useState } from 'react';
-
-interface CognitoAuthSignInDetails {
-  loginId?: string;
-}
+import { getUserData } from "../hooks/dynamoDB";
+import UserInfoCard from "@/components/UserInfoCard";
+import { usePathname } from 'next/navigation';
+import { fetchUserAttributes } from "aws-amplify/auth";
 
 interface UserData {
+  first_name: string;
+  last_name: string;
+  email: string;
   username: string;
-  signInDetails?: CognitoAuthSignInDetails;
-  attributes?: {
-    email?: string;
-    name?: string;
-  };
+  bio: string;
+  phone_number: string;
+  birthday: string;
 }
 
 export default function PublicProfile() {
   const { user } = useAuthenticator();
   const [userData, setUserData] = useState<UserData | null>(null);
+  const pathname = usePathname();
   
   useEffect(() => {
-    if (user) {
-      // Cast the user to UserData type since we know the structure matches
-      setUserData(user as unknown as UserData);
-    }
+    const fetchUserData = async () => {
+      const data = await getUserData(user.userId);
+      const userAttributes = await fetchUserAttributes();
+      if (data) {
+        setUserData({
+          first_name: data.first_name?.S || '',
+          last_name: data.last_name?.S || '',
+          email: userAttributes.email || '',
+          username: data.username?.S || '',
+          bio: data.bio?.S || '',
+          phone_number: data.phone_number?.S || '',
+          birthday: data.birthday?.S || '',
+        });
+      } else {
+        setUserData({ first_name: '', last_name: '', email: '', username: '', bio: '', phone_number: '', birthday: '' });
+      }
+    };
+
+    fetchUserData();
   }, [user]);
 
   if (!userData) {
@@ -35,35 +52,42 @@ export default function PublicProfile() {
   }
 
   return (
-    <div className="p-6">
-      <p className="text-2xl font-bold mb-6">Profile</p>
-      <div className="card w-[30rem] bg-base-100 shadow-xl p-6 mx-auto">
-        <div className="flex flex-col items-center mb-6">
-          <div className="w-24 h-24 rounded-full bg-blue-500 flex items-center justify-center text-white text-2xl font-bold mb-4">
-            {userData.signInDetails?.loginId?.charAt(0).toUpperCase()}
-          </div>
-          <h1 className="text-2xl font-bold">{userData.signInDetails?.loginId}</h1>
-        </div>
-        
-        <div className="space-y-4">
-          <div className="relative z-0 w-full mb-5 group">
-            <p className="block py-2.5 px-0 w-full text-sm bg-transparent border-0 border-b-2 border-gray-300 appearance-none text-white">
-              <strong className="text-gray-500">Username:</strong> {userData.username}
-            </p>
-          </div>
-          
-          <div className="relative z-0 w-full mb-5 group">
-            <p className="block py-2.5 px-0 w-full text-sm bg-transparent border-0 border-b-2 border-gray-300 appearance-none text-white">
-              <strong className="text-gray-500">Email:</strong> {userData.attributes?.email || 'Not provided'}
-            </p>
-          </div>
-          
-          <div className="relative z-0 w-full mb-5 group">
-            <p className="block py-2.5 px-0 w-full text-sm bg-transparent border-0 border-b-2 border-gray-300 appearance-none text-white">
-              <strong className="text-gray-500">Full Name:</strong> {userData.attributes?.name || 'Not provided'}
-            </p>
-          </div>
-        </div>
+     <div className="max-w-6xl mx-auto p-6 grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+{/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-w-6xl mx-auto"> */}
+      {/* User Info */}
+      <div className="col-span-1 sm:col-span-2">
+        <UserInfoCard currentPath={pathname} />
+      </div>
+      {/* Albums */}
+      <div className="card bg-base-100 shadow-xl flex flex-col items-center p-6 text-center">
+        <div className="w-12 h-12 mb-3 text-blue-500">📸</div>
+        <h3 className="text-lg font-semibold">Albums</h3>
+        <p className="text-gray-500">View and organize your photo albums.</p>
+        <button className="btn btn-secondary mt-3">Go to Albums</button>
+      </div>
+      
+      {/* Tagged Photos */}
+      <div className="card bg-base-100 shadow-xl flex flex-col items-center p-6 text-center">
+        <div className="w-12 h-12 mb-3 text-green-500">🏷️</div>
+        <h3 className="text-lg font-semibold">Tagged Photos</h3>
+        <p className="text-gray-500">See all photos you are tagged in.</p>
+        <button className="btn btn-secondary mt-3">View Tags</button>
+      </div>
+      
+      {/* Family Tree */}
+      <div className="card bg-base-100 shadow-xl flex flex-col items-center p-6 text-center">
+        <div className="w-12 h-12 mb-3 text-purple-500">🌳</div>
+        <h3 className="text-lg font-semibold">Family Tree</h3>
+        <p className="text-gray-500">Explore your family connections.</p>
+        <button className="btn btn-secondary mt-3">View Family Tree</button>
+      </div>
+      
+      {/* Events */}
+      <div className="card bg-base-100 shadow-xl flex flex-col items-center p-6 text-center">
+        <div className="w-12 h-12 mb-3 text-red-500">📅</div>
+        <h3 className="text-lg font-semibold">Upcoming Events</h3>
+        <p className="text-gray-500">Check family gatherings and birthdays.</p>
+        <button className="btn btn-secondary mt-3">View Events</button>
       </div>
     </div>
   );

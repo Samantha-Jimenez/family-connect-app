@@ -10,10 +10,13 @@ import FamilyMembersCard from "@/components/FamilyMembersCard";
 import RecentUploadsCard from "@/components/RecentUploadsCard";
 import Panel from "@/components/Panel";
 import CallToAction from "@/components/CallToAction";
+import { usePathname } from 'next/navigation';
 
 Amplify.configure(awsconfig);
 
+
 export default function Home() {
+  const pathname = usePathname();
 
   return (
     <AuthProvider>
@@ -21,7 +24,7 @@ export default function Home() {
         <h1 className="text-4xl font-bold text-center mb-6 text-[#717568]">Welcome to Our Family Tree</h1>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-w-6xl mx-auto">
           <div className="col-span-1 sm:col-span-2">
-            <UserInfoCard />
+            <UserInfoCard currentPath={pathname} />
           </div>
           <div className="col-span-1 sm:col-span-2 lg:col-span-1 lg:row-span-5 lg:col-start-3">
             <Panel />
