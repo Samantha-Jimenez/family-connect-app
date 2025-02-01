@@ -1,20 +1,72 @@
 import React from "react";
 
 const familyTreeData = {
-  name: "Grandparent",
+  name: "Cynthia",
   children: [
     {
-      name: "Parent 1",
+      name: "Damaris",
       children: [
-        { name: "Child 1" },
-        { name: "Child 2" },
+        { name: "Nicoletta" },
+        { name: "Christina" },
       ],
     },
     {
-      name: "Parent 2",
+      name: "Sharon",
       children: [
-        { name: "Child 3" },
-        { name: "Child 4" },
+        { name: "Victor" },
+        { name: "Jonathan" },
+        { name: "Samantha" },
+      ],
+    },
+    {
+      name: "Vanessa",
+      children: [
+        { name: "Raleigh" },
+        { name: "Lisa" },
+        { name: "Maurice" },
+      ],
+    },
+    {
+      name: "Brenda",
+      children: [
+        { name: "Lisa" },
+        { name: "Tina" },
+      ],
+    },
+    {
+      name: "Frances",
+      children: [
+        { name: "Ronald" },
+        { name: "Anthony" },
+        { name: "Aristalia" },
+        { name: "John Paul" },
+      ],
+    },
+    {
+      name: "Mario 'Tony'",
+      children: [
+        { name: "Jahson" },
+        { name: "Javin" },
+        { name: "Jamari" },
+      ],
+    },
+    {
+      name: "Angela",
+      children: [
+        { name: "Jessica" },
+        { name: "Justin" },
+        { name: "Chevone" },
+        { name: "Aubrey" },
+        { name: "Kintara" },
+        { name: "TJ" },
+      ],
+    },
+    {
+      name: "Sarih",
+      children: [
+        { name: "Chyna" },
+        { name: "Mya" },
+        { name: "Noah" },
       ],
     },
   ],
@@ -35,7 +87,6 @@ const FamilyMember = ({ member }: { member: FamilyMemberProps }) => {
         </div>
         <p className="font-bold text-gray-800 mt-2">{member.name}</p>
       </div>
-
       {/* Connectors */}
       {member.children && (
         <div className="flex flex-col items-center mt-4">
@@ -60,7 +111,7 @@ const FamilyTree = () => {
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <h1 className="text-4xl font-bold text-center mb-6 text-card-header">Our Family Tree</h1>
-      <div className="overflow-x-auto flex justify-center">
+      <div className="flex justify-center">
         <div className="flex flex-col md:flex-row md:items-start">
           <FamilyMember member={familyTreeData} />
         </div>
