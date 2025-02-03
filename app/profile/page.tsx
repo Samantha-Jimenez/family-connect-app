@@ -52,42 +52,38 @@ export default function PublicProfile() {
   }
 
   return (
-     <div className="max-w-6xl mx-auto p-6 grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-{/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-w-6xl mx-auto"> */}
+    <div className="min-h-screen bg-[#fff7ed] p-6 grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+      {/* <h1 className="text-4xl font-bold text-center mb-6 text-[#717568]">User Profile</h1> */}
       {/* User Info */}
       <div className="col-span-1 sm:col-span-2">
         <UserInfoCard currentPath={pathname} />
       </div>
       {/* Albums */}
-      <div className="card bg-base-100 shadow-xl flex flex-col items-center p-6 text-center">
-        <div className="w-12 h-12 mb-3 text-blue-500">📸</div>
-        <h3 className="text-lg font-semibold">Albums</h3>
-        <p className="text-gray-500">View and organize your photo albums.</p>
-        <button className="btn btn-secondary mt-3">Go to Albums</button>
+      <div className="card bg-white text-black shadow-lg p-6">
+        <h2 className="text-xl font-bold">📸 Albums</h2>
+        <p className="mt-2">View and organize your photo albums.</p>
+        <button className="btn btn-outline mt-4 bg-[#ffdaad] border-0 text-gray-700">Go to Albums</button>
       </div>
       
       {/* Tagged Photos */}
-      <div className="card bg-base-100 shadow-xl flex flex-col items-center p-6 text-center">
-        <div className="w-12 h-12 mb-3 text-green-500">🏷️</div>
-        <h3 className="text-lg font-semibold">Tagged Photos</h3>
-        <p className="text-gray-500">See all photos you are tagged in.</p>
-        <button className="btn btn-secondary mt-3">View Tags</button>
+      <div className="card bg-white text-black shadow-lg p-6">
+        <h2 className="text-xl font-bold">🏷️ Tagged Photos</h2>
+        <p className="mt-2">See all photos you are tagged in.</p>
+        <button className="btn btn-outline mt-4 bg-[#ffdaad] border-0 text-gray-700">View Tags</button>
       </div>
       
       {/* Family Tree */}
-      <div className="card bg-base-100 shadow-xl flex flex-col items-center p-6 text-center">
-        <div className="w-12 h-12 mb-3 text-purple-500">🌳</div>
-        <h3 className="text-lg font-semibold">Family Tree</h3>
-        <p className="text-gray-500">Explore your family connections.</p>
-        <button className="btn btn-secondary mt-3">View Family Tree</button>
+      <div className="card bg-white text-black shadow-lg p-6">
+        <h2 className="text-xl font-bold">🌳 Family Tree</h2>
+        <p className="mt-2">Explore your family connections.</p>
+        <button className="btn btn-outline mt-4 bg-[#717568] text-white border-0">View Family Tree</button>
       </div>
       
       {/* Events */}
-      <div className="card bg-base-100 shadow-xl flex flex-col items-center p-6 text-center">
-        <div className="w-12 h-12 mb-3 text-red-500">📅</div>
-        <h3 className="text-lg font-semibold">Upcoming Events</h3>
-        <p className="text-gray-500">Check family gatherings and birthdays.</p>
-        <button className="btn btn-secondary mt-3">View Events</button>
+      <div className="card bg-white text-black shadow-lg p-6">
+        <h2 className="text-xl font-bold">📅 Upcoming Events</h2>
+        <p className="mt-2">Check family gatherings and birthdays.</p>
+        <button className="btn btn-outline mt-4 bg-[#717568] text-white border-0">View Events</button>
       </div>
     </div>
   );
