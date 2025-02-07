@@ -12,6 +12,7 @@ import googleCalendarPlugin from '@fullcalendar/google-calendar'
 import iCalendarPlugin from '@fullcalendar/icalendar'
 import { useCalendar } from '@/context/CalendarContext';
 import { useAuth } from '@/context/AuthContext';
+import { EventApi } from '@fullcalendar/core';
 
 interface CalendarEvent {
   id?: string;
@@ -25,15 +26,23 @@ interface CalendarEvent {
   classNames?: string[];
   extendedProps?: {
     category?: 'birthday' | 'holiday' | 'family-event' | 'appointment';
+    rrule?: {
+      freq: 'daily' | 'weekly' | 'monthly' | 'yearly';
+      interval?: number;
+      byweekday?: number[];
+      until?: string;
+    };
+    userId?: string;
+    location?: string;
   }
+  userId?: string;
+  location?: string;
   rrule?: {
     freq: 'daily' | 'weekly' | 'monthly' | 'yearly';
     interval?: number;
     byweekday?: number[];
     until?: string;
   };
-  userId?: string;
-  location?: string;
 }
 
 export default function Calendar() {
@@ -51,7 +60,7 @@ export default function Calendar() {
     setIsModalOpen(true);
   };
 
-  const handleEventClick = (info: { event: any }) => {
+  const handleEventClick = (info: { event: EventApi }) => {
     try {
       const { event } = info;
       const eventData = {
@@ -61,7 +70,7 @@ export default function Calendar() {
         end: event.end?.toISOString() || event.endStr,
         allDay: event.allDay,
         extendedProps: event.extendedProps,
-        rrule: event.rrule,
+        rrule: event.extendedProps?.rrule,
         userId: event.extendedProps?.userId,
         location: event.extendedProps?.location
       };

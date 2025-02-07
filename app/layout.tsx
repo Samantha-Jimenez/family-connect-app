@@ -16,10 +16,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Family Connect App",
-  description: "Created by the family for the family <3",
+  title: 'Family Connect',
+  description: 'Connect with your family',
   icons: {
-    icon: '/icon.png',
+    icon: '/favicon.ico',
   },
 };
 

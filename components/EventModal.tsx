@@ -43,45 +43,45 @@ export default function EventModal({
     }
   }, [isOpen, mode]);
 
-  const resetToEventValues = () => {
-    try {
-      if (event && mode === 'edit') {
-        setTitle(event.title);
-        setIsAllDay(!!event.allDay);
-        setLocation(event.location || '');
-        const start = new Date(event.start);
-        if (!isNaN(start.getTime())) {
-          setStartDate(start.toISOString().split('T')[0]);
-          setStartTime(start.toLocaleTimeString('en-US', { hour12: false }).slice(0, 5));
-        }
-        
-        if (event.end) {
-          const end = new Date(event.end);
-          if (!isNaN(end.getTime())) {
-            setEndDate(end.toISOString().split('T')[0]);
-            setEndTime(end.toLocaleTimeString('en-US', { hour12: false }).slice(0, 5));
+  useEffect(() => {
+    const resetToEventValues = () => {
+      try {
+        if (event && mode === 'edit') {
+          setTitle(event.title);
+          setIsAllDay(!!event.allDay);
+          setLocation(event.location || '');
+          const start = new Date(event.start);
+          if (!isNaN(start.getTime())) {
+            setStartDate(start.toISOString().split('T')[0]);
+            setStartTime(start.toLocaleTimeString('en-US', { hour12: false }).slice(0, 5));
+          }
+          
+          if (event.end) {
+            const end = new Date(event.end);
+            if (!isNaN(end.getTime())) {
+              setEndDate(end.toISOString().split('T')[0]);
+              setEndTime(end.toLocaleTimeString('en-US', { hour12: false }).slice(0, 5));
+            }
+          }
+        } else {
+          const selected = new Date(selectedDate);
+          if (!isNaN(selected.getTime())) {
+            setTitle('');
+            setIsAllDay(false);
+            setLocation('');
+            setStartDate(selected.toISOString().split('T')[0]);
+            setStartTime('09:00');
+            setEndDate(selected.toISOString().split('T')[0]);
+            setEndTime('10:00');
           }
         }
-      } else {
-        const selected = new Date(selectedDate);
-        if (!isNaN(selected.getTime())) {
-          setTitle('');
-          setIsAllDay(false);
-          setLocation('');
-          setStartDate(selected.toISOString().split('T')[0]);
-          setStartTime('09:00');
-          setEndDate(selected.toISOString().split('T')[0]);
-          setEndTime('10:00');
-        }
+      } catch (error) {
+        console.error('Error resetting form:', error);
       }
-    } catch (error) {
-      console.error('Error resetting form:', error);
-    }
-  };
+    };
 
-  useEffect(() => {
     resetToEventValues();
-  }, [event, mode, selectedDate]);
+  }, [event, mode, selectedDate, setTitle, setIsAllDay, setLocation, setStartDate, setStartTime, setEndDate, setEndTime]);
 
   const formatDateTime = (date: string, time?: string) => {
     try {
@@ -187,7 +187,25 @@ export default function EventModal({
 
   const handleCancel = () => {
     if (mode === 'edit') {
-      resetToEventValues();
+      // Reset all form fields individually
+      if (event) {
+        setTitle(event.title);
+        setIsAllDay(!!event.allDay);
+        setLocation(event.location || '');
+        const start = new Date(event.start);
+        if (!isNaN(start.getTime())) {
+          setStartDate(start.toISOString().split('T')[0]);
+          setStartTime(start.toLocaleTimeString('en-US', { hour12: false }).slice(0, 5));
+        }
+        
+        if (event.end) {
+          const end = new Date(event.end);
+          if (!isNaN(end.getTime())) {
+            setEndDate(end.toISOString().split('T')[0]);
+            setEndTime(end.toLocaleTimeString('en-US', { hour12: false }).slice(0, 5));
+          }
+        }
+      }
       setIsEditing(false);
     } else {
       handleClose();

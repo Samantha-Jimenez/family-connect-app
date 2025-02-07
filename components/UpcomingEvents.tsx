@@ -20,17 +20,18 @@ const UpcomingEvents = () => {
 
   // Function to get the next occurrence of a recurring event
   const getNextOccurrence = (event: Event) => {
-    const now = new Date();
     const eventStart = new Date(event.start);
     
     if (!event.rrule) {
-      return eventStart;
+      // For non-recurring events, only show them if they're in the future
+      const now = new Date();
+      return eventStart >= now ? eventStart : null;
     }
 
     // Handle weekly events
     if (event.rrule.freq === 'weekly') {
       const dayOfWeek = eventStart.getDay();
-      let nextDate = new Date(now);
+      const nextDate = new Date();
       
       // Find the next occurrence of the weekday
       while (nextDate.getDay() !== dayOfWeek) {
@@ -52,7 +53,8 @@ const UpcomingEvents = () => {
       ...event,
       nextOccurrence: getNextOccurrence(event)
     }))
-    .sort((a, b) => a.nextOccurrence.getTime() - b.nextOccurrence.getTime())
+    .filter(event => event.nextOccurrence !== null)
+    .sort((a, b) => a.nextOccurrence!.getTime() - b.nextOccurrence!.getTime())
     .slice(0, 3);
 
   const formatDate = (date: Date) => {
@@ -73,7 +75,7 @@ const UpcomingEvents = () => {
             <div key={event.id || event.start} className="flex items-center justify-between">
               <div>
                 <p className="font-medium">{event.title}</p>
-                <p className="text-sm text-gray-600">{formatDate(event.nextOccurrence)}</p>
+                <p className="text-sm text-gray-600">{formatDate(event.nextOccurrence!)}</p>
               </div>
             </div>
           ))
