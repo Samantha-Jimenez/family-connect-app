@@ -65,7 +65,7 @@ const UpcomingEvents = () => {
   };
 
   return (
-    <div className="card bg-white text-black shadow-lg p-6">
+    <div className="card text-black p-6">
       <h2 className="text-xl font-bold">📅 Upcoming Events</h2>
       <div className="mt-4 space-y-3">
         {sortedEvents.length > 0 ? (

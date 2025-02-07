@@ -16,7 +16,7 @@ interface UserData {
     birthday: string;
 }
 
-export default function UserInfoCard({ currentPath }: { currentPath: string }) {
+export default function ProfileUserInfoCard({ currentPath }: { currentPath: string }) {
     const [userData, setUserData] = useState<UserData | null>(null);
     const { user } = useAuthenticator();
     

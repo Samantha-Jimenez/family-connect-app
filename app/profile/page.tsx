@@ -2,7 +2,7 @@
 import { useAuthenticator } from "@aws-amplify/ui-react";
 import { useEffect, useState } from 'react';
 import { getUserData } from "../hooks/dynamoDB";
-import UserInfoCard from "@/components/UserInfoCard";
+import ProfileUserInfoCard from "@/components/ProfileUserInfoCard";
 import { usePathname } from 'next/navigation';
 import { fetchUserAttributes } from "aws-amplify/auth";
 import UpcomingEvents from "@/components/UpcomingEvents";
@@ -57,7 +57,7 @@ export default function PublicProfile() {
       {/* <h1 className="text-4xl font-bold text-center mb-6 text-[#717568]">User Profile</h1> */}
       {/* User Info */}
       <div className="col-span-1 sm:col-span-2">
-        <UserInfoCard currentPath={pathname} />
+        <ProfileUserInfoCard currentPath={pathname} />
       </div>
       <div className="divider col-span-1 sm:col-span-2"></div>
       {/* Albums */}
