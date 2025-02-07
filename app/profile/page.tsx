@@ -5,6 +5,7 @@ import { getUserData } from "../hooks/dynamoDB";
 import UserInfoCard from "@/components/UserInfoCard";
 import { usePathname } from 'next/navigation';
 import { fetchUserAttributes } from "aws-amplify/auth";
+import UpcomingEvents from "@/components/UpcomingEvents";
 
 interface UserData {
   first_name: string;
@@ -52,39 +53,42 @@ export default function PublicProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fff7ed] p-6 grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+    <div className="min-h-screen bg-[#fff7ed] p-6 grid gap-6 grid-cols-1 md:grid-cols-2">
       {/* <h1 className="text-4xl font-bold text-center mb-6 text-[#717568]">User Profile</h1> */}
       {/* User Info */}
       <div className="col-span-1 sm:col-span-2">
         <UserInfoCard currentPath={pathname} />
       </div>
+      <div className="divider col-span-1 sm:col-span-2"></div>
       {/* Albums */}
       <div className="card bg-white text-black shadow-lg p-6">
         <h2 className="text-xl font-bold">📸 Albums</h2>
         <p className="mt-2">View and organize your photo albums.</p>
         <button className="btn btn-outline mt-4 bg-[#ffdaad] border-0 text-gray-700">Go to Albums</button>
       </div>
-      
+      {/* <div className="divider divider-horizontal"></div> */}
+      <UpcomingEvents />
+      <div className="divider col-span-1 sm:col-span-2"></div>
       {/* Tagged Photos */}
-      <div className="card bg-white text-black shadow-lg p-6">
+      <div className="card bg-white text-black shadow-lg p-6 col-span-1 sm:col-span-2">
         <h2 className="text-xl font-bold">🏷️ Tagged Photos</h2>
         <p className="mt-2">See all photos you are tagged in.</p>
         <button className="btn btn-outline mt-4 bg-[#ffdaad] border-0 text-gray-700">View Tags</button>
       </div>
-      
+      <div className="divider col-span-1 sm:col-span-2"></div>
       {/* Family Tree */}
-      <div className="card bg-white text-black shadow-lg p-6">
+      <div className="card bg-white text-black shadow-lg p-6 col-span-1 sm:col-span-2">
         <h2 className="text-xl font-bold">🌳 Family Tree</h2>
         <p className="mt-2">Explore your family connections.</p>
         <button className="btn btn-outline mt-4 bg-[#717568] text-white border-0">View Family Tree</button>
       </div>
       
       {/* Events */}
-      <div className="card bg-white text-black shadow-lg p-6">
-        <h2 className="text-xl font-bold">📅 Upcoming Events</h2>
-        <p className="mt-2">Check family gatherings and birthdays.</p>
-        <button className="btn btn-outline mt-4 bg-[#717568] text-white border-0">View Events</button>
-      </div>
+        {/* <div className="card bg-white text-black shadow-lg p-6">
+          <h2 className="text-xl font-bold">📅 Upcoming Events</h2>
+          <p className="mt-2">Check family gatherings and birthdays.</p>
+          <button className="btn btn-outline mt-4 bg-[#717568] text-white border-0">View Events</button>
+        </div> */}
     </div>
   );
 }

@@ -10,6 +10,8 @@ import rrulePlugin from '@fullcalendar/rrule'
 import multiMonthPlugin from '@fullcalendar/multimonth'
 import googleCalendarPlugin from '@fullcalendar/google-calendar'
 import iCalendarPlugin from '@fullcalendar/icalendar'
+import { useCalendar } from '@/context/CalendarContext';
+import { useAuth } from '@/context/AuthContext';
 
 interface CalendarEvent {
   id?: string;
@@ -30,45 +32,29 @@ interface CalendarEvent {
     byweekday?: number[];
     until?: string;
   };
+  userId?: string;
 }
 
 export default function Calendar() {
-  const [events, setEvents] = useState<CalendarEvent[]>([
-    { 
-      title: "Family Dinner", 
-      start: "2024-03-21T18:00:00",
-      end: "2024-03-21T20:00:00",
-      allDay: false
-    },
-    {
-      title: "Family Reunion",
-      start: "2024-03-25",
-      allDay: true
-    },
-    {
-      title: "Family Game Night",
-      start: "2024-03-21T19:00:00",
-      rrule: {
-        freq: 'weekly',
-        interval: 1,
-        byweekday: [5] // Every Friday (0=Sunday, 1=Monday, etc.)
-      }
-    }
-  ]);
+  const { events, setEvents } = useCalendar();
+  const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
 
   const handleDateClick = (info: { date: Date }) => {
-    setSelectedDate(info.date.toISOString().split('T')[0]);
+    setSelectedDate(info.date.toISOString());
     setIsModalOpen(true);
   };
 
   const handleAddEvent = (title: string) => {
-    setEvents([...events, { 
+    const newEvent = {
       id: crypto.randomUUID(),
-      title, 
-      start: selectedDate 
-    }]);
+      title,
+      start: selectedDate,
+      userId: user?.userId
+    };
+    setEvents(currentEvents => [...currentEvents, newEvent]);
+    setIsModalOpen(false);
   };
 
   return (

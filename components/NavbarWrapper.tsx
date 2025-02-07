@@ -2,11 +2,36 @@
 
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import Navbar from "./Navbar";
+import { CalendarProvider } from '@/context/CalendarContext';
+import { Authenticator } from '@aws-amplify/ui-react';
 
-export default function NavbarWrapper() {
+export default function NavbarWrapper({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuthenticator();
   
-  if (!user) return null;
+  // If no user, show the authentication component
+  if (!user) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Authenticator>
+          {({ signOut, user }) => (
+            <main>
+              <h1>Hello {user?.username}</h1>
+              <button onClick={signOut}>Sign out</button>
+            </main>
+          )}
+        </Authenticator>
+      </div>
+    );
+  }
   
-  return <Navbar signOut={signOut} username={user.username} />;
+  return (
+    <CalendarProvider>
+      <div>
+        <Navbar signOut={signOut} username={user.username} />
+        <main>
+          {children}
+        </main>
+      </div>
+    </CalendarProvider>
+  );
 } 
