@@ -33,6 +33,7 @@ interface CalendarEvent {
     until?: string;
   };
   userId?: string;
+  location?: string;
 }
 
 export default function Calendar() {
@@ -40,20 +41,72 @@ export default function Calendar() {
   const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
 
   const handleDateClick = (info: { date: Date }) => {
+    setSelectedEvent(null);
+    setModalMode('add');
     setSelectedDate(info.date.toISOString());
     setIsModalOpen(true);
   };
 
-  const handleAddEvent = (title: string) => {
+  const handleEventClick = (info: { event: any }) => {
+    try {
+      const { event } = info;
+      const eventData = {
+        id: event.id,
+        title: event.title,
+        start: event.start?.toISOString() || event.startStr,
+        end: event.end?.toISOString() || event.endStr,
+        allDay: event.allDay,
+        extendedProps: event.extendedProps,
+        rrule: event.rrule,
+        userId: event.extendedProps?.userId,
+        location: event.extendedProps?.location
+      };
+      setSelectedEvent(eventData);
+      setModalMode('edit');
+      setIsModalOpen(true);
+    } catch (error) {
+      console.error('Error handling event click:', error);
+      alert('Unable to edit this event. Please try again.');
+    }
+  };
+
+  const handleAddEvent = (title: string, start: string, end?: string, allDay?: boolean, location?: string) => {
     const newEvent = {
       id: crypto.randomUUID(),
       title,
-      start: selectedDate,
+      start,
+      end,
+      allDay,
+      location,
       userId: user?.userId
     };
     setEvents(currentEvents => [...currentEvents, newEvent]);
+    setIsModalOpen(false);
+  };
+
+  const handleEditEvent = (title: string, start: string, end?: string, allDay?: boolean, location?: string) => {
+    if (!selectedEvent?.id) return;
+    
+    setEvents(currentEvents =>
+      currentEvents.map(event =>
+        event.id === selectedEvent.id
+          ? { ...event, title, start, end, allDay, location }
+          : event
+      )
+    );
+    setIsModalOpen(false);
+  };
+
+  const handleDeleteEvent = () => {
+    if (!selectedEvent?.id) return;
+    
+    setEvents(currentEvents =>
+      currentEvents.filter(event => event.id !== selectedEvent.id)
+    );
     setIsModalOpen(false);
   };
 
@@ -109,11 +162,7 @@ export default function Calendar() {
             )
           );
         }}
-        eventClick={(info) => {
-          // Handle event clicks - could open a modal with event details
-          const { event } = info;
-          console.log('Event clicked:', event.title, event.extendedProps);
-        }}
+        eventClick={handleEventClick}
         eventMouseEnter={(info) => {
           console.log('Event mouse entered:', info.event.title, info.event.extendedProps);
           // Show tooltip or additional info on hover
@@ -122,8 +171,11 @@ export default function Calendar() {
       <EventModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSubmit={handleAddEvent}
+        onSubmit={modalMode === 'add' ? handleAddEvent : handleEditEvent}
+        onDelete={handleDeleteEvent}
         selectedDate={selectedDate}
+        event={selectedEvent}
+        mode={modalMode}
       />
     </div>
   )
