@@ -103,15 +103,15 @@ export default function ProfileUserInfoCard({ currentPath }: { currentPath: stri
             <h2 className="text-xl font-semibold text-black mb-1">Contact Information</h2>
             <ul className="text-gray-500">
               <li className="flex items-center">
-                <span className="icon-[mdi--email] w-5 h-5 mr-2 text-[#914F2F]" />
+                <span className="icon-[mdi--email] h-5 mr-2" />
                 {userData?.email || ''}
               </li>
               <li className="flex items-center">
-                <span className="icon-[mdi--phone] w-5 h-5 mr-2 text-[#914F2F]" />
+                <span className="icon-[mdi--phone] h-5 mr-2" />
                 {userData?.phone_number || ''}
               </li>
               <li className="flex items-center">
-                <span className="icon-[mdi--map-marker] w-5 h-5 mr-2 text-[#914F2F]" />
+                <span className="icon-[mdi--map-marker] h-5 mr-2" />
                 XXXXX, XX
               </li>
             </ul>

@@ -53,7 +53,8 @@ export default function PublicProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fff7ed] p-6 grid gap-6 grid-cols-1 md:grid-cols-2">
+    <div className="min-h-screen p-6 bg-white">
+      <div className="max-w-6xl mx-auto grid gap-6 grid-cols-1 md:grid-cols-2"> 
       {/* <h1 className="text-4xl font-bold text-center mb-6 text-[#717568]">User Profile</h1> */}
       {/* User Info */}
       <div className="col-span-1 sm:col-span-2">
@@ -89,6 +90,7 @@ export default function PublicProfile() {
           <p className="mt-2">Check family gatherings and birthdays.</p>
           <button className="btn btn-outline mt-4 bg-[#717568] text-white border-0">View Events</button>
         </div> */}
+      </div>
     </div>
   );
 }
