@@ -3,12 +3,14 @@
 import { useState } from 'react';
 
 function PhotoUpload() {
-  const [image, setImage] = useState(null);
+  const [image, setImage] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [uploadUrl, setUploadUrl] = useState(null);
+  const [uploadUrl, setUploadUrl] = useState<string | null>(null);
 
-  const handleFileChange = (e) => {
-    setImage(e.target.files[0]);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setImage(e.target.files[0]);
+    }
   };
 
   const handleUpload = async () => {
