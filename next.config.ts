@@ -13,7 +13,13 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'api.dicebear.com',
         port: '',
-        pathname: '/**', // Allows all paths under api.dicebear.com
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'family-connect-app.s3.us-east-2.amazonaws.com',
+        port: '',
+        pathname: '/photos/**',
       },
     ],
   },
