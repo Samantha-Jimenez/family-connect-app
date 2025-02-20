@@ -5,29 +5,17 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'flowbite.s3.amazonaws.com',
-        port: '',
-        pathname: '/docs/gallery/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'api.dicebear.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'family-connect-app.s3.us-east-2.amazonaws.com',
-        port: '',
-        pathname: '/photos/**',
-      },
-      {
-        protocol: 'https',
         hostname: '*.s3.*.amazonaws.com',
         port: '',
-        pathname: '/photos/**',
+        pathname: '/**',
       }
     ],
+  },
+  env: {
+    AWS_S3_ACCESS_KEY_ID: process.env.AWS_S3_ACCESS_KEY_ID,
+    AWS_S3_SECRET_ACCESS_KEY: process.env.AWS_S3_SECRET_ACCESS_KEY,
+    AWS_REGION: process.env.AWS_REGION,
+    AWS_S3_BUCKET_NAME: process.env.AWS_S3_BUCKET_NAME,
   },
 };
 

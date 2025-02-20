@@ -25,7 +25,6 @@
     "@iconify/icons-mdi": "^1.2.48",
     "@iconify/react": "^5.2.0",
     "aws-amplify": "^6.12.2",
-    "aws-sdk": "^2.1692.0",
     "core-js": "^3.40.0",
     "dotenv": "^16.4.7",
     "glob": "^11.0.1",

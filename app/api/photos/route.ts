@@ -1,31 +1,53 @@
 import { NextResponse } from 'next/server';
 import { S3Client, ListObjectsV2Command } from '@aws-sdk/client-s3';
 
-const s3 = new S3Client({
-  region: process.env.AWS_REGION!,
-  credentials: {
-    accessKeyId: process.env.AWS_S3_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_S3_SECRET_ACCESS_KEY!,
-  },
-});
-
 export async function GET() {
   try {
-    const command = new ListObjectsV2Command({
-      Bucket: process.env.AWS_S3_BUCKET_NAME,
+    // Add more detailed environment variable logging
+    console.log('Checking environment variables...');
+    const envVars = {
+      AWS_S3_ACCESS_KEY_ID: process.env.AWS_S3_ACCESS_KEY_ID ? '✓ Present' : '✗ Missing',
+      AWS_S3_SECRET_ACCESS_KEY: process.env.AWS_S3_SECRET_ACCESS_KEY ? '✓ Present' : '✗ Missing',
+      AWS_S3_REGION: process.env.AWS_S3_REGION || '✗ Missing',
+      AWS_S3_BUCKET_NAME: process.env.AWS_S3_BUCKET_NAME || '✗ Missing'
+    };
+    console.log('Environment variables status:', envVars);
+
+    // Verify environment variables with correct names
+    if (!process.env.AWS_S3_ACCESS_KEY_ID || 
+        !process.env.AWS_S3_SECRET_ACCESS_KEY || 
+        !process.env.AWS_S3_REGION ||
+        !process.env.AWS_S3_BUCKET_NAME) {
+      
+      throw new Error('AWS configuration is incomplete. Please check your .env.local file.');
+    }
+
+    const s3Client = new S3Client({
+      credentials: {
+        accessKeyId: process.env.AWS_S3_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_S3_SECRET_ACCESS_KEY,
+      },
+      region: process.env.AWS_S3_REGION,
     });
 
-    const response = await s3.send(command);
+    const command = new ListObjectsV2Command({
+      Bucket: process.env.AWS_S3_BUCKET_NAME,
+      Prefix: 'photos/',
+    });
+
+    const data = await s3Client.send(command);
     
-    const photos = response.Contents?.map(item => ({
-      key: item.Key,
-      url: `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com/${item.Key}`,
-      lastModified: item.LastModified,
+    const photos = data.Contents?.map(item => ({
+      url: `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_S3_REGION}.amazonaws.com/${item.Key}`
     })) || [];
 
     return NextResponse.json({ photos });
+
   } catch (error) {
     console.error('Error fetching photos:', error);
-    return NextResponse.json({ error: 'Failed to fetch photos' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch photos', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
   }
-} 
+}
