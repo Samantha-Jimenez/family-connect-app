@@ -3,7 +3,11 @@
 import { useState } from 'react';
 import Image from 'next/image';
 
-function PhotoUpload() {
+interface PhotoUploadProps {
+  onUploadComplete?: () => void;
+}
+
+const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
   const [image, setImage] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadUrl, setUploadUrl] = useState<string | null>(null);
@@ -39,6 +43,9 @@ function PhotoUpload() {
       if (data.url) {
         console.log('Uploaded image URL:', data.url);
         setUploadUrl(data.url);
+        if (onUploadComplete) {
+          onUploadComplete();
+        }
       }
     } catch (error) {
       console.error('Upload failed', error);
@@ -96,6 +103,6 @@ function PhotoUpload() {
       )}
     </div>
   );
-}
+};
 
 export default PhotoUpload;

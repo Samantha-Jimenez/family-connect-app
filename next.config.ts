@@ -22,6 +22,11 @@ const nextConfig: NextConfig = {
         pathname: '/photos/**',
       },
     ],
+    domains: [
+      'flowbite.s3.amazonaws.com',
+      `${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com`,
+      'family-connect-app.s3.us-east-2.amazonaws.com'
+    ],
   },
 };
 

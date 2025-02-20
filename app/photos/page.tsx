@@ -1,21 +1,32 @@
 "use client";
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Image from 'next/image';
 import PhotoUpload from '@/components/PhotoUpload';
 
 const Photos = () => {
   const [currentIndex, setCurrentIndex] = useState(0); // State to track the current index
+  const [images, setImages] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const images = [
-    "https://flowbite.s3.amazonaws.com/docs/gallery/square/image.jpg",
-    "https://flowbite.s3.amazonaws.com/docs/gallery/square/image-1.jpg",
-    "https://flowbite.s3.amazonaws.com/docs/gallery/square/image-2.jpg",
-    "https://flowbite.s3.amazonaws.com/docs/gallery/square/image-3.jpg",
-    "https://flowbite.s3.amazonaws.com/docs/gallery/square/image-4.jpg",
-    "https://flowbite.s3.amazonaws.com/docs/gallery/square/image-5.jpg",
-    "https://flowbite.s3.amazonaws.com/docs/gallery/square/image-6.jpg",
-  ];
+  useEffect(() => {
+    fetchPhotos();
+  }, []);
+
+  const fetchPhotos = async () => {
+    try {
+      const response = await fetch('/api/photos');
+      const data = await response.json();
+      if (data.photos) {
+        const photoUrls = data.photos.map((photo: { url: string }) => photo.url);
+        setImages(photoUrls);
+      }
+    } catch (error) {
+      console.error('Error fetching photos:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleNext = () => {
     setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length); // Cycle to the next image
@@ -25,11 +36,26 @@ const Photos = () => {
     setCurrentIndex((prevIndex) => (prevIndex - 1 + images.length) % images.length); // Cycle to the previous image
   };
 
+  // Add this function to refresh photos after upload
+  const handlePhotoUploaded = () => {
+    fetchPhotos();
+  };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Photo Upload</h1>
       <div className="max-w-lg mx-auto">
-        <PhotoUpload />
+        <PhotoUpload onUploadComplete={handlePhotoUploaded} />
         <div className="mt-1 text-sm text-gray-500 dark:text-gray-300">
           Upload your photos to share with your family
         </div>
@@ -93,6 +119,7 @@ const Photos = () => {
                           src={image}
                           alt={`Slide ${index + 1}`}
                           fill
+                          sizes="(max-width: 768px) 100vw, 1200px"
                           className="object-cover"
                           priority={index === 0}
                       />
@@ -150,123 +177,21 @@ const Photos = () => {
               </button> */}
           </div>
         </div>
+        
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="grid gap-4">
-              <div className="relative h-48">
-                  <Image
-                      className="rounded-lg object-cover"
-                      src="https://flowbite.s3.amazonaws.com/docs/gallery/masonry/image.jpg"
-                      alt="Gallery image"
-                      fill
-                  />
-              </div>
-              <div>
-                  <Image
-                      className="h-auto max-w-full rounded-lg"
-                      src="https://flowbite.s3.amazonaws.com/docs/gallery/masonry/image-1.jpg"
-                      alt="Gallery image"
-                      width={300}
-                      height={300}
-                  />
-              </div>
-              <div>
-                  <Image
-                      className="h-auto max-w-full rounded-lg"
-                      src="https://flowbite.s3.amazonaws.com/docs/gallery/masonry/image-2.jpg"
-                      alt="Gallery image"
-                      width={300}
-                      height={300}
-                  />
-              </div>
-          </div>
-          <div className="grid gap-4">
-              <div>
-                  <Image
-                      className="h-auto max-w-full rounded-lg"
-                      src="https://flowbite.s3.amazonaws.com/docs/gallery/masonry/image-3.jpg"
-                      alt="Gallery image"
-                      width={300}
-                      height={300}
-                  />
-              </div>
-              <div>
-                  <Image
-                      className="h-auto max-w-full rounded-lg"
-                      src="https://flowbite.s3.amazonaws.com/docs/gallery/masonry/image-4.jpg"
-                      alt="Gallery image"
-                      width={300}
-                      height={300}
-                  />
-              </div>
-              <div>
-                  <Image
-                      className="h-auto max-w-full rounded-lg"
-                      src="https://flowbite.s3.amazonaws.com/docs/gallery/masonry/image-5.jpg"
-                      alt="Gallery image"
-                      width={300}
-                      height={300}
-                  />
-              </div>
-          </div>
-          <div className="grid gap-4">
-              <div>
-                  <Image
-                      className="h-auto max-w-full rounded-lg"
-                      src="https://flowbite.s3.amazonaws.com/docs/gallery/masonry/image-6.jpg"
-                      alt="Gallery image"
-                      width={300}
-                      height={300}
-                  />
-              </div>
-              <div>
-                  <Image
-                      className="h-auto max-w-full rounded-lg"
-                      src="https://flowbite.s3.amazonaws.com/docs/gallery/masonry/image-7.jpg"
-                      alt="Gallery image"
-                      width={300}
-                      height={300}
-                  />
-              </div>
-              <div>
-                  <Image
-                      className="h-auto max-w-full rounded-lg"
-                      src="https://flowbite.s3.amazonaws.com/docs/gallery/masonry/image-8.jpg"
-                      alt="Gallery image"
-                      width={300}
-                      height={300}
-                  />
-              </div>
-          </div>
-          <div className="grid gap-4">
-              <div>
-                  <Image
-                      className="h-auto max-w-full rounded-lg"
-                      src="https://flowbite.s3.amazonaws.com/docs/gallery/masonry/image-9.jpg"
-                      alt="Gallery image"
-                      width={300}
-                      height={300}
-                  />
-              </div>
-              <div>
-                  <Image
-                      className="h-auto max-w-full rounded-lg"
-                      src="https://flowbite.s3.amazonaws.com/docs/gallery/masonry/image-10.jpg"
-                      alt="Gallery image"
-                      width={300}
-                      height={300}
-                  />
-              </div>
-              <div>
-                  <Image
-                      className="h-auto max-w-full rounded-lg"
-                      src="https://flowbite.s3.amazonaws.com/docs/gallery/masonry/image-11.jpg"
-                      alt="Gallery image"
-                      width={300}
-                      height={300}
-                  />
-              </div>
-          </div>
-      </div>
+          {[...images].reverse().map((imageUrl, index) => (
+            <div key={index} className="relative h-48">
+              <Image
+                className="rounded-lg object-cover"
+                src={imageUrl}
+                alt={`Gallery image ${index + 1}`}
+                fill
+                sizes="(max-width: 768px) 50vw, 25vw"
+                priority={index === 0}
+              />
+            </div>
+          ))}
+        </div>
     </div>
   )
 }
