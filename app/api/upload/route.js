@@ -7,13 +7,13 @@ export async function POST(req) {
 
     // Configure AWS SDK for S3
     const s3 = new AWS.S3({
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      region: 'your-region',  // Set your AWS region (e.g., 'us-east-1')
+      accessKeyId: process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY,
+      region: process.env.NEXT_PUBLIC_AWS_REGION,  // Set your AWS region (e.g., 'us-east-1')
     });
 
     const params = {
-      Bucket: 'your-bucket-name',  // The name of your S3 bucket
+      Bucket: 'family-connect-app',  // The name of your S3 bucket
       Key: `photos/${Date.now()}_${file.name}`,  // Unique key for the file (timestamp + file name)
       Body: file.stream(),  // Use the file's stream for upload
       ContentType: file.type,  // Set the content type from the file's type
