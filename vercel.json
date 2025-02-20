@@ -1,14 +1,15 @@
 {
     "builds": [
-        {
+      {
         "src": "app/api/**/*.js",
         "use": "@vercel/node"
-        }
+      }
     ],
-    "ignore": [
-        "pages/*",
-        "public/*",
-        "app/*"
+    "routes": [
+      {
+        "src": "/api/(.*)",
+        "dest": "/app/api/$1"
+      }
     ]
-}
+  }
   
