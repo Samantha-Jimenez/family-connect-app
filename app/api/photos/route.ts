@@ -6,39 +6,39 @@ export async function GET() {
     // Add more detailed environment variable logging
     console.log('Checking environment variables...');
     const envVars = {
-      AWS_S3_ACCESS_KEY_ID: process.env.AWS_S3_ACCESS_KEY_ID ? '✓ Present' : '✗ Missing',
-      AWS_S3_SECRET_ACCESS_KEY: process.env.AWS_S3_SECRET_ACCESS_KEY ? '✓ Present' : '✗ Missing',
-      AWS_S3_REGION: process.env.AWS_S3_REGION || '✗ Missing',
-      AWS_S3_BUCKET_NAME: process.env.AWS_S3_BUCKET_NAME || '✗ Missing'
+      NEXT_PUBLIC_AWS_S3_ACCESS_KEY_ID: process.env.NEXT_PUBLIC_AWS_S3_ACCESS_KEY_ID ? '✓ Present' : '✗ Missing',
+      NEXT_PUBLIC_AWS_S3_SECRET_ACCESS_KEY: process.env.NEXT_PUBLIC_AWS_S3_SECRET_ACCESS_KEY ? '✓ Present' : '✗ Missing',
+      NEXT_PUBLIC_AWS_S3_REGION: process.env.NEXT_PUBLIC_AWS_S3_REGION || '✗ Missing',
+      NEXT_PUBLIC_AWS_S3_BUCKET_NAME: process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME || '✗ Missing'
     };
     console.log('Environment variables status:', envVars);
 
     // Verify environment variables with correct names
-    if (!process.env.AWS_S3_ACCESS_KEY_ID || 
-        !process.env.AWS_S3_SECRET_ACCESS_KEY || 
-        !process.env.AWS_S3_REGION ||
-        !process.env.AWS_S3_BUCKET_NAME) {
+    if (!process.env.NEXT_PUBLIC_AWS_S3_ACCESS_KEY_ID || 
+        !process.env.NEXT_PUBLIC_AWS_S3_SECRET_ACCESS_KEY || 
+        !process.env.NEXT_PUBLIC_AWS_S3_REGION ||
+        !process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME) {
       
-      throw new Error('AWS configuration is incomplete. Please check your .env.local file.');
+      throw new Error('AWS configuration is incomplete');
     }
 
     const s3Client = new S3Client({
       credentials: {
-        accessKeyId: process.env.AWS_S3_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_S3_SECRET_ACCESS_KEY,
+        accessKeyId: process.env.NEXT_PUBLIC_AWS_S3_ACCESS_KEY_ID,
+        secretAccessKey: process.env.NEXT_PUBLIC_AWS_S3_SECRET_ACCESS_KEY,
       },
-      region: process.env.AWS_S3_REGION,
+      region: process.env.NEXT_PUBLIC_AWS_S3_REGION,
     });
 
     const command = new ListObjectsV2Command({
-      Bucket: process.env.AWS_S3_BUCKET_NAME,
+      Bucket: process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME,
       Prefix: 'photos/',
     });
 
     const data = await s3Client.send(command);
     
     const photos = data.Contents?.map(item => ({
-      url: `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_S3_REGION}.amazonaws.com/${item.Key}`
+      url: `https://${process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_S3_REGION}.amazonaws.com/${item.Key}`
     })) || [];
 
     return NextResponse.json({ photos });

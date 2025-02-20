@@ -23,17 +23,12 @@ export async function POST(req: Request) {
 
     console.log('File received:', file.name, file.type);
 
-    // Verify environment variables
-    if (!process.env.AWS_S3_ACCESS_KEY_ID || 
-        !process.env.AWS_S3_SECRET_ACCESS_KEY || 
-        !process.env.AWS_S3_REGION ||
-        !process.env.AWS_S3_BUCKET_NAME) {
-      console.log('Missing AWS configuration:', {
-        hasAccessKey: !!process.env.AWS_S3_ACCESS_KEY_ID,
-        hasSecretKey: !!process.env.AWS_S3_SECRET_ACCESS_KEY,
-        hasRegion: !!process.env.AWS_S3_REGION,
-        hasBucket: !!process.env.AWS_S3_BUCKET_NAME
-      });
+    // Update environment variable checks
+    if (!process.env.NEXT_PUBLIC_AWS_S3_ACCESS_KEY_ID || 
+        !process.env.NEXT_PUBLIC_AWS_S3_SECRET_ACCESS_KEY || 
+        !process.env.NEXT_PUBLIC_AWS_S3_REGION ||
+        !process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME) {
+      console.log('Missing AWS configuration');
       throw new Error('AWS configuration is incomplete');
     }
 
@@ -46,15 +41,15 @@ export async function POST(req: Request) {
     // Configure AWS SDK for S3
     const s3Client = new S3Client({
       credentials: {
-        accessKeyId: process.env.AWS_S3_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_S3_SECRET_ACCESS_KEY,
+        accessKeyId: process.env.NEXT_PUBLIC_AWS_S3_ACCESS_KEY_ID,
+        secretAccessKey: process.env.NEXT_PUBLIC_AWS_S3_SECRET_ACCESS_KEY,
       },
-      region: process.env.AWS_S3_REGION,
+      region: process.env.NEXT_PUBLIC_AWS_S3_REGION,
     });
 
     const key = `photos/${Date.now()}_${file.name}`;
     const command = new PutObjectCommand({
-      Bucket: process.env.AWS_S3_BUCKET_NAME,
+      Bucket: process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME,
       Key: key,
       Body: buffer,
       ContentType: file.type,
@@ -63,7 +58,7 @@ export async function POST(req: Request) {
     console.log('Attempting S3 upload...');
 
     await s3Client.send(command);
-    const url = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_S3_REGION}.amazonaws.com/${key}`;
+    const url = `https://${process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_S3_REGION}.amazonaws.com/${key}`;
 
     console.log('Upload successful:', url);
 
