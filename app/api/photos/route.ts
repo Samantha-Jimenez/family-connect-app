@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { S3Client, ListObjectsV2Command } from '@aws-sdk/client-s3';
+import { S3Client, ListObjectsV2Command, HeadObjectCommand } from '@aws-sdk/client-s3';
 
 export async function GET() {
   try {
@@ -24,29 +24,60 @@ export async function GET() {
 
     const s3Client = new S3Client({
       credentials: {
-        accessKeyId: process.env.NEXT_PUBLIC_AWS_S3_ACCESS_KEY_ID,
-        secretAccessKey: process.env.NEXT_PUBLIC_AWS_S3_SECRET_ACCESS_KEY,
+        accessKeyId: process.env.NEXT_PUBLIC_AWS_S3_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.NEXT_PUBLIC_AWS_S3_SECRET_ACCESS_KEY!,
       },
       region: process.env.NEXT_PUBLIC_AWS_S3_REGION,
     });
 
-    const command = new ListObjectsV2Command({
-      Bucket: process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME,
+    const listCommand = new ListObjectsV2Command({
+      Bucket: process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME!,
       Prefix: 'photos/',
     });
 
-    const data = await s3Client.send(command);
+    const data = await s3Client.send(listCommand);
     
-    const photos = data.Contents?.map(item => ({
-      url: `https://${process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_S3_REGION}.amazonaws.com/${item.Key}`
-    })) || [];
+    // Get metadata for each photo
+    const photos = await Promise.all(
+      (data.Contents || []).map(async (object) => {
+        const headCommand = new HeadObjectCommand({
+          Bucket: process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME!,
+          Key: object.Key,
+        });
 
-    return NextResponse.json({ photos });
+        try {
+          const headData = await s3Client.send(headCommand);
+          console.log('S3 metadata for object:', object.Key, headData.Metadata); // Temporary debug log
+          
+          const url = `https://${process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_S3_REGION}.amazonaws.com/${object.Key}`;
+          
+          // Make sure metadata keys match exactly
+          return {
+            url,
+            metadata: {
+              location: headData.Metadata?.location || '',
+              description: headData.Metadata?.description || '',
+              dateTaken: headData.Metadata?.datetaken || '', // Note: S3 metadata keys are lowercase
+              peopleTagged: headData.Metadata?.peopletagged || '', // Note: S3 metadata keys are lowercase
+            },
+            lastModified: object.LastModified,
+          };
+        } catch (error) {
+          console.error('Error fetching metadata for object:', object.Key, error);
+          return null;
+        }
+      })
+    );
 
+    // Filter out any null results and reverse to show newest first
+    const validPhotos = photos.filter(Boolean).reverse();
+    console.log('Sending photos with metadata:', validPhotos); // Temporary debug log
+
+    return NextResponse.json({ photos: validPhotos });
   } catch (error) {
     console.error('Error fetching photos:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch photos', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Error fetching photos' },
       { status: 500 }
     );
   }

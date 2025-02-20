@@ -4,10 +4,45 @@ import React, { useState, useEffect } from 'react'
 import Image from 'next/image';
 import PhotoUpload from '@/components/PhotoUpload';
 
+interface Photo {
+  url: string;
+  metadata: {
+    location?: {
+      country?: string;
+      state?: string;
+      city?: string;
+      neighborhood?: string;
+    };
+    description?: string;
+    dateTaken?: string;
+    peopleTagged?: string;
+  };
+  lastModified?: Date;
+}
+
+// Add this helper function at the top of the file, before the Photos component
+const formatDate = (dateString: string): string => {
+  if (!dateString) return '';
+  
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return dateString;
+  }
+};
+
 const Photos = () => {
   const [currentIndex, setCurrentIndex] = useState(0); // State to track the current index
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
 
   useEffect(() => {
     fetchPhotos();
@@ -17,8 +52,48 @@ const Photos = () => {
     try {
       const response = await fetch('/api/photos');
       const data = await response.json();
+      console.log('Raw API response:', data); // Temporary debug log
       if (data.photos) {
-        const photoUrls = data.photos.map((photo: { url: string }) => photo.url);
+        const photoUrls = data.photos.map((photo: { 
+          url: string;
+          metadata?: {
+            location?: string | {
+              country?: string;
+              state?: string;
+              city?: string;
+              neighborhood?: string;
+            };
+            description?: string;
+            dateTaken?: string;
+            peopleTagged?: string;
+          };
+          lastModified?: string;
+        }) => {
+          // Parse location if it's a string
+          let locationData = {};
+          if (typeof photo.metadata?.location === 'string') {
+            try {
+              locationData = JSON.parse(photo.metadata.location);
+            } catch (e) {
+              console.error('Error parsing location:', e);
+            }
+          } else if (photo.metadata?.location) {
+            locationData = photo.metadata.location;
+          }
+
+          const processedPhoto = {
+            url: photo.url,
+            metadata: {
+              location: locationData,
+              description: photo.metadata?.description || '',
+              dateTaken: photo.metadata?.dateTaken || '',
+              peopleTagged: photo.metadata?.peopleTagged || ''
+            },
+            lastModified: photo.lastModified ? new Date(photo.lastModified) : undefined
+          };
+          console.log('Processed photo:', processedPhoto); // Temporary debug log
+          return processedPhoto;
+        });
         setImages(photoUrls);
       }
     } catch (error) {
@@ -39,6 +114,15 @@ const Photos = () => {
   // Add this function to refresh photos after upload
   const handlePhotoUploaded = () => {
     fetchPhotos();
+  };
+
+  const handleImageClick = (photo: Photo) => {
+    console.log('Clicked photo:', photo); // Temporary debug log
+    setSelectedPhoto(photo);
+  };
+
+  const closeModal = () => {
+    setSelectedPhoto(null);
   };
 
   if (loading) {
@@ -68,47 +152,9 @@ const Photos = () => {
           <button type="button" className="border border-gray-900 bg-gray-900 hover:border-gray-700 focus:ring-4 focus:outline-none  rounded-full text-base font-medium px-5 py-2.5 text-center me-3 mb-3 text-white focus:ring-gray-800">Gaming</button>
       </div>
 
-{/* <div id="custom-controls-gallery" className="relative w-full overflow-hidden" data-carousel="slide">
-    <div className="flex transition-transform duration-700 ease-in-out" id="carousel-items">
-        <div className="min-w-full" data-carousel-item>
-            <img src="https://flowbite.s3.amazonaws.com/docs/gallery/square/image.jpg" className="block max-w-full h-auto" alt="" />
-        </div>
-        <div className="min-w-full" data-carousel-item>
-            <img src="https://flowbite.s3.amazonaws.com/docs/gallery/square/image-2.jpg" className="block max-w-full h-auto" alt="" />
-        </div>
-        <div className="min-w-full" data-carousel-item>
-            <img src="https://flowbite.s3.amazonaws.com/docs/gallery/square/image-3.jpg" className="block max-w-full h-auto" alt="" />
-        </div>
-        <div className="min-w-full" data-carousel-item>
-            <img src="https://flowbite.s3.amazonaws.com/docs/gallery/square/image-4.jpg" className="block max-w-full h-auto" alt="" />
-        </div>
-        <div className="min-w-full" data-carousel-item>
-            <img src="https://flowbite.s3.amazonaws.com/docs/gallery/square/image-5.jpg" className="block max-w-full h-auto" alt="" />
-        </div>
-    </div>
-    <div className="flex justify-center items-center pt-4">
-        <button type="button" className="flex justify-center items-center me-4 h-full cursor-pointer group focus:outline-none" data-carousel-prev onClick={handlePrev}>
-            <span className="text-gray-400 hover:text-gray-900 dark:hover:text-white group-focus:text-gray-900 dark:group-focus:text-white">
-                <svg className="rtl:rotate-180 w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 10">
-                    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 5H1m0 0 4 4M1 5l4-4"/>
-                </svg>
-                <span className="sr-only">Previous</span>
-            </span>
-        </button>
-        <button type="button" className="flex justify-center items-center h-full cursor-pointer group focus:outline-none" data-carousel-next onClick={handleNext}>
-            <span className="text-gray-400 hover:text-gray-900 dark:hover:text-white group-focus:text-gray-900 dark:group-focus:text-white">
-                <svg className="rtl:rotate-180 w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 10">
-                    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M1 5h12m0 0L9 1m4 4L9 9"/>
-                </svg>
-                <span className="sr-only">Next</span>
-            </span>
-        </button>
-    </div>
-</div> */}
-
         <div id="default-carousel" className="relative w-full" data-carousel="slide">
           <div className="relative h-56 overflow-hidden rounded-lg md:h-96">
-              {images.map((image, index) => (
+              {images.map((photo, index) => (
                   <div
                       key={index}
                       className={`absolute w-full h-full transition-opacity duration-700 ease-in-out ${
@@ -116,7 +162,7 @@ const Photos = () => {
                       }`}
                   >
                       <Image
-                          src={image}
+                          src={photo.url}
                           alt={`Slide ${index + 1}`}
                           fill
                           sizes="(max-width: 768px) 100vw, 1200px"
@@ -159,31 +205,19 @@ const Photos = () => {
                     <span className="sr-only">Next</span>
                 </span>
             </button>
-              {/* <button type="button" className="flex justify-center items-center me-4 h-full cursor-pointer group focus:outline-none" data-carousel-prev onClick={handlePrev}>
-                  <span className="text-gray-400 hover:text-gray-900 dark:hover:text-white group-focus:text-gray-900 dark:group-focus:text-white">
-                      <svg className="rtl:rotate-180 w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 10">
-                          <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 5H1m0 0 4 4M1 5l4-4"/>
-                      </svg>
-                      <span className="sr-only">Previous</span>
-                  </span>
-              </button>
-              <button type="button" className="flex justify-center items-center h-full cursor-pointer group focus:outline-none" data-carousel-next onClick={handleNext}>
-                  <span className="text-gray-400 hover:text-gray-900 dark:hover:text-white group-focus:text-gray-900 dark:group-focus:text-white">
-                      <svg className="rtl:rotate-180 w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 10">
-                          <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M1 5h12m0 0L9 1m4 4L9 9"/>
-                      </svg>
-                      <span className="sr-only">Next</span>
-                  </span>
-              </button> */}
           </div>
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[...images].reverse().map((imageUrl, index) => (
-            <div key={index} className="relative h-48">
+          {[...images].map((photo, index) => (
+            <div 
+              key={index} 
+              className="relative h-48 cursor-pointer"
+              onClick={() => handleImageClick(photo)}
+            >
               <Image
                 className="rounded-lg object-cover"
-                src={imageUrl}
+                src={photo.url}
                 alt={`Gallery image ${index + 1}`}
                 fill
                 sizes="(max-width: 768px) 50vw, 25vw"
@@ -192,6 +226,61 @@ const Photos = () => {
             </div>
           ))}
         </div>
+
+      {/* Photo Modal */}
+      {selectedPhoto && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={closeModal}>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-2xl w-full m-4" onClick={e => e.stopPropagation()}>
+            <div className="relative h-96 mb-4">
+              <Image
+                src={selectedPhoto.url}
+                alt="Selected photo"
+                fill
+                className="object-contain rounded-lg"
+              />
+            </div>
+            <div className="space-y-2">
+              {selectedPhoto.metadata?.location && typeof selectedPhoto.metadata.location === 'object' && Object.values(selectedPhoto.metadata.location).some(val => val) && (
+                <div className="text-sm">
+                  <span className="font-bold">Location: </span>
+                  {[
+                    selectedPhoto.metadata.location.country,
+                    selectedPhoto.metadata.location.state,
+                    selectedPhoto.metadata.location.city,
+                    selectedPhoto.metadata.location.neighborhood
+                  ]
+                    .filter(Boolean)
+                    .join(', ')}
+                </div>
+              )}
+              {selectedPhoto.metadata?.description && (
+                <p className="text-sm">
+                  <span className="font-bold">Description: </span>
+                  {selectedPhoto.metadata.description}
+                </p>
+              )}
+              {selectedPhoto.metadata?.dateTaken && (
+                <p className="text-sm">
+                  <span className="font-bold">Date Taken: </span>
+                  {formatDate(selectedPhoto.metadata.dateTaken)}
+                </p>
+              )}
+              {selectedPhoto.metadata?.peopleTagged && (
+                <p className="text-sm">
+                  <span className="font-bold">People Tagged: </span>
+                  {selectedPhoto.metadata.peopleTagged}
+                </p>
+              )}
+            </div>
+            <button
+              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              onClick={closeModal}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

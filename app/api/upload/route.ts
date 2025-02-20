@@ -12,6 +12,10 @@ export async function POST(req: Request) {
     
     const formData = await req.formData();
     const file = formData.get('file') as File;
+    const location = formData.get('location') as string;
+    const description = formData.get('description') as string;
+    const dateTaken = formData.get('dateTaken') as string;
+    const peopleTagged = formData.get('peopleTagged') as string;
     
     if (!file) {
       console.log('No file provided');
@@ -53,6 +57,12 @@ export async function POST(req: Request) {
       Key: key,
       Body: buffer,
       ContentType: file.type,
+      Metadata: {
+        location: location || '',
+        description: description || '',
+        datetaken: dateTaken || '',
+        peopletagged: peopleTagged || '',
+      }
     });
 
     console.log('Attempting S3 upload...');
@@ -64,7 +74,13 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       message: 'File uploaded successfully!',
-      url: url
+      url: url,
+      metadata: {
+        location: location || '',
+        description: description || '',
+        dateTaken: dateTaken || '',
+        peopleTagged: peopleTagged || ''
+      }
     });
     
   } catch (err: unknown) {
