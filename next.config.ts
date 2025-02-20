@@ -21,11 +21,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/photos/**',
       },
-    ],
-    domains: [
-      'flowbite.s3.amazonaws.com',
-      `${process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com`,
-      'family-connect-app.s3.us-east-2.amazonaws.com'
+      {
+        protocol: 'https',
+        hostname: '*.s3.*.amazonaws.com',
+        port: '',
+        pathname: '/photos/**',
+      }
     ],
   },
 };
