@@ -43,6 +43,7 @@ const Photos = () => {
   const [images, setImages] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchPhotos();
@@ -52,7 +53,8 @@ const Photos = () => {
     try {
       const response = await fetch('/api/photos');
       const data = await response.json();
-      console.log('Raw API response:', data); // Temporary debug log
+      console.log('Raw API response:', data);
+      
       if (data.photos) {
         const photoUrls = data.photos.map((photo: { 
           url: string;
@@ -69,16 +71,35 @@ const Photos = () => {
           };
           lastModified?: string;
         }) => {
-          // Parse location if it's a string
-          let locationData = {};
-          if (typeof photo.metadata?.location === 'string') {
-            try {
-              locationData = JSON.parse(photo.metadata.location);
-            } catch (e) {
-              console.error('Error parsing location:', e);
+          // Safely parse location data
+          let locationData = {
+            country: '',
+            state: '',
+            city: '',
+            neighborhood: ''
+          };
+
+          if (photo.metadata?.location) {
+            if (typeof photo.metadata.location === 'string') {
+              try {
+                const parsedLocation = JSON.parse(photo.metadata.location);
+                locationData = {
+                  country: parsedLocation.country || '',
+                  state: parsedLocation.state || '',
+                  city: parsedLocation.city || '',
+                  neighborhood: parsedLocation.neighborhood || ''
+                };
+              } catch (e) {
+                console.warn('Failed to parse location string:', photo.metadata.location);
+              }
+            } else if (typeof photo.metadata.location === 'object') {
+              locationData = {
+                country: photo.metadata.location.country || '',
+                state: photo.metadata.location.state || '',
+                city: photo.metadata.location.city || '',
+                neighborhood: photo.metadata.location.neighborhood || ''
+              };
             }
-          } else if (photo.metadata?.location) {
-            locationData = photo.metadata.location;
           }
 
           const processedPhoto = {
@@ -91,9 +112,11 @@ const Photos = () => {
             },
             lastModified: photo.lastModified ? new Date(photo.lastModified) : undefined
           };
-          console.log('Processed photo:', processedPhoto); // Temporary debug log
+          
+          console.log('Processed photo:', processedPhoto);
           return processedPhoto;
         });
+        
         setImages(photoUrls);
       }
     } catch (error) {
@@ -111,9 +134,15 @@ const Photos = () => {
     setCurrentIndex((prevIndex) => (prevIndex - 1 + images.length) % images.length); // Cycle to the previous image
   };
 
-  // Add this function to refresh photos after upload
-  const handlePhotoUploaded = () => {
-    fetchPhotos();
+  const handlePhotoUploaded = async () => {
+    setRefreshing(true);
+    try {
+      await fetchPhotos();
+      // After fetching photos, set the current index to 0 to show the newest photo
+      setCurrentIndex(0);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleImageClick = (photo: Photo) => {
@@ -140,6 +169,11 @@ const Photos = () => {
       <h1 className="text-2xl font-bold mb-6">Photo Upload</h1>
       <div className="max-w-lg mx-auto">
         <PhotoUpload onUploadComplete={handlePhotoUploaded} />
+        {refreshing && (
+          <div className="text-sm text-blue-500 mt-2">
+            Refreshing gallery...
+          </div>
+        )}
         <div className="mt-1 text-sm text-gray-500 dark:text-gray-300">
           Upload your photos to share with your family
         </div>
@@ -222,6 +256,11 @@ const Photos = () => {
                 fill
                 sizes="(max-width: 768px) 50vw, 25vw"
                 priority={index === 0}
+                onError={(e) => {
+                  console.error('Error loading image:', photo.url);
+                  // Optionally set a fallback image
+                  // e.currentTarget.src = '/fallback-image.jpg';
+                }}
               />
             </div>
           ))}

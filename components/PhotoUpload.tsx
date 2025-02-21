@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { savePhotoToDB } from '../app/hooks/dynamoDB';
+import { getCurrentUser } from 'aws-amplify/auth';
 
 interface PhotoUploadProps {
   onUploadComplete: () => void;
@@ -36,38 +38,76 @@ const PhotoUpload = ({ onUploadComplete }: PhotoUploadProps) => {
     if (!file) return;
 
     setUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('location', JSON.stringify(location));
-    formData.append('description', description);
-    formData.append('dateTaken', dateTaken);
-    formData.append('peopleTagged', peopleTagged);
-
-    console.log('Form data being sent:', {
-      location,
-      description,
-      dateTaken,
-      peopleTagged
-    });
+    setError(null);
 
     try {
+      // Get the current user ID
+      const user = await getCurrentUser();
+      if (!user?.userId) {
+        throw new Error("User not authenticated");
+      }
+
+      // First upload to S3
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('location', JSON.stringify(location));
+      formData.append('description', description);
+      formData.append('dateTaken', dateTaken);
+      formData.append('peopleTagged', peopleTagged);
+      formData.append('uploadedBy', user.userId); // Add user ID to form data
+
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
 
-      if (!response.ok) throw new Error('Upload failed');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Upload failed: ${errorText}`);
+      }
+      
       const result = await response.json();
-      console.log('Upload response:', result);
+      console.log('Upload response:', result); // Debug log
+      
+      if (!result.key) {
+        console.error('Upload response missing key:', result);
+        throw new Error('Upload response missing key');
+      }
 
+      // Construct the full S3 URL
+      const uploadUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_S3_REGION}.amazonaws.com/photos/${result.key}`;
+      setUploadUrl(uploadUrl);
+
+      // Process people tagged
+      const processedPeopleTags = peopleTagged
+        ? peopleTagged.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
+        : [];
+
+      // Save to DynamoDB
+      await savePhotoToDB({
+        photo_id: `photo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        s3_key: `photos/${result.key}`,
+        uploaded_by: user.userId, // Set the user ID here
+        upload_date: new Date().toISOString(),
+        description,
+        location,
+        date_taken: dateTaken,
+        people_tagged: processedPeopleTags,
+      });
+
+      // Reset form
       setFile(null);
       setLocation({ country: '', state: '', city: '', neighborhood: '' });
       setDescription('');
       setDateTaken('');
       setPeopleTagged('');
+      
+      // Call onUploadComplete immediately
       onUploadComplete();
+
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error('Upload error details:', error);
+      setError(error instanceof Error ? error.message : 'Failed to upload photo');
     } finally {
       setUploading(false);
     }

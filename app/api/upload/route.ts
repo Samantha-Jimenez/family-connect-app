@@ -7,9 +7,7 @@ type UploadError = {
 };
 
 export async function POST(req: Request) {
-  try {
-    console.log('Starting upload process...');
-    
+  try {    
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const location = formData.get('location') as string;
@@ -25,8 +23,6 @@ export async function POST(req: Request) {
       );
     }
 
-    console.log('File received:', file.name, file.type);
-
     // Update environment variable checks
     if (!process.env.NEXT_PUBLIC_AWS_S3_ACCESS_KEY_ID || 
         !process.env.NEXT_PUBLIC_AWS_S3_SECRET_ACCESS_KEY || 
@@ -40,8 +36,6 @@ export async function POST(req: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    console.log('Configuring AWS S3...');
-
     // Configure AWS SDK for S3
     const s3Client = new S3Client({
       credentials: {
@@ -52,25 +46,24 @@ export async function POST(req: Request) {
     });
 
     const key = `photos/${Date.now()}_${file.name}`;
+    const metadata = {
+      location: location || '',
+      description: description || '',
+      dateTaken: dateTaken || '',
+      peopleTagged: peopleTagged || '',
+      uploadedBy: formData.get('uploadedBy') as string,
+    };
+
     const command = new PutObjectCommand({
       Bucket: process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME,
       Key: key,
       Body: buffer,
       ContentType: file.type,
-      Metadata: {
-        location: location || '',
-        description: description || '',
-        datetaken: dateTaken || '',
-        peopletagged: peopleTagged || '',
-      }
+      Metadata: metadata,
     });
-
-    console.log('Attempting S3 upload...');
 
     await s3Client.send(command);
     const url = `https://${process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_S3_REGION}.amazonaws.com/${key}`;
-
-    console.log('Upload successful:', url);
 
     return NextResponse.json({
       message: 'File uploaded successfully!',
@@ -79,7 +72,8 @@ export async function POST(req: Request) {
         location: location || '',
         description: description || '',
         dateTaken: dateTaken || '',
-        peopleTagged: peopleTagged || ''
+        peopleTagged: peopleTagged || '',
+        uploadedBy: formData.get('uploadedBy') as string,
       }
     });
     

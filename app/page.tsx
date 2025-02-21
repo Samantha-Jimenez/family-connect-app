@@ -11,6 +11,7 @@ import RecentUploadsCard from "@/components/RecentUploadsCard";
 import Panel from "@/components/Panel";
 import CallToAction from "@/components/CallToAction";
 import { usePathname } from 'next/navigation';
+import YourPhotosCard from "@/components/YourPhotosCard";
 
 Amplify.configure(awsconfig);
 
@@ -35,8 +36,11 @@ export default function Home() {
           <div className="col-span-1">
             <TaggedPhotosCard />
           </div>
-          <div className="col-span-1">
+          {/* <div className="col-span-1">
             <FavoritedPhotosCard />
+          </div> */}
+          <div className="col-span-1">
+            <YourPhotosCard />
           </div>
           <div className="col-span-1 sm:col-span-2">
             <RecentUploadsCard />
