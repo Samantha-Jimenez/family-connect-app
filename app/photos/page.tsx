@@ -184,7 +184,7 @@ const Photos = () => {
         </button>
         
         <div 
-          className={`transform transition-all duration-500 ease-in-out origin-top ${
+          className={`transform transition-all duration-1000 ease-in-out origin-top ${
             isUploadOpen 
               ? 'opacity-100 scale-y-100 max-h-full mb-8' 
               : 'opacity-0 scale-y-0 max-h-0 mb-0'
@@ -206,9 +206,9 @@ const Photos = () => {
 
       {/* Gallery section with transition */}
       <div 
-        className={`transition-all duration-500 ease-in-out transform ${
-          isUploadOpen ? 'translate-y-4' : 'translate-y-0'
-        }`}
+        // className={`transition-all duration-500 linear transform ${
+        //   isUploadOpen ? 'translate-y-4' : 'translate-y-0'
+        // }`}
       >
         <div className="flex items-center justify-center py-4 md:py-8 flex-wrap">
           <button type="button" className="border hover:bg-blue-700 focus:ring-4 focus:outline-none rounded-full text-base font-medium px-5 py-2.5 text-center me-3 mb-3 border-blue-500 text-blue-500 hover:text-white hover:bg-blue-500 bg-gray-900 focus:ring-blue-800">All categories</button>

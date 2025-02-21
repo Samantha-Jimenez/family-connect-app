@@ -1,7 +1,6 @@
 "use client";
 
 import { Amplify } from "aws-amplify";
-import awsconfig from "../aws-exports";
 import { AuthProvider } from '../context/AuthContext';
 import ProfileUserInfoCard from "@/components/ProfileUserInfoCard";
 import TaggedPhotosCard from "@/components/TaggedPhotosCard";
@@ -12,12 +11,34 @@ import Panel from "@/components/Panel";
 import CallToAction from "@/components/CallToAction";
 import { usePathname } from 'next/navigation';
 import YourPhotosCard from "@/components/YourPhotosCard";
+import { useEffect, useState } from 'react';
 
-Amplify.configure(awsconfig);
-
+// Move Amplify configuration into a try-catch block
+try {
+  const awsconfig = require("../aws-exports").default;
+  Amplify.configure(awsconfig);
+} catch (error) {
+  console.error("Error configuring Amplify:", error);
+}
 
 export default function Home() {
   const pathname = usePathname();
+  const [isConfigured, setIsConfigured] = useState(false);
+
+  useEffect(() => {
+    try {
+      const awsconfig = require("../aws-exports").default;
+      Amplify.configure(awsconfig);
+      setIsConfigured(true);
+    } catch (error) {
+      console.error("Error configuring Amplify:", error);
+      setIsConfigured(false);
+    }
+  }, []);
+
+  if (!isConfigured) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <AuthProvider>

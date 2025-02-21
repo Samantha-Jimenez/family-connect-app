@@ -57,23 +57,21 @@ export async function GET() {
             
             const url = `https://${process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_S3_REGION}.amazonaws.com/${object.Key}`;
             
-            let locationData = {};
-            if (headData.Metadata?.location) {
-              try {
-                locationData = JSON.parse(headData.Metadata.location);
-              } catch (e) {
-                console.warn('Failed to parse location metadata:', e);
-              }
-            }
+            // Sanitize the metadata values
+            const sanitizeMetadata = (value: string | undefined): string => {
+              if (!value) return '';
+              // Remove any invalid characters and trim
+              return value.toString().trim();
+            };
             
             return {
               url,
               metadata: {
-                location: locationData,
-                description: headData.Metadata?.description || '',
-                dateTaken: headData.Metadata?.datetaken || '',
-                peopleTagged: headData.Metadata?.peopletagged || '',
-                uploadedBy: headData.Metadata?.uploadedby || '',
+                location: sanitizeMetadata(headData.Metadata?.location),
+                description: sanitizeMetadata(headData.Metadata?.description),
+                dateTaken: sanitizeMetadata(headData.Metadata?.datetaken),
+                peopleTagged: sanitizeMetadata(headData.Metadata?.peopletagged),
+                uploadedBy: sanitizeMetadata(headData.Metadata?.uploadedby),
               },
               lastModified: object.LastModified,
             };
