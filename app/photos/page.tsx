@@ -44,6 +44,7 @@ const Photos = () => {
   const [loading, setLoading] = useState(true);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
 
   useEffect(() => {
     fetchPhotos();
@@ -166,25 +167,56 @@ const Photos = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Photo Upload</h1>
-      <div className="max-w-lg mx-auto">
-        <PhotoUpload onUploadComplete={handlePhotoUploaded} />
-        {refreshing && (
-          <div className="text-sm text-blue-500 mt-2">
-            Refreshing gallery...
+      <div className="mx-auto">
+        <button 
+          onClick={() => setIsUploadOpen(!isUploadOpen)}
+          className="w-full text-left text-2xl font-bold mb-2 flex items-center"
+        >
+          <span>Upload a Photo</span>
+          <svg 
+            className={`w-6 h-6 ml-2 transition-transform duration-300 ease-in-out ${isUploadOpen ? 'rotate-180' : ''}`}
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        
+        <div 
+          className={`transform transition-all duration-500 ease-in-out origin-top ${
+            isUploadOpen 
+              ? 'opacity-100 scale-y-100 max-h-full mb-8' 
+              : 'opacity-0 scale-y-0 max-h-0 mb-0'
+          }`}
+        >
+          <div className="rounded-lg p-4">
+            <PhotoUpload onUploadComplete={handlePhotoUploaded} />
+            {refreshing && (
+              <div className="text-sm text-blue-500 mt-2">
+                Refreshing gallery...
+              </div>
+            )}
+            <div className="mt-1 text-sm text-gray-500 dark:text-gray-300">
+              Upload your photos to share with your family
+            </div>
           </div>
-        )}
-        <div className="mt-1 text-sm text-gray-500 dark:text-gray-300">
-          Upload your photos to share with your family
         </div>
       </div>
-      <div className="flex items-center justify-center py-4 md:py-8 flex-wrap">
+
+      {/* Gallery section with transition */}
+      <div 
+        className={`transition-all duration-500 ease-in-out transform ${
+          isUploadOpen ? 'translate-y-4' : 'translate-y-0'
+        }`}
+      >
+        <div className="flex items-center justify-center py-4 md:py-8 flex-wrap">
           <button type="button" className="border hover:bg-blue-700 focus:ring-4 focus:outline-none rounded-full text-base font-medium px-5 py-2.5 text-center me-3 mb-3 border-blue-500 text-blue-500 hover:text-white hover:bg-blue-500 bg-gray-900 focus:ring-blue-800">All categories</button>
           <button type="button" className="border border-gray-900 bg-gray-900 hover:border-gray-700 focus:ring-4 focus:outline-none  rounded-full text-base font-medium px-5 py-2.5 text-center me-3 mb-3 text-white focus:ring-gray-800">Shoes</button>
           <button type="button" className="border border-gray-900 bg-gray-900 hover:border-gray-700 focus:ring-4 focus:outline-none  rounded-full text-base font-medium px-5 py-2.5 text-center me-3 mb-3 text-white focus:ring-gray-800">Bags</button>
           <button type="button" className="border border-gray-900 bg-gray-900 hover:border-gray-700 focus:ring-4 focus:outline-none  rounded-full text-base font-medium px-5 py-2.5 text-center me-3 mb-3 text-white focus:ring-gray-800">Electronics</button>
           <button type="button" className="border border-gray-900 bg-gray-900 hover:border-gray-700 focus:ring-4 focus:outline-none  rounded-full text-base font-medium px-5 py-2.5 text-center me-3 mb-3 text-white focus:ring-gray-800">Gaming</button>
-      </div>
+        </div>
 
         <div id="default-carousel" className="relative w-full" data-carousel="slide">
           <div className="relative h-56 overflow-hidden rounded-lg md:h-96">
@@ -241,30 +273,31 @@ const Photos = () => {
             </button>
           </div>
         </div>
-        
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[...images].map((photo, index) => (
-            <div 
-              key={index} 
-              className="relative h-48 cursor-pointer"
-              onClick={() => handleImageClick(photo)}
-            >
-              <Image
-                className="rounded-lg object-cover"
-                src={photo.url}
-                alt={`Gallery image ${index + 1}`}
-                fill
-                sizes="(max-width: 768px) 50vw, 25vw"
-                priority={index === 0}
-                onError={(e) => {
-                  console.error('Error loading image:', photo.url);
-                  // Optionally set a fallback image
-                  // e.currentTarget.src = '/fallback-image.jpg';
-                }}
-              />
-            </div>
-          ))}
-        </div>
+      </div>
+      
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[...images].map((photo, index) => (
+          <div 
+            key={index} 
+            className="relative h-48 cursor-pointer"
+            onClick={() => handleImageClick(photo)}
+          >
+            <Image
+              className="rounded-lg object-cover"
+              src={photo.url}
+              alt={`Gallery image ${index + 1}`}
+              fill
+              sizes="(max-width: 768px) 50vw, 25vw"
+              priority={index === 0}
+              onError={(e) => {
+                console.error('Error loading image:', photo.url);
+                // Optionally set a fallback image
+                // e.currentTarget.src = '/fallback-image.jpg';
+              }}
+            />
+          </div>
+        ))}
+      </div>
 
       {/* Photo Modal */}
       {selectedPhoto && (
