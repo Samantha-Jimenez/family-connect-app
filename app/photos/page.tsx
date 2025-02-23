@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react'
-import Image from 'next/image';
+import React, { useState, useEffect, MouseEvent } from 'react'
+import Image, { ImageProps } from 'next/image';
 import PhotoUpload from '@/components/PhotoUpload';
 
 interface Photo {
@@ -38,13 +38,18 @@ const formatDate = (dateString: string): string => {
   }
 };
 
+// Add type declarations for event handlers and state
+interface ImageError extends Event {
+  currentTarget: HTMLImageElement;
+}
+
 const Photos = () => {
-  const [currentIndex, setCurrentIndex] = useState(0); // State to track the current index
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [images, setImages] = useState<Photo[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
 
   useEffect(() => {
     fetchPhotos();
@@ -128,11 +133,11 @@ const Photos = () => {
   };
 
   const handleNext = () => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length); // Cycle to the next image
+    setCurrentIndex((prevIndex: number) => (prevIndex + 1) % images.length);
   };
 
   const handlePrev = () => {
-    setCurrentIndex((prevIndex) => (prevIndex - 1 + images.length) % images.length); // Cycle to the previous image
+    setCurrentIndex((prevIndex: number) => (prevIndex - 1 + images.length) % images.length);
   };
 
   const handlePhotoUploaded = async () => {
@@ -147,12 +152,22 @@ const Photos = () => {
   };
 
   const handleImageClick = (photo: Photo) => {
-    console.log('Clicked photo:', photo); // Temporary debug log
     setSelectedPhoto(photo);
   };
 
   const closeModal = () => {
     setSelectedPhoto(null);
+  };
+
+  const handleModalClick = (e: MouseEvent) => {
+    e.stopPropagation();
+  };
+
+  // Update the image error handler
+  const handleImageError = (e: ImageError) => {
+    console.error('Error loading image:', e.currentTarget.src);
+    // Optionally set a fallback image
+    // e.currentTarget.src = '/fallback-image.jpg';
   };
 
   if (loading) {
@@ -234,6 +249,7 @@ const Photos = () => {
                           sizes="(max-width: 768px) 100vw, 1200px"
                           className="object-cover"
                           priority={index === 0}
+                          onError={handleImageError}
                       />
                   </div>
               ))}
@@ -289,11 +305,7 @@ const Photos = () => {
               fill
               sizes="(max-width: 768px) 50vw, 25vw"
               priority={index === 0}
-              onError={(e) => {
-                console.error('Error loading image:', photo.url);
-                // Optionally set a fallback image
-                // e.currentTarget.src = '/fallback-image.jpg';
-              }}
+              onError={handleImageError}
             />
           </div>
         ))}
@@ -302,13 +314,14 @@ const Photos = () => {
       {/* Photo Modal */}
       {selectedPhoto && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={closeModal}>
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-2xl w-full m-4" onClick={e => e.stopPropagation()}>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-2xl w-full m-4" onClick={handleModalClick}>
             <div className="relative h-96 mb-4">
               <Image
                 src={selectedPhoto.url}
                 alt="Selected photo"
                 fill
                 className="object-contain rounded-lg"
+                onError={handleImageError}
               />
             </div>
             <div className="space-y-2">
