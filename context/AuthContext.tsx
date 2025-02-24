@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext } from 'react';
+import { createContext } from 'react';
 import { Authenticator, useAuthenticator } from '@aws-amplify/ui-react';
 
 const AuthContext = createContext({});
@@ -25,23 +25,13 @@ function AuthStateProvider({ children }: { children: React.ReactNode }) {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <Authenticator
-      signUpAttributes={['email']}
-      loginMechanisms={['username']}
       className="grid items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)] bg-gray-100"
-      components={{
-        SignIn: {
-          Header: () => (
-            <h3 className="text-2xl font-bold text-center mb-4">
-              Sign in to your account
-            </h3>
-          ),
-        },
-        Footer: () => null,
-      }}
+      signUpAttributes={[]}
+      loginMechanisms={['email']}
     >
       <AuthStateProvider>{children}</AuthStateProvider>
     </Authenticator>
   );
 }
 
-export const useAuth = useAuthenticator; 
+export const useAuth = useAuthenticator;

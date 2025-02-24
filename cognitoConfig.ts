@@ -1,12 +1,19 @@
-export const cognitoAuthConfig = {
-    authority: process.env.NEXT_PUBLIC_COGNITO_AUTHORITY,
-    client_id: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID,
-    redirect_uri: process.env.NEXT_PUBLIC_COGNITO_REDIRECT_URI,
-    response_type: process.env.NEXT_PUBLIC_COGNITO_RESPONSE_TYPE,
-    scope: process.env.NEXT_PUBLIC_COGNITO_SCOPE,
-    signIn: {
-      email: { required: process.env.NEXT_PUBLIC_COGNITO_SIGN_IN_EMAIL_REQUIRED === 'true' },
-    },
+import { Amplify } from 'aws-amplify';
+
+const cognitoConfig = {
+  aws_project_region: process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-2',
+  aws_cognito_region: process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-2',
+  aws_user_pools_id: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID,
+  aws_user_pools_web_client_id: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID,
+  oauth: {
+    domain: process.env.NEXT_PUBLIC_COGNITO_DOMAIN,
+    scope: ['email', 'openid', 'profile'],
+    redirectSignIn: process.env.NEXT_PUBLIC_COGNITO_REDIRECT_URI,
+    redirectSignOut: process.env.NEXT_PUBLIC_COGNITO_REDIRECT_URI,
+    responseType: 'code'
+  }
 };
 
-export default cognitoAuthConfig;
+Amplify.configure(cognitoConfig);
+
+export default cognitoConfig;
