@@ -1,16 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect, ChangeEvent } from 'react';
 import Image from 'next/image';
-import { savePhotoToDB } from '../app/hooks/dynamoDB';
+import { savePhotoToDB, getAllFamilyMembers } from '../app/hooks/dynamoDB';
 import { getCurrentUser } from 'aws-amplify/auth';
+import Select from 'react-select';
 
 interface PhotoUploadProps {
   onUploadComplete: () => void;
 }
 
-const PhotoUpload = ({ onUploadComplete }: PhotoUploadProps) => {
-  const [file, setFile] = useState<File | null>(null);
+interface FamilyMember {
+  family_member_id: string;
+  first_name: string;
+  last_name: string;
+}
+
+interface UserOption {
+  value: string;
+  label: string;
+}
+
+const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [location, setLocation] = useState({
     country: '',
     state: '',
@@ -19,25 +31,41 @@ const PhotoUpload = ({ onUploadComplete }: PhotoUploadProps) => {
   });
   const [description, setDescription] = useState('');
   const [dateTaken, setDateTaken] = useState('');
-  const [peopleTagged, setPeopleTagged] = useState('');
-  const [uploading, setUploading] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState<UserOption[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const [uploadUrl, setUploadUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
 
-  const handleLocationChange = (field: keyof typeof location) => (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setLocation(prev => ({
-      ...prev,
-      [field]: e.target.value
-    }));
+  // Transform familyMembers into UserOption format for react-select
+  const familyMemberOptions: UserOption[] = familyMembers.map((member) => ({
+    value: member.family_member_id,
+    label: `${member.first_name} ${member.last_name}`
+  }));
+
+  useEffect(() => {
+    const loadFamilyMembers = async () => {
+      try {
+        const members = await getAllFamilyMembers();
+        setFamilyMembers(members);
+      } catch (error) {
+        console.error('Error loading family members:', error);
+      }
+    };
+    loadFamilyMembers();
+  }, []);
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) return;
+    if (!selectedFile) return;
 
-    setUploading(true);
+    setIsUploading(true);
     setError(null);
 
     try {
@@ -49,12 +77,18 @@ const PhotoUpload = ({ onUploadComplete }: PhotoUploadProps) => {
 
       // First upload to S3
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', selectedFile);
       formData.append('location', JSON.stringify(location));
       formData.append('description', description);
       formData.append('dateTaken', dateTaken);
-      formData.append('peopleTagged', peopleTagged);
-      formData.append('uploadedBy', user.userId); // Add user ID to form data
+      
+      // Include both IDs and names in the people tagged data
+      const taggedPeople = selectedUsers.map(user => ({
+        id: user.value,
+        name: user.label
+      }));
+      formData.append('peopleTagged', JSON.stringify(taggedPeople));
+      formData.append('uploadedBy', user.userId);
 
       const response = await fetch('/api/upload', {
         method: 'POST',
@@ -78,29 +112,24 @@ const PhotoUpload = ({ onUploadComplete }: PhotoUploadProps) => {
       const uploadUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_S3_REGION}.amazonaws.com/photos/${result.key}`;
       setUploadUrl(uploadUrl);
 
-      // Process people tagged
-      const processedPeopleTags = peopleTagged
-        ? peopleTagged.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
-        : [];
-
       // Save to DynamoDB
       await savePhotoToDB({
         photo_id: `photo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         s3_key: `photos/${result.key}`,
-        uploaded_by: user.userId, // Set the user ID here
+        uploaded_by: user.userId,
         upload_date: new Date().toISOString(),
         description,
         location,
         date_taken: dateTaken,
-        people_tagged: processedPeopleTags,
+        people_tagged: taggedPeople,
       });
 
       // Reset form
-      setFile(null);
+      setSelectedFile(null);
       setLocation({ country: '', state: '', city: '', neighborhood: '' });
       setDescription('');
       setDateTaken('');
-      setPeopleTagged('');
+      setSelectedUsers([]);
       
       // Call onUploadComplete immediately
       onUploadComplete();
@@ -109,7 +138,7 @@ const PhotoUpload = ({ onUploadComplete }: PhotoUploadProps) => {
       console.error('Upload error details:', error);
       setError(error instanceof Error ? error.message : 'Failed to upload photo');
     } finally {
-      setUploading(false);
+      setIsUploading(false);
     }
   };
 
@@ -122,8 +151,14 @@ const PhotoUpload = ({ onUploadComplete }: PhotoUploadProps) => {
         <input
           type="file"
           accept="image/*"
-          onChange={(e) => setFile(e.target.files?.[0] || null)}
-          className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+          onChange={handleFileChange}
+          className="mt-1 block w-full text-sm text-gray-500
+            file:mr-4 file:py-2 file:px-4
+            file:rounded-full file:border-0
+            file:text-sm file:font-semibold
+            file:bg-blue-50 file:text-blue-700
+            hover:file:bg-blue-100
+            dark:file:bg-gray-700 dark:file:text-gray-200"
         />
       </div>
 
@@ -137,9 +172,8 @@ const PhotoUpload = ({ onUploadComplete }: PhotoUploadProps) => {
             <input
               type="text"
               value={location.country}
-              onChange={handleLocationChange('country')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Enter country"
+              onChange={(e) => setLocation({ ...location, country: e.target.value })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
             />
           </div>
 
@@ -150,9 +184,8 @@ const PhotoUpload = ({ onUploadComplete }: PhotoUploadProps) => {
             <input
               type="text"
               value={location.state}
-              onChange={handleLocationChange('state')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Enter state/province"
+              onChange={(e) => setLocation({ ...location, state: e.target.value })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
             />
           </div>
 
@@ -163,9 +196,8 @@ const PhotoUpload = ({ onUploadComplete }: PhotoUploadProps) => {
             <input
               type="text"
               value={location.city}
-              onChange={handleLocationChange('city')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Enter city"
+              onChange={(e) => setLocation({ ...location, city: e.target.value })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
             />
           </div>
 
@@ -176,9 +208,8 @@ const PhotoUpload = ({ onUploadComplete }: PhotoUploadProps) => {
             <input
               type="text"
               value={location.neighborhood}
-              onChange={handleLocationChange('neighborhood')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Enter neighborhood"
+              onChange={(e) => setLocation({ ...location, neighborhood: e.target.value })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
             />
           </div>
         </div>
@@ -192,7 +223,7 @@ const PhotoUpload = ({ onUploadComplete }: PhotoUploadProps) => {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
           placeholder="Enter photo description"
         />
       </div>
@@ -205,29 +236,47 @@ const PhotoUpload = ({ onUploadComplete }: PhotoUploadProps) => {
           type="date"
           value={dateTaken}
           onChange={(e) => setDateTaken(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
         />
       </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-          People Tagged
+          Tag People
         </label>
-        <input
-          type="text"
-          value={peopleTagged}
-          onChange={(e) => setPeopleTagged(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          placeholder="Enter names (comma separated)"
+        <Select
+          isMulti
+          options={familyMemberOptions}
+          value={selectedUsers}
+          onChange={(selected) => setSelectedUsers(selected as UserOption[])}
+          className="mt-1"
+          classNamePrefix="select"
+          placeholder="Select family members in this photo..."
+          noOptionsMessage={() => "No family members found"}
+          isLoading={familyMembers.length === 0}
+          theme={(theme) => ({
+            ...theme,
+            colors: {
+              ...theme.colors,
+              primary: '#3b82f6',
+              primary25: '#bfdbfe',
+              neutral0: 'var(--bg-color, white)',
+              neutral80: 'var(--text-color, black)',
+            },
+          })}
         />
       </div>
 
       <button
         type="submit"
-        disabled={!file || uploading}
-        className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+        disabled={!selectedFile || isUploading}
+        className={`w-full px-4 py-2 text-white rounded-md ${
+          isUploading || !selectedFile
+            ? 'bg-blue-300 cursor-not-allowed'
+            : 'bg-blue-500 hover:bg-blue-600'
+        }`}
       >
-        {uploading ? 'Uploading...' : 'Upload Photo'}
+        {isUploading ? 'Uploading...' : 'Upload Photo'}
       </button>
 
       {uploadUrl && (

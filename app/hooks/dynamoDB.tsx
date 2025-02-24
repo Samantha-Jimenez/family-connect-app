@@ -1,4 +1,4 @@
-import { DynamoDBClient, PutItemCommand, GetItemCommand, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, PutItemCommand, GetItemCommand, UpdateItemCommand, ScanCommand } from "@aws-sdk/client-dynamodb";
 import { fetchUserAttributes } from '@aws-amplify/auth';
 import { getCurrentUser } from "aws-amplify/auth";
 
@@ -43,6 +43,12 @@ interface AlbumData {
   created_by: string;
   created_date: string;
   cover_photo_id?: string;
+}
+
+interface FamilyMember {
+  family_member_id: string;
+  first_name: string;
+  last_name: string;
 }
 
 export async function saveUserToDB(first_name: string, last_name: string, email: string, username: string, bio: string, phone_number: string, birthday: string) {
@@ -235,5 +241,30 @@ export async function addPhotoToAlbum(photo_id: string, album_id: string) {
   } catch (error) {
     console.error("❌ Error adding photo to album:", error);
     throw error;
+  }
+}
+
+export async function getAllFamilyMembers(): Promise<FamilyMember[]> {
+  try {
+    const params = {
+      TableName: TABLES.FAMILY,
+      // No specific key needed as we want all items
+    };
+
+    const command = new ScanCommand(params);
+    const response = await dynamoDB.send(command);
+
+    if (!response.Items) {
+      return [];
+    }
+
+    return response.Items.map(item => ({
+      family_member_id: item.family_member_id.S || '',
+      first_name: item.first_name.S || '',
+      last_name: item.last_name.S || ''
+    }));
+  } catch (error) {
+    console.error("❌ Error fetching family members:", error);
+    return [];
   }
 }
