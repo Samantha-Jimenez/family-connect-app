@@ -38,11 +38,6 @@ const formatDate = (dateString: string): string => {
   }
 };
 
-// Add type declarations for event handlers and state
-interface ImageError extends Event {
-  currentTarget: HTMLImageElement;
-}
-
 const Photos = () => {
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [images, setImages] = useState<Photo[]>([]);
@@ -164,7 +159,7 @@ const Photos = () => {
   };
 
   // Update the image error handler
-  const handleImageError = (e: ImageError) => {
+  const handleImageError: React.ReactEventHandler<HTMLImageElement> = (e) => {
     console.error('Error loading image:', e.currentTarget.src);
     // Optionally set a fallback image
     // e.currentTarget.src = '/fallback-image.jpg';

@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useEffect } from 'react';
-import { saveUserToDB, getUserData } from '../hooks/dynamoDB';
+import { saveUserToDB, getUserData } from '@/hooks/dynamoDB';
 import { useAuth } from '@/context/AuthContext';
 import AuthGuard from '@/components/AuthGuard';
 import { useAuthenticator } from '@aws-amplify/ui-react';

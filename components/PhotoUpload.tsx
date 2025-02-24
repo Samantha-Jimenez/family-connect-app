@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import Image from 'next/image';
-import { savePhotoToDB, getAllFamilyMembers } from '../app/hooks/dynamoDB';
+import { savePhotoToDB, getAllFamilyMembers } from '@/hooks/dynamoDB';
 import { getCurrentUser } from 'aws-amplify/auth';
 import Select from 'react-select';
 

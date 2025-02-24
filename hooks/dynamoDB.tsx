@@ -19,6 +19,11 @@ const TABLES = {
 } as const;
 
 // Add these new interfaces at the top of the file
+interface TaggedPerson {
+  id: string;
+  name: string;
+}
+
 interface PhotoData {
   photo_id: string;
   s3_key: string;
@@ -32,7 +37,7 @@ interface PhotoData {
     neighborhood?: string;
   };
   date_taken?: string;
-  people_tagged?: string[];
+  people_tagged: TaggedPerson[];
   album_id?: string;
 }
 
@@ -182,7 +187,7 @@ export async function savePhotoToDB(photoData: PhotoData) {
 
     // Ensure people_tagged is an array before accessing it
     if (Array.isArray(photoData.people_tagged) && photoData.people_tagged.length > 0) {
-      item.people_tagged = { SS: photoData.people_tagged };
+      item.people_tagged = { SS: photoData.people_tagged.map(p => p.id) };
     } else {
       item.people_tagged = { SS: [] }; // Initialize as an empty array if no tags
     }

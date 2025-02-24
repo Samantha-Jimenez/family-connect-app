@@ -6,8 +6,7 @@ import { defineAuth } from '@aws-amplify/backend';
  */
 export const auth = defineAuth({
   loginWith: {
-    email: true,
-    username: true,
+    email: true
   },
   userAttributes: {
     email: {
@@ -15,15 +14,10 @@ export const auth = defineAuth({
       mutable: true,
     },
   },
-  // Customize verification mechanisms
-  verification: {
-    email: {
-      emailSubject: 'Welcome to Family Connect!',
-      emailBody: 'Your verification code is {####}',
-    },
-  },
-  // Multi-factor authentication configuration
-  multiFactor: {
-    mode: 'optional',
+  multifactor: {
+    mode: 'OPTIONAL',
+    sms: {
+      smsMessage: (code) => `Your verification code is ${code}`
+    }
   },
 });

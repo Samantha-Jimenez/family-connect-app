@@ -1,7 +1,7 @@
 "use client"
 import { useAuthenticator } from "@aws-amplify/ui-react";
 import { useEffect, useState } from 'react';
-import { getUserData } from "../hooks/dynamoDB";
+import { getUserData } from "@/hooks/dynamoDB";
 import ProfileUserInfoCard from "@/components/ProfileUserInfoCard";
 import { usePathname } from 'next/navigation';
 import { fetchUserAttributes } from "aws-amplify/auth";

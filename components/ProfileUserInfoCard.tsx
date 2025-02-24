@@ -2,7 +2,7 @@
 import Image from "next/image";
 import avatar from '../public/avatar.jpeg';
 import { useEffect, useState } from "react";
-import { getUserData } from "@/app/hooks/dynamoDB";
+import { getUserData } from "@/hooks/dynamoDB";
 import { useAuthenticator } from "@aws-amplify/ui-react";
 import { fetchUserAttributes } from "aws-amplify/auth";
 
