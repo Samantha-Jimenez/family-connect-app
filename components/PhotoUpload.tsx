@@ -101,21 +101,20 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
       }
       
       const result = await response.json();
-      console.log('Upload response:', result); // Debug log
+      console.log('Upload result:', result); // Debug log
       
       if (!result.key) {
         console.error('Upload response missing key:', result);
         throw new Error('Upload response missing key');
       }
 
-      // Construct the full S3 URL
-      const uploadUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_S3_REGION}.amazonaws.com/photos/${result.key}`;
-      setUploadUrl(uploadUrl);
+      const s3Url = `https://${process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_PROJECT_REGION}.amazonaws.com/${result.key}`;
+      console.log('Generated S3 URL:', s3Url); // Debug log
 
       // Save to DynamoDB
       await savePhotoToDB({
         photo_id: `photo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        s3_key: `photos/${result.key}`,
+        s3_key: result.key,
         uploaded_by: user.userId,
         upload_date: new Date().toISOString(),
         description,
@@ -135,7 +134,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
       onUploadComplete();
 
     } catch (error) {
-      console.error('Upload error details:', error);
+      console.error('Upload error:', error);
       setError(error instanceof Error ? error.message : 'Failed to upload photo');
     } finally {
       setIsUploading(false);

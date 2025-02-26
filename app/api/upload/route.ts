@@ -1,92 +1,37 @@
 import { NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
-type UploadError = {
-  message: string;
-  code?: string;
-};
+const s3 = new S3Client({
+  region: process.env.NEXT_PUBLIC_AWS_PROJECT_REGION,
+  credentials: {
+    accessKeyId: process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY!,
+  },
+});
 
-export async function POST(req: Request) {
-  try {    
-    const formData = await req.formData();
+export async function POST(request: Request) {
+  try {
+    const formData = await request.formData();
     const file = formData.get('file') as File;
-    const location = formData.get('location') as string;
-    const description = formData.get('description') as string;
-    const dateTaken = formData.get('dateTaken') as string;
-    const peopleTagged = formData.get('peopleTagged') as string;
     
     if (!file) {
-      console.log('No file provided');
-      return NextResponse.json(
-        { error: 'No file provided' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    // Update environment variable checks
-    if (!process.env.NEXT_PUBLIC_AWS_S3_ACCESS_KEY_ID || 
-        !process.env.NEXT_PUBLIC_AWS_S3_SECRET_ACCESS_KEY || 
-        !process.env.NEXT_PUBLIC_AWS_S3_REGION ||
-        !process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME) {
-      console.log('Missing AWS configuration');
-      throw new Error('AWS configuration is incomplete');
-    }
+    const buffer = await file.arrayBuffer();
+    const fileName = file.name.replace(/^photos\//g, '');
+    const s3Key = `photos/${Date.now()}_${fileName}`;
 
-    // Convert File to Buffer for S3 upload
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    // Configure AWS SDK for S3
-    const s3Client = new S3Client({
-      credentials: {
-        accessKeyId: process.env.NEXT_PUBLIC_AWS_S3_ACCESS_KEY_ID,
-        secretAccessKey: process.env.NEXT_PUBLIC_AWS_S3_SECRET_ACCESS_KEY,
-      },
-      region: process.env.NEXT_PUBLIC_AWS_S3_REGION,
-    });
-
-    const key = `photos/${Date.now()}_${file.name}`;
-    const metadata = {
-      location: location || '',
-      description: description || '',
-      dateTaken: dateTaken || '',
-      peopleTagged: peopleTagged || '',
-      uploadedBy: formData.get('uploadedBy') as string,
-    };
-
-    const command = new PutObjectCommand({
+    await s3.send(new PutObjectCommand({
       Bucket: process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME,
-      Key: key,
-      Body: buffer,
+      Key: s3Key,
+      Body: Buffer.from(buffer),
       ContentType: file.type,
-      Metadata: metadata,
-    });
+    }));
 
-    await s3Client.send(command);
-    const url = `https://${process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_S3_REGION}.amazonaws.com/${key}`;
-
-    return NextResponse.json({
-      message: 'File uploaded successfully!',
-      url: url,
-      metadata: {
-        location: location || '',
-        description: description || '',
-        dateTaken: dateTaken || '',
-        peopleTagged: peopleTagged || '',
-        uploadedBy: formData.get('uploadedBy') as string,
-      }
-    });
-    
-  } catch (err: unknown) {
-    const error = err as UploadError;
-    console.error('Detailed upload error:', {
-      message: error.message,
-      code: error.code,
-      fullError: error
-    });
-    return NextResponse.json(
-      { error: 'Error uploading file', details: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ key: s3Key });
+  } catch (error) {
+    console.error('Upload error:', error);
+    return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
   }
 } 
