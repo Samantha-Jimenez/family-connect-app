@@ -6,7 +6,7 @@ import { getCurrentUser } from "aws-amplify/auth";
 const dynamoDB = new DynamoDBClient({ 
   region: process.env.NEXT_PUBLIC_AWS_PROJECT_REGION,
   credentials: {
-    accessKeyId: process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID!,  // Ensure these are set in env
+    accessKeyId: process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID!,
     secretAccessKey: process.env.NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY!,
   }
 });
@@ -159,52 +159,63 @@ export async function createAlbum(name: string, description?: string) {
   }
 }
 
-export async function savePhotoToDB(photoData: PhotoData) {
+export const savePhotoToDB = async (photoData: PhotoData) => {
   try {
-    const user = await getCurrentUser();
-    const userId = user.userId;
-    
-    if (!userId) {
-      throw new Error("User is not authenticated.");
-    }
-
-    // Build the DynamoDB item
-    const item: any = {
+    // Create the base item with required fields
+    const item: Record<string, any> = {
       photo_id: { S: photoData.photo_id },
-      s3_key: { S: photoData.s3_key },
-      uploaded_by: { S: userId },
-      upload_date: { S: new Date().toISOString() },
-      description: { S: photoData.description || '' },
-      location: { M: {
-        country: { S: photoData.location?.country || '' },
-        state: { S: photoData.location?.state || '' },
-        city: { S: photoData.location?.city || '' },
-        neighborhood: { S: photoData.location?.neighborhood || '' }
-      }},
-      date_taken: { S: photoData.date_taken || '' },
-      album_id: { S: photoData.album_id || '' }
+      // Remove any existing photos/ prefix and ensure single prefix
+      s3_key: { S: `photos/${photoData.s3_key.replace(/^photos\//g, '')}` },
+      uploaded_by: { S: photoData.uploaded_by },
+      upload_date: { S: photoData.upload_date },
     };
 
-    // Ensure people_tagged is an array before accessing it
-    if (Array.isArray(photoData.people_tagged) && photoData.people_tagged.length > 0) {
-      item.people_tagged = { SS: photoData.people_tagged.map(p => p.id) };
-    } else {
-      item.people_tagged = { SS: [] }; // Initialize as an empty array if no tags
+    // Log the s3_key being saved
+    console.log('Saving photo with s3_key:', item.s3_key.S);
+
+    // Add optional fields only if they exist
+    if (photoData.description) {
+      item.description = { S: photoData.description };
     }
 
-    const params = {
+    if (photoData.location) {
+      item.location = {
+        M: {
+          country: { S: photoData.location.country || '' },
+          state: { S: photoData.location.state || '' },
+          city: { S: photoData.location.city || '' },
+          neighborhood: { S: photoData.location.neighborhood || '' }
+        }
+      };
+    }
+
+    if (photoData.date_taken) {
+      item.date_taken = { S: photoData.date_taken };
+    }
+
+    if (photoData.people_tagged && photoData.people_tagged.length > 0) {
+      item.people_tagged = {
+        L: photoData.people_tagged.map(person => ({
+          M: {
+            id: { S: person.id },
+            name: { S: person.name }
+          }
+        }))
+      };
+    }
+
+    const command = new PutItemCommand({
       TableName: TABLES.PHOTOS,
       Item: item
-    };
+    });
 
-    await dynamoDB.send(new PutItemCommand(params));
-    console.log("✅ Photo data saved to DynamoDB!");
-    return true;
+    await dynamoDB.send(command);
+    console.log('✅ Photo saved to DynamoDB successfully');
   } catch (error) {
-    console.error("❌ Error saving photo to DynamoDB:", error);
+    console.error('❌ Error saving photo to DynamoDB:', error);
     throw error;
   }
-}
+};
 
 export async function addPhotoToAlbum(photo_id: string, album_id: string) {
   try {
