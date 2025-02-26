@@ -27,17 +27,15 @@ export default function YourPhotosCard() {
         throw new Error("User not authenticated");
       }
 
-      // Fetch photos from your API
       const response = await fetch('/api/photos');
       const data = await response.json();
       
-      // Filter photos by the current user's ID
-      const filteredPhotos = data.photos.filter((photo: any) => {
-        // Check both metadata.uploadedBy and the DynamoDB uploaded_by field
-        return photo.metadata?.uploadedBy === user.userId || 
-               photo.uploaded_by === user.userId;
-      });
+      // Simplified filtering - just check the uploaded_by field
+      const filteredPhotos = data.photos.filter((photo: Photo) => 
+        photo.uploaded_by === user.userId
+      );
 
+      console.log('Current user ID:', user.userId); // Debug log
       console.log('Filtered photos:', filteredPhotos); // Debug log
       setUserPhotos(filteredPhotos);
     } catch (error) {
