@@ -3,6 +3,7 @@
 import React, { useState, useEffect, MouseEvent } from 'react'
 import Image from 'next/image';
 import PhotoUpload from '@/components/PhotoUpload';
+import { Range, getTrackBackground } from 'react-range';
 
 interface Photo {
   url: string;
@@ -18,6 +19,11 @@ interface Photo {
     peopleTagged?: string;
   };
   lastModified?: Date;
+}
+
+interface DateRange {
+  min: number;
+  max: number;
 }
 
 // Add this helper function at the top of the file, before the Photos component
@@ -38,6 +44,14 @@ const formatDate = (dateString: string): string => {
   }
 };
 
+const dateToTimestamp = (date: string): number => {
+  return new Date(date).getTime();
+};
+
+const timestampToDate = (timestamp: number): string => {
+  return formatDate(new Date(timestamp).toISOString());
+};
+
 const Photos = () => {
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [images, setImages] = useState<Photo[]>([]);
@@ -45,6 +59,9 @@ const Photos = () => {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
+  const [dateRange, setDateRange] = useState<DateRange>({ min: 0, max: 0 });
+  const [currentDateRange, setCurrentDateRange] = useState<[number, number]>([0, 0]);
+  const [filteredImages, setFilteredImages] = useState<Photo[]>([]);
 
   useEffect(() => {
     fetchPhotos();
@@ -54,6 +71,21 @@ const Photos = () => {
     
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (images.length > 0) {
+      const timestamps = images
+        .map(img => dateToTimestamp(img.metadata.dateTaken || ''))
+        .filter(timestamp => !isNaN(timestamp));
+      
+      const min = Math.min(...timestamps);
+      const max = Math.max(...timestamps);
+      
+      setDateRange({ min, max });
+      setCurrentDateRange([min, max]);
+      setFilteredImages(images);
+    }
+  }, [images]);
 
   const fetchPhotos = async () => {
     try {
@@ -131,6 +163,59 @@ const Photos = () => {
     // e.currentTarget.src = '/fallback-image.jpg';
   };
 
+  const filterImagesByDateRange = (range: [number, number]) => {
+    const filtered = images.filter(image => {
+      const timestamp = dateToTimestamp(image.metadata.dateTaken || '');
+      return timestamp >= range[0] && timestamp <= range[1];
+    });
+    setFilteredImages(filtered);
+  };
+
+  const renderDateRangeSlider = () => {
+    if (dateRange.min === 0 && dateRange.max === 0) return null;
+
+    return (
+      <div className="mb-8 px-4">
+        <div className="mb-2 flex justify-between text-sm text-gray-600">
+          <span>{timestampToDate(currentDateRange[0])}</span>
+          <span>{timestampToDate(currentDateRange[1])}</span>
+        </div>
+        <Range
+          values={currentDateRange}
+          step={86400000} // One day in milliseconds
+          min={dateRange.min}
+          max={dateRange.max}
+          onChange={(values) => {
+            setCurrentDateRange(values);
+            filterImagesByDateRange(values);
+          }}
+          renderTrack={({ props, children }) => (
+            <div
+              {...props}
+              className="h-2 w-full rounded bg-gray-200"
+              style={{
+                background: getTrackBackground({
+                  values: currentDateRange,
+                  colors: ["#e5e7eb", "#3b82f6", "#e5e7eb"],
+                  min: dateRange.min,
+                  max: dateRange.max
+                })
+              }}
+            >
+              {children}
+            </div>
+          )}
+          renderThumb={({ props }) => (
+            <div
+              {...props}
+              className="h-4 w-4 rounded-full bg-blue-500 focus:outline-none"
+            />
+          )}
+        />
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -194,9 +279,11 @@ const Photos = () => {
           <button type="button" className="border border-gray-900 bg-gray-900 hover:border-gray-700 focus:ring-4 focus:outline-none  rounded-full text-base font-medium px-5 py-2.5 text-center me-3 mb-3 text-white focus:ring-gray-800">Gaming</button>
         </div>
 
+        {renderDateRangeSlider()}
+
         <div id="default-carousel" className="relative w-full" data-carousel="slide">
           <div className="relative h-56 overflow-hidden rounded-lg md:h-96">
-              {images.map((photo, index) => (
+              {filteredImages.map((photo, index) => (
                   <div
                       key={index}
                       className={`absolute w-full h-full transition-opacity duration-700 ease-in-out ${
@@ -216,7 +303,7 @@ const Photos = () => {
               ))}
           </div>
           <div className="absolute z-30 flex -translate-x-1/2 bottom-5 left-1/2 space-x-3 rtl:space-x-reverse">
-              {images.map((_, index) => (
+              {filteredImages.map((_, index) => (
                   <button
                       key={index}
                       type="button"
@@ -253,7 +340,7 @@ const Photos = () => {
       </div>
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[...images].map((photo, index) => (
+        {[...filteredImages].map((photo, index) => (
           <div 
             key={index} 
             className="relative h-48 cursor-pointer"
