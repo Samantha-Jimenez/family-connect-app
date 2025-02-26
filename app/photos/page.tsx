@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, MouseEvent } from 'react'
-import Image, { ImageProps } from 'next/image';
+import Image from 'next/image';
 import PhotoUpload from '@/components/PhotoUpload';
 
 interface Photo {
@@ -48,76 +48,42 @@ const Photos = () => {
 
   useEffect(() => {
     fetchPhotos();
+    
+    // Refresh photos every 45 minutes to ensure URLs don't expire
+    const interval = setInterval(fetchPhotos, 45 * 60 * 1000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const fetchPhotos = async () => {
     try {
+      setLoading(true);
       const response = await fetch('/api/photos');
       const data = await response.json();
       console.log('Raw API response:', data);
       
+      if (data.error) {
+        console.error('API returned error:', data.error);
+        return;
+      }
+
       if (data.photos) {
-        const photoUrls = data.photos.map((photo: { 
-          url: string;
-          metadata?: {
-            location?: string | {
-              country?: string;
-              state?: string;
-              city?: string;
-              neighborhood?: string;
-            };
-            description?: string;
-            dateTaken?: string;
-            peopleTagged?: string;
-          };
-          lastModified?: string;
-        }) => {
-          // Safely parse location data
-          let locationData = {
-            country: '',
-            state: '',
-            city: '',
-            neighborhood: ''
-          };
-
-          if (photo.metadata?.location) {
-            if (typeof photo.metadata.location === 'string') {
-              try {
-                const parsedLocation = JSON.parse(photo.metadata.location);
-                locationData = {
-                  country: parsedLocation.country || '',
-                  state: parsedLocation.state || '',
-                  city: parsedLocation.city || '',
-                  neighborhood: parsedLocation.neighborhood || ''
-                };
-              } catch (e) {
-                console.warn('Failed to parse location string:', photo.metadata.location);
-              }
-            } else if (typeof photo.metadata.location === 'object') {
-              locationData = {
-                country: photo.metadata.location.country || '',
-                state: photo.metadata.location.state || '',
-                city: photo.metadata.location.city || '',
-                neighborhood: photo.metadata.location.neighborhood || ''
-              };
-            }
-          }
-
-          const processedPhoto = {
+        const photoUrls = data.photos.map((photo: any) => {
+          console.log('Processing photo in client:', photo);
+          
+          return {
             url: photo.url,
             metadata: {
-              location: locationData,
-              description: photo.metadata?.description || '',
-              dateTaken: photo.metadata?.dateTaken || '',
-              peopleTagged: photo.metadata?.peopleTagged || ''
+              location: photo.metadata.location || {},
+              description: photo.metadata.description || '',
+              dateTaken: photo.metadata.dateTaken || '',
+              peopleTagged: photo.metadata.peopleTagged || ''
             },
             lastModified: photo.lastModified ? new Date(photo.lastModified) : undefined
           };
-          
-          console.log('Processed photo:', processedPhoto);
-          return processedPhoto;
         });
         
+        console.log('Processed photos in client:', photoUrls);
         setImages(photoUrls);
       }
     } catch (error) {
@@ -239,11 +205,11 @@ const Photos = () => {
                   >
                       <Image
                           src={photo.url}
-                          alt={`Slide ${index + 1}`}
+                          alt={photo.metadata.description || 'Photo'}
                           fill
-                          sizes="(max-width: 768px) 100vw, 1200px"
-                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                           priority={index === 0}
+                          className="object-cover"
                           onError={handleImageError}
                       />
                   </div>
@@ -294,11 +260,11 @@ const Photos = () => {
             onClick={() => handleImageClick(photo)}
           >
             <Image
-              className="rounded-lg object-cover"
+              className="rounded-lg object-cover w-full h-full"
               src={photo.url}
-              alt={`Gallery image ${index + 1}`}
+              alt={photo.metadata.description || 'Photo'}
               fill
-              sizes="(max-width: 768px) 50vw, 25vw"
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
               priority={index === 0}
               onError={handleImageError}
             />
@@ -314,7 +280,8 @@ const Photos = () => {
               <Image
                 src={selectedPhoto.url}
                 alt="Selected photo"
-                fill
+                width={500}
+                height={300}
                 className="object-contain rounded-lg"
                 onError={handleImageError}
               />
