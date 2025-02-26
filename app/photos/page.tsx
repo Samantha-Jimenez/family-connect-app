@@ -52,6 +52,22 @@ const timestampToDate = (timestamp: number): string => {
   return formatDate(new Date(timestamp).toISOString());
 };
 
+// Add this helper function after the existing helper functions
+const formatPhotoCount = (filtered: number, total: number) => {
+  return `Showing ${filtered} of ${total} photos`;
+};
+
+// Add this new component function
+const PhotoCount = ({ filtered, total }: { filtered: number, total: number }) => {
+  return (
+    <div className="inline-flex items-center px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800">
+      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+        {formatPhotoCount(filtered, total)}
+      </span>
+    </div>
+  );
+};
+
 const Photos = () => {
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [images, setImages] = useState<Photo[]>([]);
@@ -176,6 +192,11 @@ const Photos = () => {
 
     return (
       <div className="mb-8 px-4">
+        {/* Add the photo count display */}
+        <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+          {formatPhotoCount(filteredImages.length, images.length)}
+        </div>
+
         <div className="mb-2 flex justify-between text-sm text-gray-600">
           <span>{timestampToDate(currentDateRange[0])}</span>
           <span>{timestampToDate(currentDateRange[1])}</span>
@@ -277,6 +298,10 @@ const Photos = () => {
           <button type="button" className="border border-gray-900 bg-gray-900 hover:border-gray-700 focus:ring-4 focus:outline-none  rounded-full text-base font-medium px-5 py-2.5 text-center me-3 mb-3 text-white focus:ring-gray-800">Bags</button>
           <button type="button" className="border border-gray-900 bg-gray-900 hover:border-gray-700 focus:ring-4 focus:outline-none  rounded-full text-base font-medium px-5 py-2.5 text-center me-3 mb-3 text-white focus:ring-gray-800">Electronics</button>
           <button type="button" className="border border-gray-900 bg-gray-900 hover:border-gray-700 focus:ring-4 focus:outline-none  rounded-full text-base font-medium px-5 py-2.5 text-center me-3 mb-3 text-white focus:ring-gray-800">Gaming</button>
+        </div>
+
+        <div className="flex justify-center mb-4">
+          <PhotoCount filtered={filteredImages.length} total={images.length} />
         </div>
 
         {renderDateRangeSlider()}
