@@ -75,9 +75,9 @@ export default function YourPhotosCard() {
 
       <button 
         className="btn btn-outline mt-4 bg-[#ffdaad] border-0 text-gray-700 w-full"
-        onClick={() => window.location.href = '/photos'}
+        onClick={() => window.location.href = '/your-photos'}
       >
-        View All Photos
+        View All Your Photos
       </button>
     </div>
   );
