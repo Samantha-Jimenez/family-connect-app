@@ -187,6 +187,13 @@ const Photos = () => {
     setFilteredImages(filtered);
   };
 
+  const handleRangeChange = (values: number[]) => {
+    // Ensure we have exactly two values and convert to tuple
+    const rangeValues: [number, number] = [values[0], values[1]];
+    setCurrentDateRange(rangeValues);
+    filterImagesByDateRange(rangeValues);
+  };
+
   const renderDateRangeSlider = () => {
     if (dateRange.min === 0 && dateRange.max === 0) return null;
 
@@ -206,10 +213,7 @@ const Photos = () => {
           step={86400000} // One day in milliseconds
           min={dateRange.min}
           max={dateRange.max}
-          onChange={(values) => {
-            setCurrentDateRange(values);
-            filterImagesByDateRange(values);
-          }}
+          onChange={handleRangeChange}
           renderTrack={({ props, children }) => (
             <div
               {...props}
