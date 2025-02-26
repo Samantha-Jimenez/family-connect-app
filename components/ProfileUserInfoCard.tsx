@@ -69,11 +69,11 @@ export default function ProfileUserInfoCard({ currentPath }: { currentPath: stri
                 />
               </div>
             </div>
-            {currentPath !== '/profile' && (
+            {/* {currentPath !== '/profile' && (
                 <button className="btn btn-outline mt-2 bg-[#914F2F] text-white border-0 w-full">
                     Edit Profile
                 </button>
-            )}
+            )} */}
           </div>
 
           {/* Right Column - Details */}

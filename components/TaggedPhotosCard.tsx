@@ -55,7 +55,7 @@ export default function TaggedPhotosCard() {
   if (loading) {
     return (
       <div className="card bg-white text-black shadow-lg p-6">
-        <h2 className="text-xl font-bold">📌 Tagged Photos</h2>
+        <h2 className="text-xl font-bold">Tagged Photos</h2>
         <p className="mt-2">Loading tagged photos...</p>
       </div>
     );
@@ -63,8 +63,8 @@ export default function TaggedPhotosCard() {
 
   return (
     <div className="card bg-white text-black shadow-lg p-6">
-      <h2 className="text-xl font-bold">📌 Tagged Photos</h2>
-      <p className="mt-2">Photos you&apos;re tagged in ({taggedPhotos.length})</p>
+      <h2 className="text-xl font-bold">Tagged Photos</h2>
+      <p className="mt-2 italic">Photos you&apos;re tagged in ({taggedPhotos.length})</p>
       
       <div className="mt-4 grid grid-cols-3 gap-2">
         {taggedPhotos.slice(0, 6).map((photo, index) => (
@@ -80,12 +80,12 @@ export default function TaggedPhotosCard() {
         ))}
       </div>
 
-      <button 
+      {/* <button 
         className="btn btn-outline mt-4 bg-[#ffdaad] border-0 text-gray-700 w-full"
-        onClick={() => window.location.href = '/photos?filter=tagged'}
+        onClick={() => window.location.href = '/your-photos'}
       >
         View All Tagged Photos
-      </button>
+      </button> */}
     </div>
   );
 }

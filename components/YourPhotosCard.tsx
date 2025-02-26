@@ -48,7 +48,7 @@ export default function YourPhotosCard() {
   if (loading) {
     return (
       <div className="card bg-white text-black shadow-lg p-6">
-        <h2 className="text-xl font-bold">📸 Your Photos</h2>
+        <h2 className="text-xl font-bold">Uploaded Photos</h2>
         <p className="mt-2">Loading your photos...</p>
       </div>
     );
@@ -56,8 +56,8 @@ export default function YourPhotosCard() {
 
   return (
     <div className="card bg-white text-black shadow-lg p-6">
-      <h2 className="text-xl font-bold">📸 Your Photos</h2>
-      <p className="mt-2">Photos you've uploaded ({userPhotos.length})</p>
+      <h2 className="text-xl font-bold">Uploaded Photos</h2>
+      <p className="mt-2 italic">Photos you've uploaded ({userPhotos.length})</p>
       
       <div className="mt-4 grid grid-cols-3 gap-2">
         {userPhotos.slice(0, 6).map((photo, index) => (
@@ -73,12 +73,12 @@ export default function YourPhotosCard() {
         ))}
       </div>
 
-      <button 
+      {/* <button 
         className="btn btn-outline mt-4 bg-[#ffdaad] border-0 text-gray-700 w-full"
         onClick={() => window.location.href = '/your-photos'}
       >
         View All Your Photos
-      </button>
+      </button> */}
     </div>
   );
 }

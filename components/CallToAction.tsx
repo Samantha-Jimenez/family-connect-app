@@ -2,12 +2,12 @@ import React from 'react'
 
 const CallToAction = () => {
   return (
-    <div className="bg-white rounded-3xl p-6 text-black shadow-lg">
-        <h2 className="text-lg font-semibold mb-4 text-[#717568]">
+    <div className="bg-white rounded-3xl py-4 px-6 text-black shadow-lg">
+        {/* <h2 className="text-lg font-semibold text-[#717568]">
             CallToAction
-        </h2>
-        <p className="mt-2">
-            This is a call to action.
+        </h2> */}
+        <p className="italic">
+            Don't forget to complete your profile!
         </p>
     </div>
   )
