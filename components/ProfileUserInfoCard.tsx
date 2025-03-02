@@ -84,10 +84,10 @@ export default function ProfileUserInfoCard({ currentPath }: { currentPath: stri
 
   return (
     <div className="rounded-3xl">
-      <div className="rounded-3xl p-8 transition-all duration-300 mt-20 h-60">
+      <div className="rounded-3xl py-8 transition-all duration-300 mt-20 h-60">
         <div className="flex flex-col md:flex-row">
           {/* Left Column - Avatar and Basic Info */}
-          <div className="md:w-2/3 text-center mb-8 md:mb-0">
+          <div className="text-center mb-8 md:mb-0">
             <div className="avatar bottom-24">
               <div className="w-[17rem] h-[17rem] mx-auto rounded-[60px] shadow-lg">
                 <Image 
@@ -107,12 +107,12 @@ export default function ProfileUserInfoCard({ currentPath }: { currentPath: stri
           </div>
 
           {/* Right Column - Details */}
-          <div className="md:w-2/3 md:pl-8">
+          <div className="md:pl-8">
             <h1 className="text-2xl font-bold text-black">
-              {userData?.username || 'Guest User'}
+              Welcome, {userData?.first_name || ''} {userData?.last_name || ''} !
             </h1>
             <h1 className="text-gray-500">
-              Welcome, {userData?.first_name || ''} {userData?.last_name || ''} !
+              {user.username}
             </h1>
             <h2 className="text-xl font-semibold text-black mb-1">About Me</h2>
             <p className="text-gray-500 mb-2">
@@ -125,7 +125,7 @@ export default function ProfileUserInfoCard({ currentPath }: { currentPath: stri
               <span className="bg-[#FAE5C0] text-gray-500 px-3 py-1 rounded-full text-sm">Cousin</span>
             </div>
           </div>
-          <div className="md:w-2/3 md:pl-8">
+          <div className="md:pl-8">
           <h2 className="text-xl font-semibold text-black mb-2">Birthday</h2>
             <p className="text-gray-500 mb-4 flex items-center">
                 {userData?.birthday ? (
