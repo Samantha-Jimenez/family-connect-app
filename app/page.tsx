@@ -12,7 +12,7 @@ import CallToAction from "@/components/CallToAction";
 import { usePathname } from 'next/navigation';
 import YourPhotosCard from "@/components/YourPhotosCard";
 import { useEffect, useState } from 'react';
-
+import Settings from "@/components/Settings";
 // Move Amplify configuration into a try-catch block
 try {
   const awsconfig = require("../aws-exports").default;
@@ -47,7 +47,7 @@ export default function Home() {
     <AuthProvider>
       <div className="min-h-screen bg-white p-4 sm:p-6">
         {/* <h1 className="text-4xl font-bold text-center mb-6 text-[#717568]">Welcome to Our Family Tree</h1> */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_16rem] gap-2 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_16rem] gap-4 max-w-6xl mx-auto">
           <div className="col-span-1 sm:col-span-2">
             <ProfileUserInfoCard currentPath={pathname} />
           </div>
@@ -90,7 +90,7 @@ export default function Home() {
               {activeTab === 'uploads' && <YourPhotosCard />}
               {activeTab === 'tagged' && <TaggedPhotosCard />}
               {activeTab === 'albums' && <p>Albums feature coming soon...</p>}
-              {activeTab === 'settings' && <p>Settings feature coming soon...</p>}
+              {activeTab === 'settings' && <Settings />}
             </div>
           </div>
           {/* <div className="col-span-1">
