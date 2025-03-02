@@ -18,13 +18,13 @@ const TABLES = {
   ALBUMS: "Albums"
 } as const;
 
-// Add these new interfaces at the top of the file
-interface TaggedPerson {
+// Export all interfaces
+export interface TaggedPerson {
   id: string;
   name: string;
 }
 
-interface PhotoData {
+export interface PhotoData {
   photo_id: string;
   s3_key: string;
   uploaded_by: string;
@@ -41,7 +41,7 @@ interface PhotoData {
   album_id?: string;
 }
 
-interface AlbumData {
+export interface AlbumData {
   album_id: string;
   name: string;
   description?: string;
@@ -50,13 +50,23 @@ interface AlbumData {
   cover_photo_id?: string;
 }
 
-interface FamilyMember {
+export interface FamilyMember {
   family_member_id: string;
   first_name: string;
   last_name: string;
 }
 
-export async function saveUserToDB(first_name: string, last_name: string, email: string, username: string, bio: string, phone_number: string, birthday: string) {
+// Export all functions
+export const saveUserToDB = async (
+  first_name: string, 
+  last_name: string, 
+  email: string, 
+  username: string, 
+  bio: string, 
+  phone_number: string, 
+  birthday: string,
+  profile_photo?: string
+) => {
   try {
     const userAttributes = await fetchUserAttributes();
     const user = await getCurrentUser();
@@ -83,7 +93,8 @@ export async function saveUserToDB(first_name: string, last_name: string, email:
         username: { S: username },
         bio: { S: bio },
         phone_number: { S: phone_number },
-        birthday: { S: birthday }
+        birthday: { S: birthday },
+        profile_photo: { S: profile_photo || '' }
       },
     };
 
@@ -93,9 +104,9 @@ export async function saveUserToDB(first_name: string, last_name: string, email:
     console.error("❌ Error saving user to DynamoDB:", error);
     throw error;
   }
-}
+};
 
-export async function getUserData(userId: string) {
+export const getUserData = async (userId: string) => {
   try {
     if (!userId) {
       throw new Error("❌ userId is required.");
@@ -126,10 +137,9 @@ export async function getUserData(userId: string) {
     }
     return null;
   }
-}
+};
 
-// Add these new functions after the existing ones
-export async function createAlbum(name: string, description?: string) {
+export const createAlbum = async (name: string, description?: string) => {
   try {
     const user = await getCurrentUser();
     const userId = user.userId;
@@ -157,7 +167,7 @@ export async function createAlbum(name: string, description?: string) {
     console.error("Error creating album:", error);
     throw error;
   }
-}
+};
 
 export const savePhotoToDB = async (photoData: PhotoData) => {
   try {
@@ -217,7 +227,7 @@ export const savePhotoToDB = async (photoData: PhotoData) => {
   }
 };
 
-export async function addPhotoToAlbum(photo_id: string, album_id: string) {
+export const addPhotoToAlbum = async (photo_id: string, album_id: string) => {
   try {
     const user = await getCurrentUser();
     const userId = user.userId;
@@ -258,9 +268,9 @@ export async function addPhotoToAlbum(photo_id: string, album_id: string) {
     console.error("❌ Error adding photo to album:", error);
     throw error;
   }
-}
+};
 
-export async function getAllFamilyMembers(): Promise<FamilyMember[]> {
+export const getAllFamilyMembers = async (): Promise<FamilyMember[]> => {
   try {
     const params = {
       TableName: TABLES.FAMILY,
@@ -283,4 +293,4 @@ export async function getAllFamilyMembers(): Promise<FamilyMember[]> {
     console.error("❌ Error fetching family members:", error);
     return [];
   }
-}
+};

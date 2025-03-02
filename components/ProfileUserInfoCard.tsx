@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { getUserData } from "@/hooks/dynamoDB";
 import { useAuthenticator } from "@aws-amplify/ui-react";
 import { fetchUserAttributes } from "aws-amplify/auth";
+import { getFullImageUrl } from '@/utils/imageUtils';
 
 interface UserData {
     first_name: string;
@@ -14,11 +15,13 @@ interface UserData {
     bio: string;
     phone_number: string;
     birthday: string;
+    profile_photo?: string;
 }
 
 export default function ProfileUserInfoCard({ currentPath }: { currentPath: string }) {
     const [userData, setUserData] = useState<UserData | null>(null);
     const { user } = useAuthenticator();
+    const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
     
     const getZodiacSign = (dateString: string) => {
         if (!dateString) return '';
@@ -52,30 +55,47 @@ export default function ProfileUserInfoCard({ currentPath }: { currentPath: stri
 
     useEffect(() => {
         const fetchUserData = async () => {
-            const data = await getUserData(user.userId);
-            const userAttributes = await fetchUserAttributes();
-            if (data) {
-                setUserData({
-                    first_name: data.first_name?.S || '',
-                    last_name: data.last_name?.S || '',
-                    email: userAttributes.email || '',
-                    username: data.username?.S || '',
-                    bio: data.bio?.S || '',
-                    phone_number: data.phone_number?.S || '',
-                    birthday: data.birthday?.S || '',
-                });
-            } else {
-                setUserData({
-                    first_name: '',
-                    last_name: '',
-                    email: '',
-                    username: '',
-                    bio: '',
-                    phone_number: '',
-                    birthday: '',
-                });
+            try {
+                const data = await getUserData(user.userId);
+                const userAttributes = await fetchUserAttributes();
+                
+                if (data) {
+                    // Update profile photo URL first if it exists
+                    if (data.profile_photo?.S) {
+                        const photoUrl = getFullImageUrl(data.profile_photo.S);
+                        setProfilePhotoUrl(photoUrl);
+                    } else {
+                        setProfilePhotoUrl(null);
+                    }
+                    
+                    setUserData({
+                        first_name: data.first_name?.S || '',
+                        last_name: data.last_name?.S || '',
+                        email: userAttributes.email || '',
+                        username: data.username?.S || '',
+                        bio: data.bio?.S || '',
+                        phone_number: data.phone_number?.S || '',
+                        birthday: data.birthday?.S || '',
+                        profile_photo: data.profile_photo?.S || '',
+                    });
+                } else {
+                    setUserData({
+                        first_name: '',
+                        last_name: '',
+                        email: '',
+                        username: '',
+                        bio: '',
+                        phone_number: '',
+                        birthday: '',
+                        profile_photo: '',
+                    });
+                    setProfilePhotoUrl(null);
+                }
+            } catch (error) {
+                console.error('Error fetching user data:', error);
             }
         };
+
         fetchUserData();
     }, [user]);
 
@@ -90,13 +110,20 @@ export default function ProfileUserInfoCard({ currentPath }: { currentPath: stri
           <div className="text-center mb-8 md:mb-0">
             <div className="avatar bottom-24">
               <div className="w-[17rem] h-[17rem] mx-auto rounded-[60px] shadow-lg">
-                <Image 
-                  src={avatar.src} 
-                  alt="User Avatar"
-                  className="rounded-[60px]"
-                  width={192}
-                  height={192}
-                />
+                {profilePhotoUrl ? (
+                  <Image 
+                    src={profilePhotoUrl}
+                    alt="User Avatar"
+                    className="rounded-[60px] object-cover"
+                    width={192}
+                    height={192}
+                    priority
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-200 rounded-[60px] flex items-center justify-center">
+                    <span className="icon-[mdi--account] text-6xl text-gray-400" />
+                  </div>
+                )}
               </div>
             </div>
             {/* {currentPath !== '/profile' && (

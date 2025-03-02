@@ -5,6 +5,9 @@ import { useAuth } from '@/context/AuthContext';
 import AuthGuard from '@/components/AuthGuard';
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import { fetchUserAttributes } from '@aws-amplify/auth';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { getFullImageUrl } from '@/utils/imageUtils';
 
 interface UserData {
   first_name: string;
@@ -14,6 +17,7 @@ interface UserData {
   bio: string;
   phone_number: string;
   birthday: string;
+  profile_photo?: string;
 }
 
 const Settings = () => {
@@ -22,7 +26,13 @@ const Settings = () => {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [authUsername, setAuthUsername] = useState('');
   const [authEmail, setAuthEmail] = useState('');
-  console.log('user', user);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const router = useRouter();
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [showErrorToast, setShowErrorToast] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -36,6 +46,7 @@ const Settings = () => {
           bio: data.bio?.S || '',
           phone_number: data.phone_number?.S || '',
           birthday: data.birthday?.S || '',
+          profile_photo: data.profile_photo?.S || undefined,
         });
       } else {
         setUserData({
@@ -46,6 +57,7 @@ const Settings = () => {
           bio: '',
           phone_number: '',
           birthday: '',
+          profile_photo: undefined,
         });
       }
     };
@@ -67,6 +79,18 @@ const Settings = () => {
 
     fetchUserData();
   }, [user]);
+
+  // Add useEffect to handle auto-hiding toasts
+  useEffect(() => {
+    if (showSuccessToast || showErrorToast) {
+      const timer = setTimeout(() => {
+        setShowSuccessToast(false);
+        setShowErrorToast(false);
+      }, 3000); // Hide after 3 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [showSuccessToast, showErrorToast]);
   
   if (authStatus !== 'authenticated') {
     return null;
@@ -84,8 +108,116 @@ const Settings = () => {
     }
   };
 
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedImage(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handlePhotoSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    if (selectedImage) {
+      try {
+        setIsUploading(true);
+        setUploadProgress(0);
+        
+        const formData = new FormData();
+        formData.append('file', selectedImage);
+
+        // Create a promise that wraps XMLHttpRequest to handle upload progress
+        const uploadWithProgress = new Promise<{ key: string }>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          
+          xhr.upload.addEventListener('progress', (event) => {
+            if (event.lengthComputable) {
+              const progress = (event.loaded / event.total) * 100;
+              setUploadProgress(Math.round(progress));
+            }
+          });
+
+          xhr.addEventListener('load', () => {
+            if (xhr.status === 200) {
+              try {
+                const response = JSON.parse(xhr.responseText);
+                resolve(response);
+              } catch (error) {
+                reject(new Error('Invalid response format'));
+              }
+            } else {
+              reject(new Error(`Upload failed with status: ${xhr.status}`));
+            }
+          });
+
+          xhr.addEventListener('error', () => {
+            reject(new Error('Upload failed'));
+          });
+
+          xhr.open('POST', '/api/upload');
+          xhr.send(formData);
+        });
+
+        const result = await uploadWithProgress;
+        
+        if (!result.key) {
+          throw new Error('Upload response missing key');
+        }
+
+        setUploadProgress(70);
+        
+        // Save to DynamoDB
+        await saveUserToDB(
+          userData?.first_name || '',
+          userData?.last_name || '',
+          userData?.email || '',
+          userData?.username || '',
+          userData?.bio || '',
+          userData?.phone_number || '',
+          userData?.birthday || '',
+          result.key
+        );
+
+        setUploadProgress(90);
+
+        // Update local state with the new photo URL
+        const newPhotoUrl = getFullImageUrl(result.key);
+        setUserData(prev => prev ? {
+          ...prev,
+          profile_photo: result.key
+        } : null);
+
+        // Clear the selected image state
+        setSelectedImage(null);
+        setImagePreview(null);
+        
+        setUploadProgress(100);
+        
+        // Show success toast
+        setShowSuccessToast(true);
+        
+        // Reset upload state after a short delay
+        setTimeout(() => {
+          setIsUploading(false);
+          setUploadProgress(0);
+          window.location.reload();
+        }, 1000);
+        
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        setShowErrorToast(true);
+        setIsUploading(false);
+        setUploadProgress(0);
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    let profilePhotoUrl = userData?.profile_photo;
+    
     const formData = new FormData(e.currentTarget);
     const first_name = formData.get('floating_first_name') as string || userData?.first_name || '';
     const last_name = formData.get('floating_last_name') as string || userData?.last_name || '';
@@ -95,13 +227,96 @@ const Settings = () => {
     const birthday = formData.get('floating_birthday') as string || userData?.birthday || '';
     const email = authEmail || '';
 
-    await saveUserToDB(first_name, last_name, email, username, bio, phone_number, birthday);
+    await saveUserToDB(
+      first_name, 
+      last_name, 
+      email, 
+      username, 
+      bio, 
+      phone_number, 
+      birthday,
+      profilePhotoUrl
+    );
   };
 
   return (
     <AuthGuard>
       <div className="min-h-screen p-4 sm:p-6">
-        {/* <h1 className="text-4xl font-bold text-center mb-6 text-[#717568]">Settings</h1> */}
+        {/* Conditional toast rendering */}
+        <div className="toast toast-top toast-center">
+          {showSuccessToast && (
+            <div className="alert alert-success">
+              <span>Profile photo updated successfully!</span>
+            </div>
+          )}
+          {showErrorToast && (
+            <div className="alert alert-error">
+              <span>Failed to update profile photo. Please try again.</span>
+            </div>
+          )}
+        </div>
+
+        <form onSubmit={handlePhotoSubmit} className="card bg-white shadow-xl p-6 mx-auto mt-6">
+          <div className="flex flex-col items-center gap-4">
+            <div className="avatar">
+              <div className="w-24 h-24 rounded-full">
+                {imagePreview ? (
+                  <Image 
+                    src={imagePreview}
+                    alt="Profile preview" 
+                    width={96}
+                    height={96}
+                    className="rounded-full object-cover"
+                  />
+                ) : userData?.profile_photo ? (
+                  <Image 
+                    src={getFullImageUrl(userData.profile_photo)}
+                    alt="Current profile" 
+                    width={96}
+                    height={96}
+                    className="rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center">
+                    <span className="icon-[mdi--account] text-4xl text-gray-400" />
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col items-center gap-2 w-full max-w-xs">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="file-input file-input-bordered w-full"
+                disabled={isUploading}
+              />
+              
+              {isUploading && (
+                <div className="w-full">
+                  <progress 
+                    className="progress progress-success w-full" 
+                    value={uploadProgress} 
+                    max="100"
+                  ></progress>
+                  <p className="text-center text-sm text-gray-600 mt-1">
+                    {uploadProgress}%
+                  </p>
+                </div>
+              )}
+              
+              {selectedImage && (
+                <button 
+                  type="submit"
+                  className="btn bg-[#914F2F] hover:bg-[#914F2F]/90 text-white w-full"
+                  disabled={isUploading}
+                >
+                  {isUploading ? 'Uploading...' : 'Upload Photo'}
+                </button>
+              )}
+            </div>
+          </div>
+        </form>
         <form className="card bg-white shadow-xl p-6 mx-auto mt-6" onSubmit={handleSubmit}>
           <div className="grid md:grid-cols-2 md:gap-6">
               <div className="relative z-0 w-full mb-5 group">
