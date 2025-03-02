@@ -12,6 +12,7 @@ export interface CalendarEvent {
   borderColor?: string;
   textColor?: string;
   classNames?: string[];
+  location?: string;
   extendedProps?: {
     category?: 'birthday' | 'holiday' | 'family-event' | 'appointment';
   }

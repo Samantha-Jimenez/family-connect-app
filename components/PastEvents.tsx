@@ -18,78 +18,66 @@ interface Event {
   };
 }
 
-const UpcomingEvents = () => {
+const PastEvents = () => {
   const { events } = useCalendar();
   const router = useRouter();
 
-  // Function to get the next occurrence of a recurring event
-  const getNextOccurrence = (event: Event) => {
+  // Function to get the last occurrence of a recurring event
+  const getLastOccurrence = (event: Event) => {
     const eventStart = new Date(event.start);
+    const now = new Date();
     
     if (!event.rrule) {
-      // For non-recurring events, only show them if they're in the future
-      const now = new Date();
-      return eventStart >= now ? eventStart : null;
+      // For non-recurring events, only show them if they're in the past
+      return eventStart < now ? eventStart : null;
     }
 
     // Handle weekly events
     if (event.rrule.freq === 'weekly') {
       const dayOfWeek = eventStart.getDay();
-      const nextDate = new Date();
+      const lastDate = new Date(now);
       
-      // Find the next occurrence of the weekday
-      while (nextDate.getDay() !== dayOfWeek) {
-        nextDate.setDate(nextDate.getDate() + 1);
+      // Find the previous occurrence of the weekday
+      while (lastDate.getDay() !== dayOfWeek) {
+        lastDate.setDate(lastDate.getDate() - 1);
       }
       
       // Set the same time as the original event
-      nextDate.setHours(eventStart.getHours());
-      nextDate.setMinutes(eventStart.getMinutes());
+      lastDate.setHours(eventStart.getHours());
+      lastDate.setMinutes(eventStart.getMinutes());
       
-      return nextDate;
+      return lastDate < now ? lastDate : null;
     }
 
-    return eventStart;
+    return eventStart < now ? eventStart : null;
   };
 
   const sortedEvents = (events || [])
     .map(event => ({
       ...event,
-      nextOccurrence: getNextOccurrence(event),
+      lastOccurrence: getLastOccurrence(event),
       location: event.location
     }))
-    .filter(event => event.nextOccurrence !== null)
-    .sort((a, b) => a.nextOccurrence!.getTime() - b.nextOccurrence!.getTime())
+    .filter(event => event.lastOccurrence !== null)
+    .sort((a, b) => b.lastOccurrence!.getTime() - a.lastOccurrence!.getTime()) // Reverse sort for past events
     .slice(0, 5);
 
   const formatDate = (date: Date) => {
-    // Create dates in local timezone
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
     
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
-    // Adjust the event date to local timezone
     const localDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
     const dateString = localDate.toDateString();
     
-    // Check if the event is today or tomorrow
-    if (dateString === today.toDateString()) {
-      return `Today, ${localDate.toLocaleTimeString('en-US', { 
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      })}`;
-    } else if (dateString === tomorrow.toDateString()) {
-      return `Tomorrow, ${localDate.toLocaleTimeString('en-US', { 
+    if (dateString === yesterday.toDateString()) {
+      return `Yesterday, ${localDate.toLocaleTimeString('en-US', { 
         hour: 'numeric',
         minute: '2-digit',
         hour12: true
       })}`;
     }
     
-    // For other dates, show the full date and time
     return localDate.toLocaleDateString('en-US', { 
       weekday: 'short',
       month: 'short', 
@@ -101,17 +89,13 @@ const UpcomingEvents = () => {
   };
 
   const handleEventClick = (event: Event) => {
-    // Navigate to calendar page with the event date in view
-    // const eventDate = new Date(event.start);
-    // const dateString = eventDate.toISOString().split('T')[0]; // Format: YYYY-MM-DD
-    // router.push(`/calendar?date=${dateString}`);
-    router.push(`/calendar`);
+    router.push('/calendar');
   };
 
   return (
     <div className="card bg-white text-black p-6 shadow-md">
       <h2 className="text-xl font-bold flex items-center gap-2">
-        Upcoming Events
+        Past Events
       </h2>
       <div className="mt-4 space-y-4">
         {sortedEvents.length > 0 ? (
@@ -130,7 +114,7 @@ const UpcomingEvents = () => {
             >
               <div className="flex-1">
                 <p className="font-medium text-gray-900">{event.title}</p>
-                <p className="text-sm text-gray-600">{formatDate(event.nextOccurrence!)}</p>
+                <p className="text-sm text-gray-600">{formatDate(event.lastOccurrence!)}</p>
                 {event.location && (
                   <p className="text-sm text-gray-500 flex items-center gap-1">
                     <span>📍</span> {event.location}
@@ -146,7 +130,7 @@ const UpcomingEvents = () => {
           ))
         ) : (
           <div className="text-center py-6">
-            <p className="text-gray-500">No upcoming events</p>
+            <p className="text-gray-500">No past events</p>
           </div>
         )}
       </div>
@@ -154,4 +138,4 @@ const UpcomingEvents = () => {
   );
 };
 
-export default UpcomingEvents;
+export default PastEvents;
