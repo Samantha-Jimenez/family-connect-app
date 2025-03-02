@@ -20,6 +20,36 @@ export default function ProfileUserInfoCard({ currentPath }: { currentPath: stri
     const [userData, setUserData] = useState<UserData | null>(null);
     const { user } = useAuthenticator();
     
+    const getZodiacSign = (dateString: string) => {
+        if (!dateString) return '';
+        const [year, month, day] = dateString.split('-').map(num => parseInt(num));
+        const monthDay = month * 100 + day; // Convert to MMDD format
+
+        if ((monthDay >= 321 && monthDay <= 419)) return <span className="icon-[icon-park-outline--aries] text-base"></span>; // Aries
+        if ((monthDay >= 420 && monthDay <= 520)) return <span className="icon-[icon-park-outline--taurus] text-base"></span>; // Taurus
+        if ((monthDay >= 521 && monthDay <= 620)) return <span className="icon-[icon-park-outline--gemini] text-base"></span>; // Gemini
+        if ((monthDay >= 621 && monthDay <= 722)) return <span className="icon-[icon-park-outline--cancer] text-base"></span>; // Cancer
+        if ((monthDay >= 723 && monthDay <= 822)) return <span className="icon-[icon-park-outline--leo] text-base"></span>; // Leo
+        if ((monthDay >= 823 && monthDay <= 922)) return <span className="icon-[icon-park-outline--virgo] text-base"></span>; // Virgo
+        if ((monthDay >= 923 && monthDay <= 1022)) return <span className="icon-[icon-park-outline--libra] text-base"></span>; // Libra
+        if ((monthDay >= 1023 && monthDay <= 1121)) return <span className="icon-[icon-park-outline--scorpio] text-base"></span>; // Scorpio
+        if ((monthDay >= 1122 && monthDay <= 1221)) return <span className="icon-[icon-park-outline--sagittarius] text-base"></span>; // Sagittarius
+        if ((monthDay >= 1222 || monthDay <= 119)) return <span className="icon-[icon-park-outline--capricornus] text-base"></span>; // Capricorn
+        if ((monthDay >= 120 && monthDay <= 218)) return <span className="icon-[icon-park-outline--aquarius] text-base"></span>; // Aquarius
+        return <span className="icon-[icon-park-outline--pisces] text-base"></span>; // Pisces
+    };
+
+    const formatBirthday = (dateString: string) => {
+        if (!dateString) return '';
+        const [year, month, day] = dateString.split('-').map(num => parseInt(num));
+        const date = new Date(year, month - 1, day);
+        return date.toLocaleDateString('en-US', {
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric'
+        });
+    };
+
     useEffect(() => {
         const fetchUserData = async () => {
             const data = await getUserData(user.userId);
@@ -97,8 +127,13 @@ export default function ProfileUserInfoCard({ currentPath }: { currentPath: stri
           </div>
           <div className="md:w-2/3 md:pl-8">
           <h2 className="text-xl font-semibold text-black mb-2">Birthday</h2>
-            <p className="text-gray-500 mb-4">
-              {userData?.birthday || ''}
+            <p className="text-gray-500 mb-4 flex items-center gap-2">
+                {userData?.birthday ? (
+                    <>
+                        {formatBirthday(userData.birthday)}
+                        <span className="text-xl">{getZodiacSign(userData.birthday)}</span>
+                    </>
+                ) : ''}
             </p>
             <h2 className="text-xl font-semibold text-black mb-1">Contact Information</h2>
             <ul className="text-gray-500">
