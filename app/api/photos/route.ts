@@ -4,14 +4,6 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 
-// Debug log all environment variables
-console.log('Environment Variables:', {
-  region: process.env.NEXT_PUBLIC_AWS_PROJECT_REGION,
-  bucket: process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME,
-  hasAccessKey: !!process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID,
-  hasSecretKey: !!process.env.NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY
-});
-
 const dynamoDB = new DynamoDBClient({
   region: process.env.NEXT_PUBLIC_AWS_PROJECT_REGION,
   credentials: {
@@ -41,16 +33,10 @@ export async function GET() {
 
     const bucketName = process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME;
     
-    // Debug the items we're getting from DynamoDB
-    console.log('DynamoDB Items:', JSON.stringify(response.Items, null, 2));
-    
     // Generate signed URLs for each photo
     const photos = await Promise.all(response.Items.map(async (item) => {
       // Get the raw s3_key and ensure it has the correct format
       const s3Key = item.s3_key.S?.replace(/^photos\/photos\//g, 'photos/') || '';
-      
-      // Log the exact key we're using
-      console.log('Using S3 key:', s3Key);
       
       const getObjectCommand = new GetObjectCommand({
         Bucket: bucketName,
@@ -92,7 +78,6 @@ export async function GET() {
     // Filter out any null values from failed URL generations
     const validPhotos = photos.filter(photo => photo !== null);
     
-    console.log('Number of valid photos:', validPhotos.length);
     return NextResponse.json({ photos: validPhotos });
   } catch (error) {
     console.error('Error fetching photos:', error);
