@@ -18,7 +18,17 @@ interface UserData {
   phone_number: string;
   birthday: string;
   profile_photo?: string;
+  city?: string;
+  state?: string;
 }
+
+const US_STATES = [
+  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
+  'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
+  'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
+  'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
+  'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
+];
 
 const Settings = () => {
   const { authStatus } = useAuth();
@@ -47,6 +57,8 @@ const Settings = () => {
           phone_number: data.phone_number?.S || '',
           birthday: data.birthday?.S || '',
           profile_photo: data.profile_photo?.S || undefined,
+          city: data.city?.S || undefined,
+          state: data.state?.S || undefined,
         });
       } else {
         setUserData({
@@ -58,6 +70,8 @@ const Settings = () => {
           phone_number: '',
           birthday: '',
           profile_photo: undefined,
+          city: undefined,
+          state: undefined,
         });
       }
     };
@@ -176,7 +190,9 @@ const Settings = () => {
           userData?.bio || '',
           userData?.phone_number || '',
           userData?.birthday || '',
-          result.key
+          result.key,
+          userData?.city || '',
+          userData?.state || ''
         );
 
         setUploadProgress(90);
@@ -225,6 +241,8 @@ const Settings = () => {
     const bio = formData.get('floating_bio') as string || userData?.bio || '';
     const phone_number = formData.get('floating_phone') as string || userData?.phone_number || '';
     const birthday = formData.get('floating_birthday') as string || userData?.birthday || '';
+    const city = formData.get('floating_city') as string || userData?.city || '';
+    const state = formData.get('floating_state') as string || userData?.state || '';
     const email = authEmail || '';
 
     await saveUserToDB(
@@ -235,7 +253,9 @@ const Settings = () => {
       bio, 
       phone_number, 
       birthday,
-      profilePhotoUrl
+      profilePhotoUrl,
+      city,
+      state
     );
   };
 
@@ -380,6 +400,35 @@ const Settings = () => {
                   required
               />
               <label htmlFor="floating_bio" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Bio</label>
+          </div>
+          <div className="grid md:grid-cols-2 md:gap-6">
+            <div className="relative z-0 w-full mb-5 group">
+              <input
+                type="text"
+                value={userData?.city || ''}
+                name="city"
+                id="floating_city"
+                onChange={handleInputChange}
+                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                placeholder=" "
+              />
+              <label htmlFor="floating_city" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">City/Town</label>
+            </div>
+            <div className="relative z-0 w-full mb-5 group">
+              <select
+                value={userData?.state || ''}
+                name="state"
+                id="floating_state"
+                onChange={handleInputChange}
+                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+              >
+                <option value="">Select State</option>
+                {US_STATES.map(state => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
+              </select>
+              <label htmlFor="floating_state" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">State</label>
+            </div>
           </div>
           <button type="submit" className="text-white bg-[#914F2F] hover:bg-[#914F2F]/90 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Save Changes</button>
         </form>

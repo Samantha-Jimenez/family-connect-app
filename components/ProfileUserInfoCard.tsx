@@ -16,6 +16,8 @@ interface UserData {
     phone_number: string;
     birthday: string;
     profile_photo?: string;
+    city?: string;
+    state?: string;
 }
 
 export default function ProfileUserInfoCard({ currentPath }: { currentPath: string }) {
@@ -77,6 +79,8 @@ export default function ProfileUserInfoCard({ currentPath }: { currentPath: stri
                         phone_number: data.phone_number?.S || '',
                         birthday: data.birthday?.S || '',
                         profile_photo: data.profile_photo?.S || '',
+                        city: data.city?.S || '',
+                        state: data.state?.S || '',
                     });
                 } else {
                     setUserData({
@@ -88,6 +92,8 @@ export default function ProfileUserInfoCard({ currentPath }: { currentPath: stri
                         phone_number: '',
                         birthday: '',
                         profile_photo: '',
+                        city: '',
+                        state: '',
                     });
                     setProfilePhotoUrl(null);
                 }
@@ -173,7 +179,9 @@ export default function ProfileUserInfoCard({ currentPath }: { currentPath: stri
               </li>
               <li className="flex items-center">
                 <span className="icon-[mdi--map-marker] h-5 mr-2" />
-                XXXXX, XX
+                {userData?.city && userData?.state 
+                  ? `${userData.city}, ${userData.state}`
+                  : 'Location not set'}
               </li>
             </ul>
           </div>

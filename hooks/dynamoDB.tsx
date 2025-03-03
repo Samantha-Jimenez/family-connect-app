@@ -65,7 +65,9 @@ export const saveUserToDB = async (
   bio: string, 
   phone_number: string, 
   birthday: string,
-  profile_photo?: string
+  profile_photo?: string,
+  city?: string,
+  state?: string
 ) => {
   try {
     const userAttributes = await fetchUserAttributes();
@@ -94,7 +96,9 @@ export const saveUserToDB = async (
         bio: { S: bio },
         phone_number: { S: phone_number },
         birthday: { S: birthday },
-        profile_photo: { S: profile_photo || '' }
+        profile_photo: { S: profile_photo || '' },
+        city: { S: city || '' },
+        state: { S: state || '' }
       },
     };
 

@@ -113,14 +113,14 @@ export default function Navbar({ signOut, username }: { signOut: () => void, use
                     Your Profile
                   </button>
                 </li>
-                <li>
+                {/* <li>
                   <button 
                     onClick={() => router.push('/settings')}
                     className="w-full text-left rounded px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   >
                     Settings
                   </button>
-                </li>
+                </li> */}
                 <li>
                   <button 
                     onClick={handleSignOut}
