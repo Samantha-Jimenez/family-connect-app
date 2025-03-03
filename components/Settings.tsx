@@ -100,11 +100,41 @@ const Settings = () => {
     return null;
   }
 
+  const formatPhoneNumber = (value: string) => {
+    // Remove all non-digit characters
+    const phoneNumber = value.replace(/\D/g, '');
+    
+    // Format the number as user types
+    let formattedNumber = '';
+    if (phoneNumber.length === 0) {
+      formattedNumber = '';
+    } else if (phoneNumber.length <= 3) {
+      formattedNumber = `(${phoneNumber}`;
+    } else if (phoneNumber.length <= 6) {
+      formattedNumber = `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
+    } else {
+      formattedNumber = `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`;
+    }
+    
+    return formattedNumber;
+  };
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     if (userData) {
       const fieldName = e.target.name.replace('floating_', ''); // Remove 'floating_' prefix
+      
+      // Special handling for phone number formatting
+      if (fieldName === 'phone') {
+        const formattedNumber = formatPhoneNumber(e.target.value);
+        setUserData({
+          ...userData,
+          phone_number: formattedNumber,
+        });
+        return;
+      }
+
       setUserData({
         ...userData,
         [fieldName]: e.target.value,
@@ -380,11 +410,11 @@ const Settings = () => {
                 type="tel"
                 value={userData?.phone_number || ''}
                 name="floating_phone"
-                pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}"
                 onChange={handleInputChange}
                 id="floating_phone"
                 className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
                 placeholder=" "
+                maxLength={14}
                 required
               />
               <label htmlFor="floating_phone" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Phone number</label>

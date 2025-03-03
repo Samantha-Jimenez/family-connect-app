@@ -176,7 +176,7 @@ export default function ProfileUserInfoCard() {
                 <span className="icon-[mdi--map-marker] h-5 mr-2" />
                 {userData?.city && userData?.state 
                   ? `${userData.city}, ${userData.state}`
-                  : 'Location not set'}
+                  : ''}
               </li>
             </ul>
           </div>

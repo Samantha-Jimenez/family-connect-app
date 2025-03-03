@@ -91,7 +91,7 @@ export default function Home() {
                 <div className="mt-6">
                   {activeTab === 'uploads' && <YourPhotosCard />}
                   {activeTab === 'tagged' && <TaggedPhotosCard />}
-                  {activeTab === 'albums' && <p data-theme="light">Albums feature coming soon...</p>}
+                  {activeTab === 'albums' && <p data-theme="light" className="italic">Albums feature coming soon...</p>}
                   {activeTab === 'settings' && <Settings />}
                 </div>
               </div>
