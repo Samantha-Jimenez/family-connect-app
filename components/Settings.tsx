@@ -8,6 +8,8 @@ import { fetchUserAttributes } from '@aws-amplify/auth';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { getFullImageUrl } from '@/utils/imageUtils';
+import { useToast } from '@/context/ToastContext';
+import { useUser } from '@/context/UserContext';
 
 interface UserData {
   first_name: string;
@@ -39,10 +41,10 @@ const Settings = () => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const router = useRouter();
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const [showErrorToast, setShowErrorToast] = useState(false);
+  const { showToast } = useToast();
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const { setUserData: setUserContextData } = useUser();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -94,31 +96,22 @@ const Settings = () => {
     fetchUserData();
   }, [user]);
 
-  // Add useEffect to handle auto-hiding toasts
-  useEffect(() => {
-    if (showSuccessToast || showErrorToast) {
-      const timer = setTimeout(() => {
-        setShowSuccessToast(false);
-        setShowErrorToast(false);
-      }, 3000); // Hide after 3 seconds
-
-      return () => clearTimeout(timer);
-    }
-  }, [showSuccessToast, showErrorToast]);
-  
   if (authStatus !== 'authenticated') {
     return null;
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     if (userData) {
-        setUserData({
-            ...userData,
-            [e.target.name]: e.target.value,
-        });
+      const fieldName = e.target.name.replace('floating_', ''); // Remove 'floating_' prefix
+      setUserData({
+        ...userData,
+        [fieldName]: e.target.value,
+      });
     }
-    if (e.target.name === 'email') {
-        setAuthEmail(e.target.value);
+    if (e.target.name === 'floating_email') {
+      setAuthEmail(e.target.value);
     }
   };
 
@@ -210,8 +203,7 @@ const Settings = () => {
         
         setUploadProgress(100);
         
-        // Show success toast
-        setShowSuccessToast(true);
+        showToast('Profile photo updated successfully!', 'success');
         
         // Reset upload state after a short delay
         setTimeout(() => {
@@ -222,7 +214,7 @@ const Settings = () => {
         
       } catch (error) {
         console.error('Error uploading image:', error);
-        setShowErrorToast(true);
+        showToast('Failed to update profile photo. Please try again.', 'error');
         setIsUploading(false);
         setUploadProgress(0);
       }
@@ -232,50 +224,61 @@ const Settings = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    let profilePhotoUrl = userData?.profile_photo;
-    
-    const formData = new FormData(e.currentTarget);
-    const first_name = formData.get('floating_first_name') as string || userData?.first_name || '';
-    const last_name = formData.get('floating_last_name') as string || userData?.last_name || '';
-    const username = formData.get('floating_username') as string || userData?.username || '';
-    const bio = formData.get('floating_bio') as string || userData?.bio || '';
-    const phone_number = formData.get('floating_phone') as string || userData?.phone_number || '';
-    const birthday = formData.get('floating_birthday') as string || userData?.birthday || '';
-    const city = formData.get('floating_city') as string || userData?.city || '';
-    const state = formData.get('floating_state') as string || userData?.state || '';
-    const email = authEmail || '';
+    try {
+      let profilePhotoUrl = userData?.profile_photo;
+      
+      const formData = new FormData(e.currentTarget);
+      const first_name = formData.get('floating_first_name') as string || userData?.first_name || '';
+      const last_name = formData.get('floating_last_name') as string || userData?.last_name || '';
+      const username = formData.get('floating_username') as string || userData?.username || '';
+      const bio = formData.get('floating_bio') as string || userData?.bio || '';
+      const phone_number = formData.get('floating_phone') as string || userData?.phone_number || '';
+      const birthday = formData.get('floating_birthday') as string || userData?.birthday || '';
+      const city = formData.get('floating_city') as string || userData?.city || '';
+      const state = formData.get('floating_state') as string || userData?.state || '';
+      const email = authEmail || '';
 
-    await saveUserToDB(
-      first_name, 
-      last_name, 
-      email, 
-      username, 
-      bio, 
-      phone_number, 
-      birthday,
-      profilePhotoUrl,
-      city,
-      state
-    );
+      await saveUserToDB(
+        first_name, 
+        last_name, 
+        email, 
+        username, 
+        bio, 
+        phone_number, 
+        birthday,
+        profilePhotoUrl,
+        city,
+        state
+      );
+
+      // Update both local and shared state
+      const newUserData = {
+        first_name,
+        last_name,
+        email,
+        username,
+        bio,
+        phone_number,
+        birthday,
+        profile_photo: profilePhotoUrl,
+        city,
+        state
+      };
+      
+      setUserContextData(newUserData);
+      setUserData(prev => prev ? { ...prev, ...newUserData } : newUserData);
+
+      showToast('Profile updated successfully!', 'success' as const);
+      
+    } catch (error) {
+      console.error('Error saving changes:', error);
+      showToast('Failed to update profile. Please try again.', 'error' as const);
+    }
   };
 
   return (
     <AuthGuard>
       <div className="min-h-screen p-4 sm:p-6">
-        {/* Conditional toast rendering */}
-        <div className="toast toast-top toast-center">
-          {showSuccessToast && (
-            <div className="alert alert-success">
-              <span>Profile photo updated successfully!</span>
-            </div>
-          )}
-          {showErrorToast && (
-            <div className="alert alert-error">
-              <span>Failed to update profile photo. Please try again.</span>
-            </div>
-          )}
-        </div>
-
         <form onSubmit={handlePhotoSubmit} className="card bg-white shadow-xl p-6 mx-auto mt-6">
           <div className="flex flex-col items-center gap-4">
             <div className="avatar">
@@ -337,76 +340,73 @@ const Settings = () => {
             </div>
           </div>
         </form>
-        <form className="card bg-white shadow-xl p-6 mx-auto mt-6" onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="card bg-white shadow-xl p-6 mx-auto mt-6">
           <div className="grid md:grid-cols-2 md:gap-6">
-              <div className="relative z-0 w-full mb-5 group">
-                  <input type="text" value={userData?.first_name || ''} name="first_name" id="floating_first_name" onChange={handleInputChange} className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " required />
-                  <label htmlFor="floating_first_name" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">First name</label>
-              </div>
-              <div className="relative z-0 w-full mb-5 group">
-                  <input type="text" value={userData?.last_name || ''} name="last_name" id="floating_last_name" onChange={handleInputChange} className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " required />
-                  <label htmlFor="floating_last_name" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Last name</label>
-              </div>
+            <div className="relative z-0 w-full mb-5 group">
+              <input type="text" value={userData?.first_name || ''} name="floating_first_name" id="floating_first_name" onChange={handleInputChange} className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " required />
+              <label htmlFor="floating_first_name" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">First name</label>
+            </div>
+            <div className="relative z-0 w-full mb-5 group">
+              <input type="text" value={userData?.last_name || ''} name="floating_last_name" id="floating_last_name" onChange={handleInputChange} className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " required />
+              <label htmlFor="floating_last_name" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Last name</label>
+            </div>
           </div>
           <div className="relative z-0 w-full mb-5 group">
-              <input 
-                type="text" 
-                value={authUsername || ''} 
-                name="username" 
-                id="floating_username" 
-                onChange={(e) => setAuthUsername(e.target.value)}
-                className="block py-2.5 px-0 w-full text-sm bg-transparent border-0 border-b-2 border-gray-300 appearance-none text-black dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" 
-                placeholder=" " 
-                required 
-              />
-              <label htmlFor="floating_username" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Username</label>
+            <input 
+              type="text" 
+              value={authUsername || ''} 
+              name="floating_username" 
+              id="floating_username" 
+              onChange={(e) => setAuthUsername(e.target.value)}
+              className="block py-2.5 px-0 w-full text-sm bg-transparent border-0 border-b-2 border-gray-300 appearance-none text-black dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" 
+              placeholder=" " 
+              required 
+            />
+            <label htmlFor="floating_username" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Username</label>
           </div>
           <div className="relative z-0 w-full mb-5 group">
-              <input type="email" value={authEmail || ''} name="email" id="floating_email" onChange={handleInputChange} className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " required />
-              <label htmlFor="floating_email" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Email address</label>
+            <input type="email" value={authEmail || ''} name="floating_email" id="floating_email" onChange={handleInputChange} className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " required />
+            <label htmlFor="floating_email" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Email address</label>
           </div>
-          <button type="submit" className="text-white bg-[#914F2F] hover:bg-[#914F2F]/90 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Save Changes</button>
-        </form>
-        <form className="card bg-white shadow-xl p-6 mx-auto mt-4" onSubmit={handleSubmit}>
           <div className="grid md:grid-cols-2 md:gap-6">
-              <div className="relative z-0 w-full mb-5 group">
-                  <input type="date" value={userData?.birthday || ''} name="birthday" id="floating_birthday" onChange={handleInputChange} className="block py-2.5 px-0 w-full text-sm bg-transparent border-0 border-b-2 border-gray-300 appearance-none text-black dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" required />
-                  <label htmlFor="floating_birthday" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Birthday (MM/DD/YYYY)</label>
-              </div>
-              <div className="relative z-0 w-full mb-5 group">
-                  <input
-                      type="tel"
-                      value={userData?.phone_number || ''}
-                      name="phone_number"
-                      pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}"
-                      onChange={handleInputChange}
-                      id="floating_phone"
-                      className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
-                      placeholder=" "
-                      required
-                  />
-                  <label htmlFor="floating_phone" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Phone number</label>
-              </div>
-          </div>
-          <div className="relative z-0 w-full mb-5 group">
+            <div className="relative z-0 w-full mb-5 group">
+              <input type="date" value={userData?.birthday || ''} name="floating_birthday" id="floating_birthday" onChange={handleInputChange} className="block py-2.5 px-0 w-full text-sm bg-transparent border-0 border-b-2 border-gray-300 appearance-none text-black dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" required />
+              <label htmlFor="floating_birthday" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Birthday (MM/DD/YYYY)</label>
+            </div>
+            <div className="relative z-0 w-full mb-5 group">
               <input
-                  type="text"
-                  value={userData?.bio || ''}
-                  name="bio"
-                  id="floating_bio"
-                  onChange={handleInputChange}
-                  className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
-                  placeholder=" "
-                  required
+                type="tel"
+                value={userData?.phone_number || ''}
+                name="floating_phone"
+                pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}"
+                onChange={handleInputChange}
+                id="floating_phone"
+                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                placeholder=" "
+                required
               />
-              <label htmlFor="floating_bio" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Bio</label>
+              <label htmlFor="floating_phone" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Phone number</label>
+            </div>
+          </div>
+          <div className="relative z-0 w-full mb-5 group">
+            <input
+              type="text"
+              value={userData?.bio || ''}
+              name="floating_bio"
+              id="floating_bio"
+              onChange={handleInputChange}
+              className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+              placeholder=" "
+              required
+            />
+            <label htmlFor="floating_bio" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Bio</label>
           </div>
           <div className="grid md:grid-cols-2 md:gap-6">
             <div className="relative z-0 w-full mb-5 group">
               <input
                 type="text"
                 value={userData?.city || ''}
-                name="city"
+                name="floating_city"
                 id="floating_city"
                 onChange={handleInputChange}
                 className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
@@ -417,7 +417,7 @@ const Settings = () => {
             <div className="relative z-0 w-full mb-5 group">
               <select
                 value={userData?.state || ''}
-                name="state"
+                name="floating_state"
                 id="floating_state"
                 onChange={handleInputChange}
                 className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"

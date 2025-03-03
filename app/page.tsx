@@ -1,5 +1,4 @@
 "use client";
-
 import { Amplify } from "aws-amplify";
 import { AuthProvider } from '../context/AuthContext';
 import ProfileUserInfoCard from "@/components/ProfileUserInfoCard";
@@ -13,6 +12,8 @@ import { usePathname } from 'next/navigation';
 import YourPhotosCard from "@/components/YourPhotosCard";
 import { useEffect, useState } from 'react';
 import Settings from "@/components/Settings";
+import { ToastProvider } from '../context/ToastContext';
+import { UserProvider } from '../context/UserContext';
 // Move Amplify configuration into a try-catch block
 try {
   const awsconfig = require("../aws-exports").default;
@@ -45,65 +46,68 @@ export default function Home() {
 
   return (
     <AuthProvider>
-      <div className="min-h-screen bg-white p-4 sm:p-6">
-        {/* <h1 className="text-4xl font-bold text-center mb-6 text-[#717568]">Welcome to Our Family Tree</h1> */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_16rem] gap-4 max-w-7xl mx-auto">
-          <div className="col-span-1 sm:col-span-2">
-            <ProfileUserInfoCard currentPath={pathname} />
-          </div>
-          <div className="col-span-1 sm:col-span-2 lg:col-span-1 lg:row-span-5 lg:col-start-3">
-            <Panel />
-          </div>
-          <div className="col-span-1 sm:col-span-2">
-            <CallToAction />
-          </div>
-          
-          <div className="col-span-1 sm:col-span-2">
-            <div className="tabs tabs-bordered">
-              <a 
-                className={`tab tab-lg ${activeTab === 'uploads' ? 'tab-active' : ''}`}
-                onClick={() => setActiveTab('uploads')}
-              >
-                Uploads
-              </a>
-              <a 
-                className={`tab tab-lg ${activeTab === 'tagged' ? 'tab-active' : ''}`}
-                onClick={() => setActiveTab('tagged')}
-              >
-                Tagged
-              </a>
-              <a 
-                className={`tab tab-lg ${activeTab === 'albums' ? 'tab-active' : ''}`}
-                onClick={() => setActiveTab('albums')}
-              >
-                Albums
-              </a>
-              <a 
-                className={`tab tab-lg ${activeTab === 'settings' ? 'tab-active' : ''}`}
-                onClick={() => setActiveTab('settings')}
-              >
-                Settings
-              </a>
-            </div>
+      <ToastProvider>
+        <UserProvider>
+          <div className="min-h-screen bg-white p-4 sm:p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_16rem] gap-4 max-w-7xl mx-auto">
+              <div className="col-span-1 sm:col-span-2">
+                <ProfileUserInfoCard />
+              </div>
+              <div className="col-span-1 sm:col-span-2 lg:col-span-1 lg:row-span-5 lg:col-start-3">
+                <Panel />
+              </div>
+              <div className="col-span-1 sm:col-span-2">
+                <CallToAction />
+              </div>
+              
+              <div className="col-span-1 sm:col-span-2">
+                <div className="tabs tabs-bordered">
+                  <a 
+                    className={`tab tab-lg ${activeTab === 'uploads' ? 'tab-active' : ''}`}
+                    onClick={() => setActiveTab('uploads')}
+                  >
+                    Uploads
+                  </a>
+                  <a 
+                    className={`tab tab-lg ${activeTab === 'tagged' ? 'tab-active' : ''}`}
+                    onClick={() => setActiveTab('tagged')}
+                  >
+                    Tagged
+                  </a>
+                  <a 
+                    className={`tab tab-lg ${activeTab === 'albums' ? 'tab-active' : ''}`}
+                    onClick={() => setActiveTab('albums')}
+                  >
+                    Albums
+                  </a>
+                  <a 
+                    className={`tab tab-lg ${activeTab === 'settings' ? 'tab-active' : ''}`}
+                    onClick={() => setActiveTab('settings')}
+                  >
+                    Settings
+                  </a>
+                </div>
 
-            <div className="mt-6">
-              {activeTab === 'uploads' && <YourPhotosCard />}
-              {activeTab === 'tagged' && <TaggedPhotosCard />}
-              {activeTab === 'albums' && <p>Albums feature coming soon...</p>}
-              {activeTab === 'settings' && <Settings />}
+                <div className="mt-6">
+                  {activeTab === 'uploads' && <YourPhotosCard />}
+                  {activeTab === 'tagged' && <TaggedPhotosCard />}
+                  {activeTab === 'albums' && <p>Albums feature coming soon...</p>}
+                  {activeTab === 'settings' && <Settings />}
+                </div>
+              </div>
+              {/* <div className="col-span-1">
+                <FavoritedPhotosCard />
+              </div> */}
+              {/* <div className="col-span-1 sm:col-span-2">
+                <RecentUploadsCard />
+              </div>
+              <div className="col-span-1 sm:col-span-2">
+                <FamilyMembersCard />
+              </div> */}
             </div>
           </div>
-          {/* <div className="col-span-1">
-            <FavoritedPhotosCard />
-          </div> */}
-          {/* <div className="col-span-1 sm:col-span-2">
-            <RecentUploadsCard />
-          </div>
-          <div className="col-span-1 sm:col-span-2">
-            <FamilyMembersCard />
-          </div> */}
-        </div>
-      </div>
+        </UserProvider>
+      </ToastProvider>
     </AuthProvider>
   );
 }

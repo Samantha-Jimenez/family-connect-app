@@ -6,6 +6,7 @@ import { getUserData } from "@/hooks/dynamoDB";
 import { useAuthenticator } from "@aws-amplify/ui-react";
 import { fetchUserAttributes } from "aws-amplify/auth";
 import { getFullImageUrl } from '@/utils/imageUtils';
+import { useUser } from '@/context/UserContext';
 
 interface UserData {
     first_name: string;
@@ -20,8 +21,8 @@ interface UserData {
     state?: string;
 }
 
-export default function ProfileUserInfoCard({ currentPath }: { currentPath: string }) {
-    const [userData, setUserData] = useState<UserData | null>(null);
+export default function ProfileUserInfoCard() {
+    const { userData, setUserData } = useUser();
     const { user } = useAuthenticator();
     const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
     
@@ -62,7 +63,6 @@ export default function ProfileUserInfoCard({ currentPath }: { currentPath: stri
                 const userAttributes = await fetchUserAttributes();
                 
                 if (data) {
-                    // Update profile photo URL first if it exists
                     if (data.profile_photo?.S) {
                         const photoUrl = getFullImageUrl(data.profile_photo.S);
                         setProfilePhotoUrl(photoUrl);
@@ -103,7 +103,7 @@ export default function ProfileUserInfoCard({ currentPath }: { currentPath: stri
         };
 
         fetchUserData();
-    }, [user]);
+    }, [user, setUserData]);
 
   // Generate a consistent avatar seed using username instead of id
     //   const avatarSeed = userData?.username || 'default';
@@ -132,11 +132,6 @@ export default function ProfileUserInfoCard({ currentPath }: { currentPath: stri
                 )}
               </div>
             </div>
-            {/* {currentPath !== '/profile' && (
-                <button className="btn btn-outline mt-2 bg-[#914F2F] text-white border-0 w-full">
-                    Edit Profile
-                </button>
-            )} */}
           </div>
 
           {/* Right Column - Details */}

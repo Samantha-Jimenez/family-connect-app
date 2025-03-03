@@ -58,7 +58,7 @@ export default function PublicProfile() {
       {/* <h1 className="text-4xl font-bold text-center mb-6 text-[#717568]">User Profile</h1> */}
       {/* User Info */}
       <div className="col-span-1 sm:col-span-2">
-        <ProfileUserInfoCard currentPath={pathname} />
+        <ProfileUserInfoCard/>
       </div>
       <div className="divider col-span-1 sm:col-span-2"></div>
       {/* Albums */}
