@@ -140,7 +140,8 @@ const Settings = () => {
           
           xhr.upload.addEventListener('progress', (event) => {
             if (event.lengthComputable) {
-              const progress = (event.loaded / event.total) * 100;
+              // Limit progress to 90% during upload, reserving the last 10% for processing
+              const progress = (event.loaded / event.total) * 90;
               setUploadProgress(Math.round(progress));
             }
           });
@@ -172,7 +173,8 @@ const Settings = () => {
           throw new Error('Upload response missing key');
         }
 
-        setUploadProgress(70);
+        // Set to 95% while saving to DynamoDB
+        setUploadProgress(95);
         
         // Save to DynamoDB
         await saveUserToDB(
@@ -188,7 +190,8 @@ const Settings = () => {
           userData?.state || ''
         );
 
-        setUploadProgress(90);
+        // Complete the progress
+        setUploadProgress(100);
 
         // Update local state with the new photo URL
         const newPhotoUrl = getFullImageUrl(result.key);
@@ -201,8 +204,6 @@ const Settings = () => {
         setSelectedImage(null);
         setImagePreview(null);
         
-        setUploadProgress(100);
-        
         showToast('Profile photo updated successfully!', 'success');
         
         // Reset upload state after a short delay
@@ -210,7 +211,7 @@ const Settings = () => {
           setIsUploading(false);
           setUploadProgress(0);
           window.location.reload();
-        }, 1000);
+        }, 1000); // Reduced delay to 1 second
         
       } catch (error) {
         console.error('Error uploading image:', error);
@@ -308,6 +309,7 @@ const Settings = () => {
             </div>
             <div className="flex flex-col items-center gap-2 w-full max-w-xs">
               <input
+                data-theme="light"
                 type="file"
                 accept="image/*"
                 onChange={handleImageChange}
@@ -430,7 +432,14 @@ const Settings = () => {
               <label htmlFor="floating_state" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">State</label>
             </div>
           </div>
-          <button type="submit" className="text-white bg-[#914F2F] hover:bg-[#914F2F]/90 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Save Changes</button>
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              className="text-white bg-[#914F2F] hover:bg-[#914F2F]/90 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+            >
+              Save Changes
+            </button>
+          </div>
         </form>
       </div>
     </AuthGuard>
