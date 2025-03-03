@@ -15,19 +15,35 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
-// Helper function to get alert class
-const getAlertClass = (type: ToastType): string => {
+// Add this new helper function after the getAlertClass function
+const getAlertColor = (type: ToastType): string => {
   switch (type) {
     case 'success':
-      return 'alert alert-success shadow-lg';
+      return '#E9F7F3'; // green
     case 'error':
-      return 'alert alert-error shadow-lg';
+      return '#FEF2F3'; // red
     case 'warning':
-      return 'alert alert-warning shadow-lg';
+      return '#FEF7E8'; // yellow
     case 'info':
-      return 'alert alert-info shadow-lg';
+      return '#EBF5FF'; // blue
     default:
-      return 'alert alert-info shadow-lg';
+      return '#EBF5FF'; // default to blue
+  }
+};
+
+// Add this new helper function to get border color
+const getBorderColor = (type: ToastType): string => {
+  switch (type) {
+    case 'success':
+      return '#EAEFEE'; // green border
+    case 'error':
+      return '#FFF8F7'; // red border
+    case 'warning':
+      return '#F9F2E9'; // yellow border
+    case 'info':
+      return '#E6EBF1'; // blue border
+    default:
+      return '#E6EBF1'; // default blue border
   }
 };
 
@@ -51,9 +67,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
       <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[9999] flex flex-col gap-2">
         {toasts.map(toast => {
-          console.log('Rendering toast of type:', getAlertClass(toast.type));
           return (
-            <div key={toast.id} className={`${getAlertClass(toast.type)} w-auto max-w-md`}>
+            <div 
+              key={toast.id} 
+              data-theme="light"
+              style={{
+                '--alert-color': getAlertColor(toast.type),
+                border: `1px solid ${getBorderColor(toast.type)}`,
+              } as React.CSSProperties}
+              className={`alert shadow-lg w-auto max-w-md`}
+            >
               <span className="flex items-center gap-2">
                 {toast.type === 'success' ? (
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

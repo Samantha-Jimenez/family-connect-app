@@ -58,9 +58,7 @@ export async function GET() {
       });
       
       try {
-        const url = await getSignedUrl(s3Client, getObjectCommand, { expiresIn: 3600 });
-        console.log('Generated signed URL for key:', s3Key);
-        
+        const url = await getSignedUrl(s3Client, getObjectCommand, { expiresIn: 3600 });        
         return {
           photo_id: item.photo_id.S || '',
           url,

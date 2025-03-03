@@ -61,7 +61,7 @@ export default function Home() {
               </div>
               
               <div className="col-span-1 sm:col-span-2">
-                <div className="tabs tabs-bordered">
+                <div data-theme="light" className="tabs tabs-bordered">
                   <a 
                     className={`tab tab-lg ${activeTab === 'uploads' ? 'tab-active' : ''}`}
                     onClick={() => setActiveTab('uploads')}
@@ -91,7 +91,7 @@ export default function Home() {
                 <div className="mt-6">
                   {activeTab === 'uploads' && <YourPhotosCard />}
                   {activeTab === 'tagged' && <TaggedPhotosCard />}
-                  {activeTab === 'albums' && <p>Albums feature coming soon...</p>}
+                  {activeTab === 'albums' && <p data-theme="light">Albums feature coming soon...</p>}
                   {activeTab === 'settings' && <Settings />}
                 </div>
               </div>
