@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { savePhotoToDB, getAllFamilyMembers } from '@/hooks/dynamoDB';
 import { getCurrentUser } from 'aws-amplify/auth';
 import Select from 'react-select';
+import { useToast } from '@/context/ToastContext';
 
 interface PhotoUploadProps {
   onUploadComplete: () => void;
@@ -36,6 +37,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
   const [uploadUrl, setUploadUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
+  const { showToast } = useToast();
 
   // Transform familyMembers into UserOption format for react-select
   const familyMemberOptions: UserOption[] = familyMembers.map((member) => ({
@@ -130,11 +132,16 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
       setDateTaken('');
       setSelectedUsers([]);
       
+      // Add success toast
+      showToast('Photo uploaded successfully!', 'success');
+      
       // Call onUploadComplete immediately
       onUploadComplete();
 
     } catch (error) {
       console.error('Upload error:', error);
+      // Add error toast
+      showToast(error instanceof Error ? error.message : 'Failed to upload photo', 'error');
       setError(error instanceof Error ? error.message : 'Failed to upload photo');
     } finally {
       setIsUploading(false);

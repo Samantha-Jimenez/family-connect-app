@@ -22,7 +22,7 @@ interface UserData {
 }
 
 export default function ProfileUserInfoCard() {
-    const { userData, setUserData } = useUser();
+    const { userData } = useUser();
     const { user } = useAuthenticator();
     const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
     
@@ -64,50 +64,20 @@ export default function ProfileUserInfoCard() {
         const fetchUserData = async () => {
             try {
                 const data = await getUserData(user.userId);
-                const userAttributes = await fetchUserAttributes();
                 
-                if (data) {
-                    if (data.profile_photo?.S) {
-                        const photoUrl = getFullImageUrl(data.profile_photo.S);
-                        setProfilePhotoUrl(photoUrl);
-                    } else {
-                        setProfilePhotoUrl(null);
-                    }
-                    
-                    setUserData({
-                        first_name: data.first_name?.S || '',
-                        last_name: data.last_name?.S || '',
-                        email: userAttributes.email || '',
-                        username: data.username?.S || '',
-                        bio: data.bio?.S || '',
-                        phone_number: data.phone_number?.S || '',
-                        birthday: data.birthday?.S || '',
-                        profile_photo: data.profile_photo?.S || '',
-                        city: data.city?.S || '',
-                        state: data.state?.S || '',
-                    });
+                if (data?.profile_photo?.S) {
+                    const photoUrl = getFullImageUrl(data.profile_photo.S);
+                    setProfilePhotoUrl(photoUrl);
                 } else {
-                    setUserData({
-                        first_name: '',
-                        last_name: '',
-                        email: '',
-                        username: '',
-                        bio: '',
-                        phone_number: '',
-                        birthday: '',
-                        profile_photo: '',
-                        city: '',
-                        state: '',
-                    });
                     setProfilePhotoUrl(null);
                 }
             } catch (error) {
-                console.error('Error fetching user data:', error);
+                console.error('Error fetching profile photo:', error);
             }
         };
 
         fetchUserData();
-    }, [user, setUserData]);
+    }, [user]);
 
   // Generate a consistent avatar seed using username instead of id
     //   const avatarSeed = userData?.username || 'default';
