@@ -45,8 +45,12 @@ export default function ProfileUserInfoCard() {
         return <div className="tooltip" data-tip="Pisces"><span className="icon-[icon-park-outline--pisces] text-base"></span></div>;
     };
 
-    const formatBirthday = (dateString: string) => {
+    const formatBirthday = (dateString: any) => {
         if (!dateString) return '';
+        // Check if dateString is a string and has the expected format
+        if (typeof dateString !== 'string' || !dateString.includes('-')) {
+            return '';
+        }
         const [year, month, day] = dateString.split('-').map(num => parseInt(num));
         const date = new Date(year, month - 1, day);
         return date.toLocaleDateString('en-US', {

@@ -10,44 +10,17 @@ const navigation = [
 ]
 
 export default function Navbar({ signOut, username }: { signOut: () => void, username: string }) {
-  const [isDropdownOpen, setDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-
-  // Update useEffect to handle click outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const dropdown = document.querySelector('.dropdown');
-      const dropdownMenu = document.querySelector('.dropdown-content');
-      if (
-        dropdown && 
-        !dropdown.contains(event.target as Node) && 
-        dropdownMenu && 
-        !dropdownMenu.contains(event.target as Node)
-      ) {
-        setDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   const updatedNavigation = navigation.map(item => ({
     ...item,
     current: pathname === item.href
   }));
 
-  const toggleDropdown = () => {
-    setDropdownOpen(!isDropdownOpen);
-  };
-
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!isMobileMenuOpen);
-    setDropdownOpen(false);
   };
 
   const handleSignOut = () => {
@@ -98,38 +71,36 @@ export default function Navbar({ signOut, username }: { signOut: () => void, use
             {/* Profile dropdown */}
             <div className="relative ml-3">
               <div className="dropdown dropdown-end">
-                <div tabIndex={0} role="button" className="btn btn-ghost rounded-btn" onClick={toggleDropdown}>
+                <label 
+                  tabIndex={0} 
+                  className="btn btn-ghost rounded-btn"
+                >
                   <span className="h-8 w-8 rounded-full bg-gray-400 flex items-center justify-center text-white">
                     {username.charAt(0).toUpperCase()}
                   </span>
-                </div>
+                </label>
+                <ul 
+                  tabIndex={0} 
+                  className="menu dropdown-content z-[1] mt-3 p-2 shadow bg-base-100 rounded-box w-52"
+                >
+                  <li>
+                    <button 
+                      onClick={() => router.push('/profile')}
+                      className="w-full text-left rounded px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Your Profile
+                    </button>
+                  </li>
+                  <li>
+                    <button 
+                      onClick={handleSignOut}
+                      className="w-full text-left rounded px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Sign out
+                    </button>
+                  </li>
+                </ul>
               </div>
-              <ul tabIndex={0} className={`absolute right-0 z-10 mt-1 w-48 origin-top-right rounded-md bg-white py-1 ring-1 shadow-lg ring-black/5 transition focus:outline-hidden data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in menu dropdown-content rounded-box p-2 ${isDropdownOpen ? '' : 'hidden'}`}>
-                <li>
-                  <button 
-                    onClick={() => router.push('/profile')}
-                    className="w-full text-left rounded px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    Your Profile
-                  </button>
-                </li>
-                {/* <li>
-                  <button 
-                    onClick={() => router.push('/settings')}
-                    className="w-full text-left rounded px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    Settings
-                  </button>
-                </li> */}
-                <li>
-                  <button 
-                    onClick={handleSignOut}
-                    className="w-full text-left rounded px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    Sign out
-                  </button>
-                </li>
-              </ul>
             </div>
           </div>
         </div>
