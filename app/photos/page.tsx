@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, MouseEvent } from 'react'
+import React, { useState, useEffect, MouseEvent, useMemo } from 'react'
 import Image from 'next/image';
 import PhotoUpload from '@/components/PhotoUpload';
 import { Range, getTrackBackground } from 'react-range';
@@ -78,6 +78,7 @@ const Photos = () => {
   const [dateRange, setDateRange] = useState<DateRange>({ min: 0, max: 0 });
   const [currentDateRange, setCurrentDateRange] = useState<[number, number]>([0, 0]);
   const [filteredImages, setFilteredImages] = useState<Photo[]>([]);
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPhotos();
@@ -179,19 +180,43 @@ const Photos = () => {
     // e.currentTarget.src = '/fallback-image.jpg';
   };
 
-  const filterImagesByDateRange = (range: [number, number]) => {
+  const filterImagesByDateRangeAndLocation = (range: [number, number], location: string | null) => {
     const filtered = images.filter(image => {
       const timestamp = dateToTimestamp(image.metadata.dateTaken || '');
-      return timestamp >= range[0] && timestamp <= range[1];
+      const matchesDateRange = timestamp >= range[0] && timestamp <= range[1];
+      const matchesLocation = !location || (image.metadata.location && Object.values(image.metadata.location).includes(location));
+      return matchesDateRange && matchesLocation;
     });
     setFilteredImages(filtered);
   };
 
   const handleRangeChange = (values: number[]) => {
-    // Ensure we have exactly two values and convert to tuple
     const rangeValues: [number, number] = [values[0], values[1]];
     setCurrentDateRange(rangeValues);
-    filterImagesByDateRange(rangeValues);
+    filterImagesByDateRangeAndLocation(rangeValues, selectedLocation);
+  };
+
+  const handleLocationChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const location = event.target.value || null;
+    setSelectedLocation(location);
+    filterImagesByDateRangeAndLocation(currentDateRange, location);
+  };
+
+  const uniqueLocations = useMemo(() => {
+    const locations = images.map(image => image.metadata.location).filter(Boolean);
+    const locationSet = new Set<string>();
+    locations.forEach(location => {
+      Object.values(location).forEach(loc => {
+        if (loc) locationSet.add(loc);
+      });
+    });
+    return Array.from(locationSet);
+  }, [images]);
+
+  const resetFilters = () => {
+    setSelectedLocation(null);
+    setCurrentDateRange([dateRange.min, dateRange.max]);
+    setFilteredImages(images);
   };
 
   const renderDateRangeSlider = () => {
@@ -306,6 +331,36 @@ const Photos = () => {
 
         <div className="flex justify-center mb-4">
           <PhotoCount filtered={filteredImages.length} total={images.length} />
+        </div>
+
+        {/* Location filter dropdown */}
+        <div className="mb-4">
+          <label htmlFor="location-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Filter by Location:
+          </label>
+          <select
+            id="location-filter"
+            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+            value={selectedLocation || ''}
+            onChange={handleLocationChange}
+          >
+            <option value="">All Locations</option>
+            {uniqueLocations.map((location, index) => (
+              <option key={index} value={location}>
+                {location}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Clear Filters Button */}
+        <div className="mb-4">
+          <button
+            onClick={resetFilters}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Clear Filters
+          </button>
         </div>
 
         {renderDateRangeSlider()}
