@@ -24,6 +24,7 @@ interface UserOption {
 
 const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [location, setLocation] = useState({
     country: '',
     state: '',
@@ -59,9 +60,29 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      
+      // Create a preview URL for the selected file
+      const fileReader = new FileReader();
+      fileReader.onload = (e) => {
+        if (e.target?.result) {
+          setPreviewUrl(e.target.result as string);
+        }
+      };
+      fileReader.readAsDataURL(file);
     }
   };
+
+  // Reset preview when form is submitted or on component unmount
+  useEffect(() => {
+    return () => {
+      // Clean up the preview URL when component unmounts
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,8 +146,9 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
         people_tagged: taggedPeople,
       });
 
-      // Reset form
+      // Reset form and preview
       setSelectedFile(null);
+      setPreviewUrl(null);
       setLocation({ country: '', state: '', city: '', neighborhood: '' });
       setDescription('');
       setDateTaken('');
@@ -167,6 +189,21 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
             dark:file:bg-gray-700 dark:file:text-gray-200"
         />
       </div>
+
+      {previewUrl && (
+        <div className="mt-4">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-200">Photo Preview:</h3>
+          <div className="relative w-full h-[300px] mt-2">
+            <Image
+              src={previewUrl}
+              alt="Selected photo preview"
+              fill
+              className="object-contain rounded-lg"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
+          </div>
+        </div>
+      )}
 
       <div className="space-y-4">
         <h3 className="text-sm font-medium text-gray-700 dark:text-gray-200">Location Details</h3>
