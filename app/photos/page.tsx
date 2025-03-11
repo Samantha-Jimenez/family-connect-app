@@ -4,6 +4,7 @@ import React, { useState, useEffect, MouseEvent, useMemo } from 'react'
 import Image from 'next/image';
 import PhotoUpload from '@/components/PhotoUpload';
 import { Range, getTrackBackground } from 'react-range';
+import { familyTreeData } from '../familytree/page'; // Adjust the import path as necessary
 
 interface Photo {
   url: string;
@@ -68,6 +69,30 @@ const PhotoCount = ({ filtered, total }: { filtered: number, total: number }) =>
   );
 };
 
+// Utility function to extract all family member names
+const extractFamilyMemberNames = (member: FamilyMemberProps): string[] => {
+  let names = [member.name];
+  if (member.spouse) {
+    names.push(member.spouse);
+  }
+  if (member.children) {
+    member.children.forEach(child => {
+      names = names.concat(extractFamilyMemberNames(child));
+    });
+  }
+  if (member.previousSpouses) {
+    member.previousSpouses.forEach(spouse => {
+      names.push(spouse.name);
+      spouse.children.forEach(child => {
+        names = names.concat(extractFamilyMemberNames(child));
+      });
+    });
+  }
+  return names;
+};
+
+const familyMemberNames = Array.from(new Set(extractFamilyMemberNames(familyTreeData)));
+
 const Photos = () => {
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [images, setImages] = useState<Photo[]>([]);
@@ -79,6 +104,7 @@ const Photos = () => {
   const [currentDateRange, setCurrentDateRange] = useState<[number, number]>([0, 0]);
   const [filteredImages, setFilteredImages] = useState<Photo[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+  const [selectedPerson, setSelectedPerson] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPhotos();
@@ -180,12 +206,13 @@ const Photos = () => {
     // e.currentTarget.src = '/fallback-image.jpg';
   };
 
-  const filterImagesByDateRangeAndLocation = (range: [number, number], location: string | null) => {
+  const filterImagesByDateRangeLocationAndPerson = (range: [number, number], location: string | null, person: string | null) => {
     const filtered = images.filter(image => {
       const timestamp = dateToTimestamp(image.metadata.dateTaken || '');
       const matchesDateRange = timestamp >= range[0] && timestamp <= range[1];
       const matchesLocation = !location || (image.metadata.location && Object.values(image.metadata.location).includes(location));
-      return matchesDateRange && matchesLocation;
+      const matchesPerson = !person || (image.metadata.peopleTagged && image.metadata.peopleTagged.includes(person));
+      return matchesDateRange && matchesLocation && matchesPerson;
     });
     setFilteredImages(filtered);
   };
@@ -193,13 +220,19 @@ const Photos = () => {
   const handleRangeChange = (values: number[]) => {
     const rangeValues: [number, number] = [values[0], values[1]];
     setCurrentDateRange(rangeValues);
-    filterImagesByDateRangeAndLocation(rangeValues, selectedLocation);
+    filterImagesByDateRangeLocationAndPerson(rangeValues, selectedLocation, selectedPerson);
   };
 
   const handleLocationChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const location = event.target.value || null;
     setSelectedLocation(location);
-    filterImagesByDateRangeAndLocation(currentDateRange, location);
+    filterImagesByDateRangeLocationAndPerson(currentDateRange, location, selectedPerson);
+  };
+
+  const handlePersonChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const person = event.target.value || null;
+    setSelectedPerson(person);
+    filterImagesByDateRangeLocationAndPerson(currentDateRange, selectedLocation, person);
   };
 
   const uniqueLocations = useMemo(() => {
@@ -215,6 +248,7 @@ const Photos = () => {
 
   const resetFilters = () => {
     setSelectedLocation(null);
+    setSelectedPerson(null);
     setCurrentDateRange([dateRange.min, dateRange.max]);
     setFilteredImages(images);
   };
@@ -348,6 +382,26 @@ const Photos = () => {
             {uniqueLocations.map((location, index) => (
               <option key={index} value={location}>
                 {location}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Person filter dropdown */}
+        <div className="mb-4">
+          <label htmlFor="person-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Filter by Person:
+          </label>
+          <select
+            id="person-filter"
+            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+            value={selectedPerson || ''}
+            onChange={handlePersonChange}
+          >
+            <option value="">All People</option>
+            {familyMemberNames.map((name, index) => (
+              <option key={index} value={name}>
+                {name}
               </option>
             ))}
           </select>

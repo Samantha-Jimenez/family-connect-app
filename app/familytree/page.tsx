@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 
-const familyTreeData = {
+export const familyTreeData = {
   name: "Cynthia",
   children: [
     {
