@@ -13,7 +13,7 @@ export const familyTreeData = {
             { name: "Victor" },
             { name: "Brooklyn" },
             { name: "Miles" },
-            { name: "F." }
+            { name: "Fabrice" }
           ]
         },
         { name: "Christina" }
@@ -29,6 +29,21 @@ export const familyTreeData = {
         }, 
         { name: "Jonathan" }, 
         { name: "Samantha" }
+      ],
+    },
+    {
+      name: "Brenda",
+      children: [
+        { 
+          name: "FaTina", 
+          children: [
+            { name: "Tristan" },
+            { name: "Brenna" },
+            { name: "Ethan" },
+            { name: "Aiden" }
+          ]
+        },
+        { name: "Clifton" }
       ],
     },
     {
@@ -52,7 +67,14 @@ export const familyTreeData = {
             }
           ]
         }, 
-        { name: "Lisa" }, 
+        { 
+          name: "Lisa", 
+          children: [
+            { name: "Taleyah" },
+            { name: "Tiara" },
+            { name: "Treyvon" }
+          ]
+        }, 
         { name: "Maurice" }
       ],
     },
