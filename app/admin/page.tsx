@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useAuthenticator } from "@aws-amplify/ui-react";
-import { addFamilyMember, getAllFamilyMembers, updateFamilyMember } from "@/hooks/dynamoDB";
+import { addFamilyMember, getAllFamilyMembers, updateFamilyMember, addFamilyRelationship, RelationshipType } from "@/hooks/dynamoDB";
 import { FamilyMember } from "@/hooks/dynamoDB";
 
 const initialFormData = {
@@ -27,6 +27,9 @@ const AdminPage = () => {
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState(initialFormData);
+  const [selectedSourceMemberId, setSelectedSourceMemberId] = useState<string | null>(null);
+  const [selectedTargetMemberId, setSelectedTargetMemberId] = useState<string | null>(null);
+  const [relationshipType, setRelationshipType] = useState<RelationshipType>('parent');
 
   useEffect(() => {
     if (user && user.userId === "f16b1510-0001-705f-8680-28689883e706") {
@@ -86,6 +89,22 @@ const AdminPage = () => {
     }
   };
 
+  const handleCreateRelationship = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log(selectedSourceMemberId, selectedTargetMemberId, relationshipType, "selectedSourceMemberId, selectedTargetMemberId, relationshipType");
+    if (!selectedSourceMemberId || !selectedTargetMemberId) {
+      setMessage('Please select both family members and a relationship type.');
+      return;
+    }
+    try {
+      await addFamilyRelationship(selectedSourceMemberId, selectedTargetMemberId, relationshipType);
+      setMessage('Relationship added successfully!');
+    } catch (error) {
+      setMessage('Error adding relationship.');
+      console.error("Error adding relationship:", error);
+    }
+  };
+
   console.log(familyMembers, "familyMembers");
 
   return (
@@ -115,7 +134,7 @@ const AdminPage = () => {
                 value={formData[name as FormDataKey]}
                 onChange={handleInputChange}
                 className="input input-bordered w-full"
-                required={name === 'firstName' || name === 'lastName' || name === 'email'}
+                required={name === 'firstName' || name === 'lastName'}
               />
             </div>
           ))}
@@ -192,6 +211,65 @@ const AdminPage = () => {
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold text-center mb-4 text-gray-800">Create Relationship</h2>
+        <form onSubmit={handleCreateRelationship} className="bg-white shadow-lg p-8 rounded-lg max-w-lg mx-auto space-y-4">
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text text-gray-700">Select Source Family Member</span>
+            </label>
+            <select
+              value={selectedSourceMemberId || ''}
+              onChange={(e) => setSelectedSourceMemberId(e.target.value)}
+              className="select select-bordered w-full"
+            >
+              <option value="" disabled>Select a member</option>
+              {familyMembers.map(member => (
+                <option key={member.family_member_id} value={member.family_member_id}>
+                  {member.first_name} {member.last_name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text text-gray-700">Select Relationship Type</span>
+            </label>
+            <select
+              value={relationshipType}
+              onChange={(e) => setRelationshipType(e.target.value as RelationshipType)}
+              className="select select-bordered w-full"
+            >
+              <option value="parent">Parent</option>
+              <option value="child">Child</option>
+              <option value="spouse">Spouse</option>
+              {/* Add more options if needed */}
+            </select>
+          </div>
+
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text text-gray-700">Select Target Family Member</span>
+            </label>
+            <select
+              value={selectedTargetMemberId || ''}
+              onChange={(e) => setSelectedTargetMemberId(e.target.value)}
+              className="select select-bordered w-full"
+            >
+              <option value="" disabled>Select a member</option>
+              {familyMembers.map(member => (
+                <option key={member.family_member_id} value={member.family_member_id}>
+                  {member.first_name} {member.last_name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button type="submit" className="btn btn-primary w-full">Create Relationship</button>
+        </form>
       </div>
     </div>
   );
