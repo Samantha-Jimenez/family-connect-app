@@ -1,4 +1,4 @@
-import { DynamoDBClient, PutItemCommand, GetItemCommand, UpdateItemCommand, ScanCommand, DeleteItemCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, PutItemCommand, GetItemCommand, UpdateItemCommand, ScanCommand, DeleteItemCommand, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { fetchUserAttributes } from '@aws-amplify/auth';
 import { getCurrentUser } from "aws-amplify/auth";
 
@@ -55,6 +55,14 @@ export interface FamilyMember {
   family_member_id: string;
   first_name: string;
   last_name: string;
+  email: string;
+  username: string;
+  bio: string;
+  phone_number: string;
+  birthday: string;
+  profile_photo: string;
+  city: string;
+  state: string;
 }
 
 // Define relationship types
@@ -282,7 +290,6 @@ export const getAllFamilyMembers = async (): Promise<FamilyMember[]> => {
   try {
     const params = {
       TableName: TABLES.FAMILY,
-      // No specific key needed as we want all items
     };
 
     const command = new ScanCommand(params);
@@ -293,9 +300,17 @@ export const getAllFamilyMembers = async (): Promise<FamilyMember[]> => {
     }
 
     return response.Items.map(item => ({
-      family_member_id: item.family_member_id.S || '',
-      first_name: item.first_name.S || '',
-      last_name: item.last_name.S || ''
+      family_member_id: item.family_member_id?.S || '',
+      first_name: item.first_name?.S || '',
+      last_name: item.last_name?.S || '',
+      email: item.email?.S || '',
+      username: item.username?.S || '',
+      bio: item.bio?.S || '',
+      phone_number: item.phone_number?.S || '',
+      birthday: item.birthday?.S || '',
+      profile_photo: item.profile_photo?.S || '',
+      city: item.city?.S || '',
+      state: item.state?.S || '',
     }));
   } catch (error) {
     console.error("❌ Error fetching family members:", error);
@@ -323,7 +338,15 @@ export const getFamilyMembersWithoutEmail = async (): Promise<FamilyMember[]> =>
     return response.Items.map(item => ({
       family_member_id: item.family_member_id.S || '',
       first_name: item.first_name.S || '',
-      last_name: item.last_name.S || ''
+      last_name: item.last_name.S || '',
+      email: item.email.S || '',
+      username: item.username.S || '',
+      bio: item.bio.S || '',
+      phone_number: item.phone_number.S || '',
+      birthday: item.birthday.S || '',
+      profile_photo: item.profile_photo.S || '',
+      city: item.city.S || '',
+      state: item.state.S || '',
     }));
   } catch (error) {
     console.error("❌ Error fetching family members without email:", error);
@@ -424,6 +447,43 @@ export const removeFamilyRelationship = async (
     console.log("✅ Relationship removed successfully!");
   } catch (error) {
     console.error("❌ Error removing relationship:", error);
+    throw error;
+  }
+};
+
+export const getUserDataById = async (memberId: string) => {
+  try {
+    const params = {
+      TableName: TABLES.FAMILY,
+      Key: {
+        family_member_id: { S: memberId }
+      }
+    };
+
+    const data = await dynamoDB.send(new GetItemCommand(params));
+    return data.Item ? data.Item : null;
+  } catch (error) {
+    console.error("❌ Error fetching user data by ID:", error);
+    throw error;
+  }
+};
+
+export const addFamilyMember = async (memberData: { firstName: string, lastName: string, email: string }) => {
+  try {
+    const params = {
+      TableName: TABLES.FAMILY,
+      Item: {
+        family_member_id: { S: `member_${Date.now()}` },
+        first_name: { S: memberData.firstName },
+        last_name: { S: memberData.lastName },
+        email: { S: memberData.email }
+      }
+    };
+
+    await dynamoDB.send(new PutItemCommand(params));
+    console.log("✅ Family member added successfully!");
+  } catch (error) {
+    console.error("❌ Error adding family member:", error);
     throw error;
   }
 };
