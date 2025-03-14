@@ -3,9 +3,9 @@ import { Amplify } from "aws-amplify";
 import { AuthProvider } from '../context/AuthContext';
 import ProfileUserInfoCard from "@/components/ProfileUserInfoCard";
 import TaggedPhotosCard from "@/components/TaggedPhotosCard";
-import FavoritedPhotosCard from "@/components/FavoritedPhotosCard";
-import FamilyMembersCard from "@/components/FamilyMembersCard";
-import RecentUploadsCard from "@/components/RecentUploadsCard";
+// import FavoritedPhotosCard from "@/components/FavoritedPhotosCard";
+// import FamilyMembersCard from "@/components/FamilyMembersCard";
+// import RecentUploadsCard from "@/components/RecentUploadsCard";
 import Panel from "@/components/Panel";
 import CallToAction from "@/components/CallToAction";
 import { usePathname } from 'next/navigation';
@@ -24,7 +24,7 @@ try {
 
 type Tab = 'uploads' | 'tagged' | 'albums' | 'settings';
 
-export default function Home() {
+const HomePage = () => {
   const pathname = usePathname();
   const [isConfigured, setIsConfigured] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('uploads');
@@ -110,4 +110,6 @@ export default function Home() {
       </ToastProvider>
     </AuthProvider>
   );
-}
+};
+
+export default HomePage;
