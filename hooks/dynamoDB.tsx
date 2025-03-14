@@ -1,6 +1,7 @@
 import { DynamoDBClient, PutItemCommand, GetItemCommand, UpdateItemCommand, ScanCommand, DeleteItemCommand, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { fetchUserAttributes } from '@aws-amplify/auth';
 import { getCurrentUser } from "aws-amplify/auth";
+import { v4 as uuidv4 } from 'uuid';
 
 // Set up DynamoDB client
 const dynamoDB = new DynamoDBClient({ 
@@ -336,17 +337,17 @@ export const getFamilyMembersWithoutEmail = async (): Promise<FamilyMember[]> =>
     }
 
     return response.Items.map(item => ({
-      family_member_id: item.family_member_id.S || '',
-      first_name: item.first_name.S || '',
-      last_name: item.last_name.S || '',
-      email: item.email.S || '',
-      username: item.username.S || '',
-      bio: item.bio.S || '',
-      phone_number: item.phone_number.S || '',
-      birthday: item.birthday.S || '',
-      profile_photo: item.profile_photo.S || '',
-      city: item.city.S || '',
-      state: item.state.S || '',
+      family_member_id: item.family_member_id?.S || '',
+      first_name: item.first_name?.S || '',
+      last_name: item.last_name?.S || '',
+      email: item.email?.S || '',
+      username: item.username?.S || '',
+      bio: item.bio?.S || '',
+      phone_number: item.phone_number?.S || '',
+      birthday: item.birthday?.S || '',
+      profile_photo: item.profile_photo?.S || '',
+      city: item.city?.S || '',
+      state: item.state?.S || '',
     }));
   } catch (error) {
     console.error("❌ Error fetching family members without email:", error);
@@ -386,6 +387,7 @@ export const addFamilyRelationship = async (
     const params = {
       TableName: TABLES.RELATIONSHIPS,
       Item: {
+        relationship_id: { S: uuidv4() },
         source_id: { S: sourceId },
         target_id: { S: targetId },
         relationship_type: { S: relationshipType }
@@ -473,7 +475,7 @@ export const addFamilyMember = async (memberData: { firstName: string, lastName:
     const params = {
       TableName: TABLES.FAMILY,
       Item: {
-        family_member_id: { S: `member_${Date.now()}` },
+        family_member_id: { S: uuidv4() },
         first_name: { S: memberData.firstName },
         last_name: { S: memberData.lastName },
         email: { S: memberData.email }
