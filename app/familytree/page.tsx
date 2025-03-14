@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import Link from 'next/link';
 
 export const familyTreeData = {
   name: "Cynthia",
@@ -125,7 +126,9 @@ const FamilyMember = ({ member }: { member: FamilyMemberProps }) => {
         <div className="avatar">
           <div className="w-12 h-12 bg-gray-300 rounded-full mx-auto"></div>
         </div>
-        <p className="text-gray-800 text-sm font-semibold mt-2">{member.name}</p>
+        <Link href={`/profile/${member.name.toLowerCase().replace(/\s+/g, '-')}`}>
+          <span className="text-gray-800 text-sm font-semibold mt-2">{member.name}</span>
+        </Link>
 
         {/* Toggle Button */}
         {(allChildren.length > 0) && (
