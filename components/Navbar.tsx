@@ -85,7 +85,7 @@ export default function Navbar({ signOut, username }: { signOut: () => void, use
                 >
                   <li>
                     <button 
-                      onClick={() => router.push('/profile')}
+                      onClick={() => router.push(`/profile/${name}`)}
                       className="w-full text-left rounded px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       Your Profile
