@@ -4,7 +4,8 @@ import React, { useState, useEffect, MouseEvent, useMemo } from 'react'
 import Image from 'next/image';
 import PhotoUpload from '@/components/PhotoUpload';
 import { Range, getTrackBackground } from 'react-range';
-import { familyTreeData } from '../familytree/page'; // Adjust the import path as necessary
+import { FamilyMemberProps } from '../familytree/page'; // Adjust the import path as necessary
+import { familyTreeData } from '../familytree/familyTreeData'; // Import familyTreeData
 
 interface Photo {
   url: string;
@@ -239,9 +240,11 @@ const Photos = () => {
     const locations = images.map(image => image.metadata.location).filter(Boolean);
     const locationSet = new Set<string>();
     locations.forEach(location => {
-      Object.values(location).forEach(loc => {
-        if (loc) locationSet.add(loc);
-      });
+      if (location) {
+        Object.values(location).forEach(loc => {
+          if (loc) locationSet.add(loc);
+        });
+      }
     });
     return Array.from(locationSet);
   }, [images]);
