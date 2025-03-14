@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <Authenticator
       className="grid items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)] bg-gray-100"
       signUpAttributes={[]}
-      loginMechanisms={['email']}
+      loginMechanisms={['username', 'email']}
     >
       <AuthStateProvider>{children}</AuthStateProvider>
     </Authenticator>
