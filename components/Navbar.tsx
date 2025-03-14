@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
 const navigation = [
@@ -7,9 +7,9 @@ const navigation = [
   { name: 'Photos', href: '/photos', current: false },
   { name: 'Family Tree', href: '/familytree', current: false },
   { name: 'Calendar', href: '/calendar', current: false },
-]
+];
 
-export default function Navbar({ signOut, username }: { signOut: () => void, username: string }) {
+export default function Navbar({ signOut, username, userFirstName, userLastName, userId }: { signOut: () => void, username: string, userFirstName: string, userLastName: string, userId: string }) {
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
@@ -55,7 +55,7 @@ export default function Navbar({ signOut, username }: { signOut: () => void, use
                     key={item.name}
                     href={item.href}
                     aria-current={item.current ? 'page' : undefined}
-                    className={`${item.current ? 'text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white hover:border-0 hover:border-color-transparent bg-transparent'} hover:border-0 hover:border-color-transparent btn rounded-md px-3 py-2 text-sm font-medium border-0`}
+                    className={`${item.current ? 'text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'} btn rounded-md px-3 py-2 text-sm font-medium`}
                   >
                     {item.name}
                   </a>
@@ -85,12 +85,22 @@ export default function Navbar({ signOut, username }: { signOut: () => void, use
                 >
                   <li>
                     <button 
-                      onClick={() => router.push(`/profile/${name}`)}
+                      onClick={() => router.push(`/profile/${userId}`)}
                       className="w-full text-left rounded px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       Your Profile
                     </button>
                   </li>
+                  {userId === "f16b1510-0001-705f-8680-28689883e706" && (
+                    <li>
+                      <button 
+                        onClick={() => router.push('/admin')}
+                        className="w-full text-left rounded px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        Admin
+                      </button>
+                    </li>
+                  )}
                   <li>
                     <button 
                       onClick={handleSignOut}
@@ -160,5 +170,5 @@ export default function Navbar({ signOut, username }: { signOut: () => void, use
         </div>
       </div>
     </nav>
-  )
+  );
 }

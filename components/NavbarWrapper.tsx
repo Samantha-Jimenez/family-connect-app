@@ -6,9 +6,11 @@ import { CalendarProvider } from '@/context/CalendarContext';
 import { Authenticator } from '@aws-amplify/ui-react';
 import { useState, useEffect } from 'react';
 import { getFamilyMembersWithoutEmail, FamilyMember, updateFamilyMember } from '@/hooks/dynamoDB';
+import { useUser } from '@/context/UserContext';
 
 export default function NavbarWrapper({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuthenticator();
+  const { userData } = useUser();
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [selectedFamilyMember, setSelectedFamilyMember] = useState<string | null>(null);
 
@@ -62,7 +64,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                     }}
                   >
                     {/* Render only the necessary form fields without the default button */}
-                    <Authenticator.SignUp.FormFields excludeDefaultButton />
+                    <Authenticator.SignUp.FormFields />
     
                     <div className="form-control w-full max-w-xs">
                       <label htmlFor="familyMember" className="label">
@@ -104,7 +106,13 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
   return (
     <CalendarProvider>
       <div>
-        <Navbar signOut={signOut} username={user.username} />
+        <Navbar 
+          signOut={signOut} 
+          username={user.username || 'Guest'} 
+          userFirstName={userData?.first_name || 'First Name'} 
+          userLastName={userData?.last_name || 'Last Name'}
+          userId={userData?.userId || ''}
+        />
         <main>
           {children}
         </main>
