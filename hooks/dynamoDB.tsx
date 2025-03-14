@@ -298,3 +298,53 @@ export const getAllFamilyMembers = async (): Promise<FamilyMember[]> => {
     return [];
   }
 };
+
+export const getFamilyMembersWithoutEmail = async (): Promise<FamilyMember[]> => {
+  try {
+    const params = {
+      TableName: TABLES.FAMILY,
+      FilterExpression: "attribute_not_exists(email) OR email = :emptyString",
+      ExpressionAttributeValues: {
+        ":emptyString": { S: "" }
+      }
+    };
+
+    const command = new ScanCommand(params);
+    const response = await dynamoDB.send(command);
+
+    if (!response.Items) {
+      return [];
+    }
+
+    return response.Items.map(item => ({
+      family_member_id: item.family_member_id.S || '',
+      first_name: item.first_name.S || '',
+      last_name: item.last_name.S || ''
+    }));
+  } catch (error) {
+    console.error("❌ Error fetching family members without email:", error);
+    return [];
+  }
+};
+
+export const updateFamilyMember = async (familyMemberId: string, data: { email: string, username: string }) => {
+  try {
+    const params = {
+      TableName: TABLES.FAMILY,
+      Key: {
+        family_member_id: { S: familyMemberId }
+      },
+      UpdateExpression: "SET email = :email, username = :username",
+      ExpressionAttributeValues: {
+        ":email": { S: data.email },
+        ":username": { S: data.username }
+      }
+    };
+
+    await dynamoDB.send(new UpdateItemCommand(params));
+    console.log("✅ Family member updated successfully!");
+  } catch (error) {
+    console.error("❌ Error updating family member:", error);
+    throw error;
+  }
+};
