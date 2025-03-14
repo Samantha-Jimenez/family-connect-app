@@ -1,4 +1,4 @@
-import { DynamoDBClient, PutItemCommand, GetItemCommand, UpdateItemCommand, ScanCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, PutItemCommand, GetItemCommand, UpdateItemCommand, ScanCommand, DeleteItemCommand } from "@aws-sdk/client-dynamodb";
 import { fetchUserAttributes } from '@aws-amplify/auth';
 import { getCurrentUser } from "aws-amplify/auth";
 
@@ -15,7 +15,8 @@ const dynamoDB = new DynamoDBClient({
 const TABLES = {
   FAMILY: "Family",
   PHOTOS: "Photos",
-  ALBUMS: "Albums"
+  ALBUMS: "Albums",
+  RELATIONSHIPS: "Relationships"
 } as const;
 
 // Export all interfaces
@@ -55,6 +56,9 @@ export interface FamilyMember {
   first_name: string;
   last_name: string;
 }
+
+// Define relationship types
+export type RelationshipType = 'parent' | 'sibling' | 'spouse' | 'child' | 'grandchild' | 'niece/nephew';
 
 // Export all functions
 export const saveUserToDB = async (
@@ -345,6 +349,81 @@ export const updateFamilyMember = async (familyMemberId: string, data: { email: 
     console.log("✅ Family member updated successfully!");
   } catch (error) {
     console.error("❌ Error updating family member:", error);
+    throw error;
+  }
+};
+
+// Function to add a relationship
+export const addFamilyRelationship = async (
+  sourceId: string,
+  targetId: string,
+  relationshipType: RelationshipType
+) => {
+  try {
+    const params = {
+      TableName: TABLES.RELATIONSHIPS,
+      Item: {
+        source_id: { S: sourceId },
+        target_id: { S: targetId },
+        relationship_type: { S: relationshipType }
+      }
+    };
+
+    await dynamoDB.send(new PutItemCommand(params));
+    console.log("✅ Relationship added successfully!");
+  } catch (error) {
+    console.error("❌ Error adding relationship:", error);
+    throw error;
+  }
+};
+
+// Function to get relationships for a family member
+export const getFamilyRelationships = async (familyMemberId: string) => {
+  try {
+    const params = {
+      TableName: TABLES.RELATIONSHIPS,
+      FilterExpression: "source_id = :id OR target_id = :id",
+      ExpressionAttributeValues: {
+        ":id": { S: familyMemberId }
+      }
+    };
+
+    const command = new ScanCommand(params);
+    const response = await dynamoDB.send(command);
+
+    if (!response.Items) {
+      return [];
+    }
+
+    return response.Items.map(item => ({
+      source_id: item.source_id.S || '',
+      target_id: item.target_id.S || '',
+      relationship_type: item.relationship_type.S || ''
+    }));
+  } catch (error) {
+    console.error("❌ Error fetching relationships:", error);
+    return [];
+  }
+};
+
+// Function to remove a relationship
+export const removeFamilyRelationship = async (
+  sourceId: string,
+  targetId: string
+) => {
+  try {
+    const params = {
+      TableName: TABLES.RELATIONSHIPS,
+      Key: {
+        source_id: { S: sourceId },
+        target_id: { S: targetId }
+      }
+    };
+
+    await dynamoDB.send(new DeleteItemCommand(params));
+    console.log("✅ Relationship removed successfully!");
+  } catch (error) {
+    console.error("❌ Error removing relationship:", error);
     throw error;
   }
 };
