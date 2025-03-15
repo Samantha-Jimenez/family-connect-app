@@ -27,20 +27,24 @@ export interface TaggedPerson {
 }
 
 export interface PhotoData {
+  album_id: string;
   photo_id: string;
+  url: string;
   s3_key: string;
   uploaded_by: string;
   upload_date: string;
-  description?: string;
-  location?: {
-    country?: string;
-    state?: string;
-    city?: string;
-    neighborhood?: string;
+  metadata: {
+    location: {
+      country: string;
+      state: string;
+      city: string;
+      neighborhood: string;
+    };
+    description: string;
+    date_taken: string;
+    people_tagged: TaggedPerson[];
   };
-  date_taken?: string;
-  people_tagged: TaggedPerson[];
-  album_id?: string;
+  lastModified: string;
 }
 
 export interface AlbumData {
@@ -129,9 +133,6 @@ export const getUserData = async (userId: string) => {
       throw new Error("❌ userId is required.");
     }
 
-    // Add logging to help debug
-    console.log('Attempting to fetch user data for userId:', userId);
-
     const params = {
       TableName: TABLES.FAMILY,
       Key: {
@@ -139,9 +140,7 @@ export const getUserData = async (userId: string) => {
       },
     };
 
-    console.log('DynamoDB params:', params);
     const data = await dynamoDB.send(new GetItemCommand(params));
-    console.log('DynamoDB response:', data);
     
     return data.Item ? data.Item : null;
   } catch (error) {
@@ -201,28 +200,28 @@ export const savePhotoToDB = async (photoData: PhotoData) => {
     console.log('Saving photo with s3_key:', item.s3_key.S);
 
     // Add optional fields only if they exist
-    if (photoData.description) {
-      item.description = { S: photoData.description };
+    if (photoData.metadata.description) {
+      item.description = { S: photoData.metadata.description };
     }
 
-    if (photoData.location) {
+    if (photoData.metadata.location) {
       item.location = {
         M: {
-          country: { S: photoData.location.country || '' },
-          state: { S: photoData.location.state || '' },
-          city: { S: photoData.location.city || '' },
-          neighborhood: { S: photoData.location.neighborhood || '' }
+          country: { S: photoData.metadata.location.country || '' },
+          state: { S: photoData.metadata.location.state || '' },
+          city: { S: photoData.metadata.location.city || '' },
+          neighborhood: { S: photoData.metadata.location.neighborhood || '' }
         }
       };
     }
 
-    if (photoData.date_taken) {
-      item.date_taken = { S: photoData.date_taken };
+    if (photoData.metadata.date_taken) {
+      item.date_taken = { S: photoData.metadata.date_taken };
     }
 
-    if (photoData.people_tagged && photoData.people_tagged.length > 0) {
+    if (photoData.metadata.people_tagged && photoData.metadata.people_tagged.length > 0) {
       item.people_tagged = {
-        L: photoData.people_tagged.map(person => ({
+        L: photoData.metadata.people_tagged.map(person => ({
           M: {
             id: { S: person.id },
             name: { S: person.name }
@@ -487,5 +486,53 @@ export const addFamilyMember = async (memberData: { firstName: string, lastName:
   } catch (error) {
     console.error("❌ Error adding family member:", error);
     throw error;
+  }
+};
+
+// Add this function to get all photos by tagged users
+export const getAllPhotosByTagged = async (taggedUserIds: string[]): Promise<PhotoData[]> => {
+  try {
+    const params = {
+      TableName: TABLES.PHOTOS,
+      FilterExpression: "contains(people_tagged, :taggedUserId)",
+      ExpressionAttributeValues: {
+        ":taggedUserId": { S: taggedUserIds.join(',') }
+      }
+    };
+
+    const command = new ScanCommand(params);
+    const response = await dynamoDB.send(command);
+    console.log(response, "response.Items");
+
+    if (!response.Items) {
+      return [];
+    }
+
+    return response.Items.map(item => ({
+      photo_id: item.photo_id?.S || '',
+      s3_key: item.s3_key?.S || '',
+      uploaded_by: item.uploaded_by?.S || '',
+      upload_date: item.upload_date?.S || '',
+      album_id: item.album_id?.S || '',
+      url: item.url?.S || '',
+      metadata: {
+        location: {
+          country: item.location?.M?.country?.S || '',
+          state: item.location?.M?.state?.S || '',
+          city: item.location?.M?.city?.S || '',
+          neighborhood: item.location?.M?.neighborhood?.S || ''
+        },
+        description: item.description?.S || '',
+        date_taken: item.date_taken?.S || '',
+        people_tagged: item.people_tagged?.L ? item.people_tagged.L.map(tagged => ({
+          id: tagged.M?.id.S || '',
+          name: tagged.M?.name.S || ''
+        })) : [],
+      },
+      lastModified: item.lastModified?.S || ''
+    }));
+  } catch (error) {
+    console.error("❌ Error fetching photos by tagged users:", error);
+    return [];
   }
 };

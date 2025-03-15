@@ -20,22 +20,27 @@ const s3Client = new S3Client({
   },
 });
 
-export async function GET() {
-  try {
-    const command = new ScanCommand({
-      TableName: 'Photos',
-    });
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const taggedUserId = url.searchParams.get('taggedUserId');
 
+  try {
+    const params = {
+      TableName: 'Photos',
+      FilterExpression: taggedUserId ? "contains(people_tagged, :taggedUserId)" : undefined,
+      ExpressionAttributeValues: taggedUserId ? { ":taggedUserId": { S: taggedUserId } } : undefined,
+    };
+
+    const command = new ScanCommand(params);
     const response = await dynamoDB.send(command);
+
     if (!response.Items) {
       return NextResponse.json({ photos: [] });
     }
 
     const bucketName = process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME;
     
-    // Generate signed URLs for each photo
     const photos = await Promise.all(response.Items.map(async (item) => {
-      // Get the raw s3_key and ensure it has the correct format
       const s3Key = item.s3_key.S?.replace(/^photos\/photos\//g, 'photos/') || '';
       
       const getObjectCommand = new GetObjectCommand({
@@ -46,6 +51,7 @@ export async function GET() {
       try {
         const url = await getSignedUrl(s3Client, getObjectCommand, { expiresIn: 3600 });        
         return {
+          album_id: item.album_id?.S || '',
           photo_id: item.photo_id.S || '',
           url,
           s3_key: s3Key,
@@ -57,10 +63,10 @@ export async function GET() {
               state: item.location.M.state?.S || '',
               city: item.location.M.city?.S || '',
               neighborhood: item.location.M.neighborhood?.S || ''
-            } : {},
+            } : { country: '', state: '', city: '', neighborhood: '' },
             description: item.description?.S || '',
-            dateTaken: item.date_taken?.S || '',
-            taggedPeople: item.people_tagged?.L 
+            date_taken: item.date_taken?.S || '',
+            people_tagged: item.people_tagged?.L 
               ? item.people_tagged.L.map((person: any) => ({
                   id: person.M.id.S,
                   name: person.M.name.S
@@ -75,7 +81,6 @@ export async function GET() {
       }
     }));
 
-    // Filter out any null values from failed URL generations
     const validPhotos = photos.filter(photo => photo !== null);
     
     return NextResponse.json({ photos: validPhotos });

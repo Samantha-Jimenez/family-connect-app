@@ -1,26 +1,12 @@
 "use client";
-
 import { useState, useEffect } from 'react';
 import { getCurrentUser } from 'aws-amplify/auth';
 import Image from 'next/image';
+import { PhotoData, TaggedPerson } from '@/hooks/dynamoDB';
 
-interface Photo {
-  photo_id: string;
-  s3_key: string;
-  uploaded_by: string;
-  upload_date: string;
-  url?: string;
-  metadata: {
-    taggedPeople: Array<{
-      id: string;
-      name: string;
-    }>;
-    // ... other metadata fields
-  };
-}
 
 export default function TaggedPhotosCard() {
-  const [taggedPhotos, setTaggedPhotos] = useState<Photo[]>([]);
+  const [taggedPhotos, setTaggedPhotos] = useState<PhotoData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,14 +22,10 @@ export default function TaggedPhotosCard() {
 
       const response = await fetch('/api/photos');
       const data = await response.json();
-      
       // Filter photos where the current user is tagged
-      const filteredPhotos = data.photos.filter((photo: Photo) => {
-        return photo.metadata.taggedPeople.some(person => person.id === user.userId);
+      const filteredPhotos = data.photos.filter((photo: PhotoData) => {
+        return photo.metadata?.people_tagged?.some((person: TaggedPerson) => person.id === user.userId);
       });
-
-      console.log('Current user ID:', user.userId); // Debug log
-      console.log('Tagged photos:', filteredPhotos); // Debug log
       setTaggedPhotos(filteredPhotos);
     } catch (error) {
       console.error("Error fetching tagged photos:", error);

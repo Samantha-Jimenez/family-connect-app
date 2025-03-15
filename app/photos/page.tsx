@@ -6,22 +6,7 @@ import PhotoUpload from '@/components/PhotoUpload';
 import { Range, getTrackBackground } from 'react-range';
 import { FamilyMemberProps } from '../familytree/page'; // Adjust the import path as necessary
 import { familyTreeData } from '../familytree/familyTreeData'; // Import familyTreeData
-
-interface Photo {
-  url: string;
-  metadata: {
-    location?: {
-      country?: string;
-      state?: string;
-      city?: string;
-      neighborhood?: string;
-    };
-    description?: string;
-    dateTaken?: string;
-    peopleTagged?: string;
-  };
-  lastModified?: Date;
-}
+import { FamilyMember, getAllFamilyMembers, getAllPhotosByTagged, PhotoData, TaggedPerson } from '@/hooks/dynamoDB'; // Import the functions
 
 interface DateRange {
   min: number;
@@ -47,7 +32,17 @@ const formatDate = (dateString: string): string => {
 };
 
 const dateToTimestamp = (date: string): number => {
-  return new Date(date).getTime();
+  if (!date) {
+    console.warn('Empty date string encountered, using default date');
+    return new Date('1970-01-01').getTime(); // Use a default date
+  }
+  
+  const parsedDate = new Date(date);
+  if (isNaN(parsedDate.getTime())) {
+    console.error('Invalid date string:', date);
+    return new Date('1970-01-01').getTime(); // Use a default date
+  }
+  return parsedDate.getTime();
 };
 
 const timestampToDate = (timestamp: number): string => {
@@ -92,23 +87,24 @@ const extractFamilyMemberNames = (member: FamilyMemberProps): string[] => {
   return names;
 };
 
-const familyMemberNames = Array.from(new Set(extractFamilyMemberNames(familyTreeData)));
-
 const Photos = () => {
   const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [images, setImages] = useState<Photo[]>([]);
+  const [images, setImages] = useState<PhotoData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<PhotoData | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
   const [dateRange, setDateRange] = useState<DateRange>({ min: 0, max: 0 });
   const [currentDateRange, setCurrentDateRange] = useState<[number, number]>([0, 0]);
-  const [filteredImages, setFilteredImages] = useState<Photo[]>([]);
+  const [filteredImages, setFilteredImages] = useState<PhotoData[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
-  const [selectedPerson, setSelectedPerson] = useState<string | null>(null);
+  const [selectedPerson, setSelectedPerson] = useState<TaggedPerson | null>(null);
+  const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
 
   useEffect(() => {
     fetchPhotos();
+    fetchFamilyMembers(); // Fetch family members on component mount
     
     // Refresh photos every 45 minutes to ensure URLs don't expire
     const interval = setInterval(fetchPhotos, 45 * 60 * 1000);
@@ -119,7 +115,7 @@ const Photos = () => {
   useEffect(() => {
     if (images.length > 0) {
       const timestamps = images
-        .map(img => dateToTimestamp(img.metadata.dateTaken || ''))
+        .map(img => dateToTimestamp(img.metadata?.date_taken || ''))
         .filter(timestamp => !isNaN(timestamp));
       
       const min = Math.min(...timestamps);
@@ -136,7 +132,6 @@ const Photos = () => {
       setLoading(true);
       const response = await fetch('/api/photos');
       const data = await response.json();
-      console.log('Raw API response:', data);
       
       if (data.error) {
         console.error('API returned error:', data.error);
@@ -144,22 +139,27 @@ const Photos = () => {
       }
 
       if (data.photos) {
-        const photoUrls = data.photos.map((photo: any) => {
-          console.log('Processing photo in client:', photo);
-          
+        const photoUrls = data.photos.map((photo: any) => {          
           return {
+            photo_id: photo.photo_id,
+            s3_key: photo.s3_key,
+            uploaded_by: photo.uploaded_by,
+            upload_date: photo.upload_date,
+            description: photo.description,
+            date_taken: photo.date_taken,
+            people_tagged: photo.people_tagged,
+            album_id: photo.album_id,
             url: photo.url,
-            metadata: {
-              location: photo.metadata.location || {},
-              description: photo.metadata.description || '',
-              dateTaken: photo.metadata.dateTaken || '',
-              peopleTagged: photo.metadata.peopleTagged || ''
+            location: {
+              country: photo.location?.country || '',
+              state: photo.location?.state || '',
+              city: photo.location?.city || '',
+              neighborhood: photo.location?.neighborhood || ''
             },
-            lastModified: photo.lastModified ? new Date(photo.lastModified) : undefined
+            lastModified: photo.lastModified ? new Date(photo.lastModified).toISOString() : undefined
           };
         });
         
-        console.log('Processed photos in client:', photoUrls);
         setImages(photoUrls);
       }
     } catch (error) {
@@ -167,6 +167,52 @@ const Photos = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchPhotosByTaggedUser = async (id: string) => {
+    try {
+      setLoading(true);
+
+      const response = await fetch('/api/photos');
+      const data = await response.json();
+
+      const filteredPhotos = data.photos.filter((photo: PhotoData) => {
+        return photo.metadata?.people_tagged?.some((person: TaggedPerson) => person.id === id);
+      });
+      setImages(filteredPhotos);
+      setFilteredImages(filteredPhotos);
+    } catch (error) {
+      console.error('Error fetching photos:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchFamilyMembers = async () => {
+    try {
+      const members = await getAllFamilyMembers();
+      const formattedMembers = members.map(member => ({
+        family_member_id: member.family_member_id,
+        first_name: member.first_name,
+        last_name: member.last_name,
+        email: member.email,
+        username: member.username || '', // Provide default values for missing properties
+        bio: member.bio || '',
+        phone_number: member.phone_number || '',
+        birthday: member.birthday || '',
+        profile_photo: member.profile_photo || '',
+        city: member.city || '',
+        state: member.state || ''
+      }));
+      setFamilyMembers(formattedMembers);
+    } catch (error) {
+      console.error('Error fetching family members:', error);
+    }
+  };
+
+  const mapNameToId = (name: string): string | undefined => {
+    const member = familyMembers.find(member => `${member.first_name} ${member.last_name}` === name);
+    return member ? member.family_member_id : undefined;
   };
 
   const handleNext = () => {
@@ -188,7 +234,7 @@ const Photos = () => {
     }
   };
 
-  const handleImageClick = (photo: Photo) => {
+  const handleImageClick = (photo: PhotoData) => {
     setSelectedPhoto(photo);
   };
 
@@ -207,12 +253,12 @@ const Photos = () => {
     // e.currentTarget.src = '/fallback-image.jpg';
   };
 
-  const filterImagesByDateRangeLocationAndPerson = (range: [number, number], location: string | null, person: string | null) => {
+  const filterImagesByDateRangeLocationAndPerson = (range: [number, number], location: string | null, person: TaggedPerson | null) => {
     const filtered = images.filter(image => {
-      const timestamp = dateToTimestamp(image.metadata.dateTaken || '');
+      const timestamp = dateToTimestamp(image.metadata?.date_taken || '');
       const matchesDateRange = timestamp >= range[0] && timestamp <= range[1];
-      const matchesLocation = !location || (image.metadata.location && Object.values(image.metadata.location).includes(location));
-      const matchesPerson = !person || (image.metadata.peopleTagged && image.metadata.peopleTagged.includes(person));
+      const matchesLocation = !location || (image.metadata?.location && Object.values(image.metadata.location).includes(location));
+      const matchesPerson = !person || (image.metadata?.people_tagged && image.metadata.people_tagged.some(tagged => tagged.id === person.id));
       return matchesDateRange && matchesLocation && matchesPerson;
     });
     setFilteredImages(filtered);
@@ -221,7 +267,8 @@ const Photos = () => {
   const handleRangeChange = (values: number[]) => {
     const rangeValues: [number, number] = [values[0], values[1]];
     setCurrentDateRange(rangeValues);
-    filterImagesByDateRangeLocationAndPerson(rangeValues, selectedLocation, selectedPerson);
+    const taggedPerson = selectedPersonId && selectedPerson ? { id: selectedPersonId, name: selectedPerson.name } : null;
+    filterImagesByDateRangeLocationAndPerson(rangeValues, selectedLocation, taggedPerson);
   };
 
   const handleLocationChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -230,14 +277,32 @@ const Photos = () => {
     filterImagesByDateRangeLocationAndPerson(currentDateRange, location, selectedPerson);
   };
 
-  const handlePersonChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const person = event.target.value || null;
-    setSelectedPerson(person);
-    filterImagesByDateRangeLocationAndPerson(currentDateRange, selectedLocation, person);
+  const handlePersonChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const personName = event.target.value || null;
+
+    if (personName) {
+      const personId = mapNameToId(personName);
+      if (personId) {
+        const taggedPerson: TaggedPerson = { id: personId, name: personName };
+        setSelectedPerson(taggedPerson); // Set as TaggedPerson
+        setSelectedPersonId(personId);
+        // Fetch photos by tagged user when a person is selected
+        await fetchPhotosByTaggedUser(personId);
+      } else {
+        console.error('No ID found for the selected person');
+        setSelectedPerson(null);
+        setSelectedPersonId(null);
+      }
+    } else {
+      console.log("no person selected");
+      setSelectedPerson(null); // Reset to null if no person is selected
+      setSelectedPersonId(null);
+      setFilteredImages(images); // Reset to all images if no person is selected
+    }
   };
 
   const uniqueLocations = useMemo(() => {
-    const locations = images.map(image => image.metadata.location).filter(Boolean);
+    const locations = images.map(image => image.metadata?.location).filter(Boolean);
     const locationSet = new Set<string>();
     locations.forEach(location => {
       if (location) {
@@ -398,13 +463,13 @@ const Photos = () => {
           <select
             id="person-filter"
             className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-            value={selectedPerson || ''}
+            value={selectedPerson ? selectedPerson.name : ''}
             onChange={handlePersonChange}
           >
             <option value="">All People</option>
-            {familyMemberNames.map((name, index) => (
-              <option key={index} value={name}>
-                {name}
+            {familyMembers.map((member, index) => (
+              <option key={index} value={member.first_name + ' ' + member.last_name}>
+                {member.first_name + ' ' + member.last_name}
               </option>
             ))}
           </select>
@@ -432,8 +497,8 @@ const Photos = () => {
                       }`}
                   >
                       <Image
-                          src={photo.url}
-                          alt={photo.metadata.description || 'Photo'}
+                          src={photo.url || '/fallback-image.jpg'}
+                          alt={photo.metadata?.description || 'Photo'}
                           fill
                           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                           priority={index === 0}
@@ -489,8 +554,8 @@ const Photos = () => {
           >
             <Image
               className="rounded-lg object-cover w-full h-full"
-              src={photo.url}
-              alt={photo.metadata.description || 'Photo'}
+              src={photo.url || '/fallback-image.jpg'}
+              alt={photo.metadata?.description || 'Photo'}
               fill
               sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
               priority={index === 0}
@@ -504,9 +569,9 @@ const Photos = () => {
       {selectedPhoto && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={closeModal}>
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-2xl w-full m-4" onClick={handleModalClick}>
-            <div className="relative h-96 mb-4">
+            <div className="relative mb-4">
               <Image
-                src={selectedPhoto.url}
+                src={selectedPhoto.url || '/fallback-image.jpg'}
                 alt="Selected photo"
                 width={500}
                 height={300}
@@ -516,7 +581,7 @@ const Photos = () => {
             </div>
             <div className="space-y-2">
               {selectedPhoto.metadata?.location && typeof selectedPhoto.metadata.location === 'object' && Object.values(selectedPhoto.metadata.location).some(val => val) && (
-                <div className="text-sm">
+                <div className="text-sm text-gray-800 dark:text-gray-200">
                   <span className="font-bold">Location: </span>
                   {[
                     selectedPhoto.metadata.location.country,
@@ -529,21 +594,21 @@ const Photos = () => {
                 </div>
               )}
               {selectedPhoto.metadata?.description && (
-                <p className="text-sm">
+                <p className="text-sm text-gray-800 dark:text-gray-200">
                   <span className="font-bold">Description: </span>
-                  {selectedPhoto.metadata.description}
+                  {selectedPhoto.metadata?.description}
                 </p>
               )}
-              {selectedPhoto.metadata?.dateTaken && (
-                <p className="text-sm">
+              {selectedPhoto.metadata?.date_taken && (
+                <p className="text-sm text-gray-800 dark:text-gray-200">
                   <span className="font-bold">Date Taken: </span>
-                  {formatDate(selectedPhoto.metadata.dateTaken)}
+                  {formatDate(selectedPhoto.metadata?.date_taken || '')}
                 </p>
               )}
-              {selectedPhoto.metadata?.peopleTagged && (
-                <p className="text-sm">
+              {selectedPhoto.metadata?.people_tagged && (
+                <p className="text-sm text-gray-800 dark:text-gray-200">
                   <span className="font-bold">People Tagged: </span>
-                  {selectedPhoto.metadata.peopleTagged}
+                  {selectedPhoto.metadata?.people_tagged.map(person => person.name).join(', ')}
                 </p>
               )}
             </div>

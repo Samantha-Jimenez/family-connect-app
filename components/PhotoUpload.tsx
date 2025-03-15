@@ -140,10 +140,15 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
         s3_key: result.key,
         uploaded_by: user.userId,
         upload_date: new Date().toISOString(),
-        description,
-        location,
-        date_taken: dateTaken,
-        people_tagged: taggedPeople,
+        metadata: {
+          description,
+          location,
+          date_taken: dateTaken,
+          people_tagged: taggedPeople,
+        },
+        album_id: '',
+        url: s3Url,
+        lastModified: new Date().toISOString(),
       });
 
       // Reset form and preview
