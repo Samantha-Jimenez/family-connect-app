@@ -1,95 +1,130 @@
 export const familyTreeData = {
-  name: "Cynthia",
+  first_name: "Cynthia",
+  last_name: "",
   children: [
     {
-      name: "Damaris",
+      first_name: "Damaris",
+      last_name: "",
       children: [
         { 
-          name: "Nicoletta",
+          first_name: "Nicoletta",
+          last_name: "",
           children: [
-            { name: "Victor" },
-            { name: "Brooklyn" },
-            { name: "Miles" },
-            { name: "Fabrice" }
+            { first_name: "Victor", last_name: "" },
+            { first_name: "Brooklyn", last_name: "" },
+            { first_name: "Miles", last_name: "" },
+            { first_name: "Fabrice", last_name: "" }
           ]
         },
-        { name: "Christina" }
+        { first_name: "Christina", last_name: "" }
       ],
     },
     {
-      name: "Sharon",
+      first_name: "Sharon",
+      last_name: "",
       children: [
         { 
-          name: "Victor",
+          first_name: "Victor",
+          last_name: "",
           spouse: "Stefania",
-          children: [{ name: "Alani" }, { name: "Ianna" }]
+          children: [{ first_name: "Alani", last_name: "" }, { first_name: "Ianna", last_name: "" }]
         }, 
-        { name: "Jonathan" }, 
-        { name: "Samantha" }
+        { first_name: "Jonathan", last_name: "" }, 
+        { first_name: "Samantha", last_name: "" }
       ],
     },
     {
-      name: "Brenda",
+      first_name: "Brenda",
+      last_name: "",
       children: [
         { 
-          name: "FaTina", 
+          first_name: "FaTina", 
+          last_name: "",
           children: [
-            { name: "Tristan" },
-            { name: "Brenna" },
-            { name: "Ethan" },
-            { name: "Aiden" }
+            { first_name: "Tristan", last_name: "" },
+            { first_name: "Brenna", last_name: "" },
+            { first_name: "Ethan", last_name: "" },
+            { first_name: "Aiden", last_name: "" }
           ]
         },
-        { name: "Clifton" }
+        { first_name: "Clifton", last_name: "" }
       ],
     },
     {
-      name: "Vanessa",
+      first_name: "Vanessa",
+      last_name: "",
       children: [
         { 
-          name: "Raleigh",
+          first_name: "Raleigh",
+          last_name: "",
           spouse: "Ashley",
           children: [
-            { name: "Bailey" },
-            { name: "Isaiah" }
+            { first_name: "Bailey", last_name: "" },
+            { first_name: "Isaiah", last_name: "" }
           ],
           previousSpouses: [
             {
-              name: "Sandra",
+              first_name: "Sandra",
+              last_name: "",
               children: [
-                { name: "Genesis" },
-                { name: "Isaiah" },
-                { name: "Abigail" }
+                { first_name: "Genesis", last_name: "" },
+                { first_name: "Isaiah", last_name: "" },
+                { first_name: "Abigail", last_name: "" }
               ]
             }
           ]
         }, 
         { 
-          name: "Lisa", 
+          first_name: "Lisa", 
+          last_name: "",
           children: [
-            { name: "Taleyah" },
-            { name: "Tiara" },
-            { name: "Treyvon" }
+            { first_name: "Taleyah", last_name: "" },
+            { first_name: "Tiara", last_name: "" },
+            { first_name: "Treyvon", last_name: "" }
           ]
         }, 
-        { name: "Maurice" }
+        { first_name: "Maurice", last_name: "" }
       ],
     },
     {
-      name: "Frances",
-      children: [{ name: "Ronald" }, { name: "Anthony" }, { name: "Aristalia" }, { name: "John Paul" }],
+      first_name: "Frances",
+      last_name: "",
+      children: [
+        { first_name: "Ronald", last_name: "" },
+        { first_name: "Anthony", last_name: "" },
+        { first_name: "Aristalia", last_name: "" },
+        { first_name: "John Paul", last_name: "" }
+      ],
     },
     {
-      name: "Angela",
-      children: [{ name: "Jessica" }, { name: "Justin" }, { name: "Chevone" }, { name: "Aubrey" }, { name: "Kintara" }, { name: "TJ" }],
+      first_name: "Angela",
+      last_name: "",
+      children: [
+        { first_name: "Jessica", last_name: "" },
+        { first_name: "Justin", last_name: "" },
+        { first_name: "Chevone", last_name: "" },
+        { first_name: "Aubrey", last_name: "" },
+        { first_name: "Kintara", last_name: "" },
+        { first_name: "TJ", last_name: "" }
+      ],
     },
     {
-      name: "Mario",
-      children: [{ name: "Jahson" }, { name: "Javin" }, { name: "Jamari" }],
+      first_name: "Mario",
+      last_name: "",
+      children: [
+        { first_name: "Jahson", last_name: "" },
+        { first_name: "Javin", last_name: "" },
+        { first_name: "Jamari", last_name: "" }
+      ],
     },    
     {
-      name: "Sarih",
-      children: [{ name: "Chyna" }, { name: "Mya" }, { name: "Noah" }],
+      first_name: "Sarih",
+      last_name: "",
+      children: [
+        { first_name: "Chyna", last_name: "" },
+        { first_name: "Mya", last_name: "" },
+        { first_name: "Noah", last_name: "" }
+      ],
     },
   ],
 };
