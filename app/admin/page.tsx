@@ -40,9 +40,7 @@ const AdminPage = () => {
 
   const fetchFamilyMembers = async () => {
     try {
-      console.log("Fetching family members...");
       const members = await getAllFamilyMembers();
-      console.log("Family members fetched:", members);
       setFamilyMembers(members);
     } catch (error) {
       console.error("Error fetching family members:", error);
@@ -105,8 +103,6 @@ const AdminPage = () => {
     }
   };
 
-  console.log(familyMembers, "familyMembers");
-
   return (
     <div className="min-h-screen p-6 bg-gray-50">
       <h1 className="text-4xl font-bold text-center mb-6 text-gray-800">Admin Page</h1>
@@ -153,6 +149,7 @@ const AdminPage = () => {
                 <th className="px-4 py-2 text-left text-gray-700">Last Name</th>
                 <th className="px-4 py-2 text-left text-gray-700">Email</th>
                 <th className="px-4 py-2 text-left text-gray-700">Username</th>
+                <th className="px-4 py-2 text-left text-gray-700">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -184,10 +181,15 @@ const AdminPage = () => {
                     <td className="border-t px-4 py-2 text-gray-800">{member.last_name}</td>
                     <td className="border-t px-4 py-2 text-gray-800">{member.email}</td>
                     <td className="border-t px-4 py-2 text-gray-800">{member.username}</td>
+                    <td className="border-t px-4 py-2 text-gray-800">
+                      <a href={`/profile/${member.family_member_id}`} className="btn btn-secondary">
+                        View Profile
+                      </a>
+                    </td>
                   </tr>
                   {editingMemberId === member.family_member_id && (
                     <tr>
-                      <td colSpan={4}>
+                      <td colSpan={5}>
                         <form onSubmit={handleUpdateMember} className="p-4 bg-gray-100 rounded-lg">
                           {Object.entries(editFormData).map(([key, value]) => (
                             <div key={key} className="mb-2">

@@ -26,8 +26,6 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
 
     fetchFamilyMembers();
   }, []);
-
-  console.log(user, 'user');
   
   // If no user, show the authentication component
   if (!user) {

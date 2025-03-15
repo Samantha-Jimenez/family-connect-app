@@ -35,8 +35,6 @@ export default function YourPhotosCard() {
         photo.uploaded_by === user.userId
       );
 
-      console.log('Current user ID:', user.userId); // Debug log
-      console.log('Filtered photos:', filteredPhotos); // Debug log
       setUserPhotos(filteredPhotos);
     } catch (error) {
       console.error("Error fetching user photos:", error);

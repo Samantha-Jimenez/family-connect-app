@@ -6,6 +6,8 @@ import ProfileUserInfoCard from "@/components/ProfileUserInfoCard";
 import { usePathname } from 'next/navigation';
 import { fetchUserAttributes } from "aws-amplify/auth";
 import UpcomingEvents from "@/components/UpcomingEvents";
+import { getUserDataById } from '@/hooks/dynamoDB';
+import { FamilyMember } from '@/hooks/dynamoDB';
 
 interface UserData {
   first_name: string;
@@ -17,39 +19,57 @@ interface UserData {
   birthday: string;
 }
 
-export default function PublicProfile() {
-  const { user } = useAuthenticator();
-  const [userData, setUserData] = useState<UserData | null>(null);
+export default function ProfilePage() {
   const pathname = usePathname();
-  
+  const member_id = pathname.split('/').pop();
+  const [memberData, setMemberData] = useState<FamilyMember | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    const fetchUserData = async () => {
-      const data = await getUserData(user.userId);
-      const userAttributes = await fetchUserAttributes();
-      if (data) {
-        setUserData({
-          first_name: data.first_name?.S || '',
-          last_name: data.last_name?.S || '',
-          email: userAttributes.email || '',
-          username: data.username?.S || '',
-          bio: data.bio?.S || '',
-          phone_number: data.phone_number?.S || '',
-          birthday: data.birthday?.S || '',
-        });
-      } else {
-        setUserData({ first_name: '', last_name: '', email: '', username: '', bio: '', phone_number: '', birthday: '' });
-      }
-    };
+    if (member_id) {
+      const fetchMemberData = async () => {
+        try {
+          const data = await getUserDataById(member_id as string);
+          if (data) {
+            setMemberData({
+              family_member_id: data.family_member_id?.S || '',
+              first_name: data.first_name?.S || '',
+              last_name: data.last_name?.S || '',
+              email: data.email?.S || '',
+              username: data.username?.S || '',
+              bio: data.bio?.S || '',
+              phone_number: data.phone_number?.S || '',
+              birthday: data.birthday?.S || '',
+              profile_photo: data.profile_photo?.S || '',
+              city: data.city?.S || '',
+              state: data.state?.S || '',
+            });
+          } else {
+            setError('Member not found');
+          }
+        } catch (err) {
+          console.error('Error fetching member data:', err);
+          setError('Error fetching member data');
+        } finally {
+          setLoading(false);
+        }
+      };
 
-    fetchUserData();
-  }, [user]);
+      fetchMemberData();
+    }
+  }, [member_id]);
 
-  if (!userData) {
-    return (
-      <div className="flex justify-center items-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="text-red-500">{error}</div>;
+  }
+
+  if (!memberData) {
+    return <div>No member data available</div>;
   }
 
   return (
@@ -58,7 +78,7 @@ export default function PublicProfile() {
       {/* <h1 className="text-4xl font-bold text-center mb-6 text-[#717568]">User Profile</h1> */}
       {/* User Info */}
       <div className="col-span-1 sm:col-span-2">
-        <ProfileUserInfoCard/>
+        <ProfileUserInfoCard userId={member_id}/>
       </div>
       <div className="divider col-span-1 sm:col-span-2"></div>
       {/* Albums */}

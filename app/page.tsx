@@ -14,6 +14,7 @@ import { useEffect, useState } from 'react';
 import Settings from "@/components/Settings";
 import { ToastProvider } from '../context/ToastContext';
 import { UserProvider } from '../context/UserContext';
+import { useAuthenticator } from '@aws-amplify/ui-react';
 // Move Amplify configuration into a try-catch block
 try {
   const awsconfig = require("../aws-exports").default;
@@ -25,7 +26,7 @@ try {
 type Tab = 'uploads' | 'tagged' | 'albums' | 'settings';
 
 const HomePage = () => {
-  const pathname = usePathname();
+  const { user } = useAuthenticator();
   const [isConfigured, setIsConfigured] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('uploads');
 
@@ -51,7 +52,7 @@ const HomePage = () => {
           <div className="min-h-screen bg-white p-4 sm:p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_16rem] gap-4 max-w-7xl mx-auto">
               <div className="col-span-1 sm:col-span-2">
-                <ProfileUserInfoCard />
+                <ProfileUserInfoCard userId={user.userId}/>
               </div>
               <div className="col-span-1 sm:col-span-2 lg:col-span-1 lg:row-span-5 lg:col-start-3">
                 <Panel />
