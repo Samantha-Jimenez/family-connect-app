@@ -120,7 +120,7 @@ export default function Calendar() {
   };
 
   return (
-    <div className="p-4 bg-white rounded-xl shadow-lg">
+    <div className="p-4 bg-white rounded-xl shadow-lg text-gray-800">
       <FullCalendar
         plugins={[
           dayGridPlugin,
