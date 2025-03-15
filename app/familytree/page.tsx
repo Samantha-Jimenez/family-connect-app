@@ -1,11 +1,17 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from 'next/link';
 import { familyTreeData } from './familyTreeData';
-
+import { getAllFamilyMembers } from "@/hooks/dynamoDB";
+import { FamilyMember as FamilyMemberType } from "@/hooks/dynamoDB";
+import Image from "next/image";
+import { getFullImageUrl } from "@/utils/imageUtils";
 // Define FamilyMemberProps type
 export type FamilyMemberProps = {
-  name: string;
+  id?: string;
+  first_name: string;
+  last_name: string;
+  profile_photo?: string;
   spouse?: string;
   previousSpouses?: {
     name: string;
@@ -14,9 +20,48 @@ export type FamilyMemberProps = {
   children?: FamilyMemberProps[];
 };
 
+// Define a Partial type for FamilyMember
+type PartialFamilyMember = Pick<FamilyMemberType, 'family_member_id' | 'first_name' | 'last_name' | 'profile_photo'>;
+
+// Function to match and update familyTreeData with DB members
+const updateFamilyTreeData = (membersFromDB: PartialFamilyMember[], familyTreeData: FamilyMemberProps) => {
+  const updateMember = (member: FamilyMemberProps) => {
+    const dbMember = membersFromDB.find(dbMem => dbMem.first_name === member.first_name);
+    if (dbMember) {
+      member.id = dbMember.family_member_id;
+      member.first_name = dbMember.first_name;
+      member.last_name = dbMember.last_name;
+      member.profile_photo = dbMember.profile_photo;
+    }
+    member.children?.forEach(updateMember);
+    member.previousSpouses?.forEach(spouse => spouse.children.forEach(updateMember));
+  };
+
+  updateMember(familyTreeData);
+};
+
 // Family Member Component
 const FamilyMember = ({ member }: { member: FamilyMemberProps }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [members, setMembers] = useState<FamilyMemberProps[]>([]);
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchMembers = async () => {
+      const membersFromDB = await getAllFamilyMembers();
+      const formattedMembers: PartialFamilyMember[] = membersFromDB.map(member => ({
+        family_member_id: member.family_member_id,
+        first_name: member.first_name || "Unknown", // Ensure first_name is present
+        last_name: member.last_name || "",
+        profile_photo: getFullImageUrl(member.profile_photo),
+      }));
+
+      setMembers(formattedMembers as FamilyMemberProps[]);
+      updateFamilyTreeData(formattedMembers, familyTreeData);
+    };
+
+    fetchMembers();
+  }, []);
 
   // Combine all children for display
   const allChildren = [
@@ -29,10 +74,21 @@ const FamilyMember = ({ member }: { member: FamilyMemberProps }) => {
       {/* Profile Card */}
       <div className="bg-white shadow-md p-3 rounded-lg text-center w-32 relative">
         <div className="avatar">
-          <div className="w-12 h-12 bg-gray-300 rounded-full mx-auto"></div>
+          {member.profile_photo ? (
+            <Image 
+              src={member.profile_photo} 
+              alt={member.first_name} 
+              className="rounded-full mx-auto" 
+              width={48}
+              height={48}
+              style={{ width: '3rem', height: '3rem' }}
+            />
+          ) : (
+            <div className="w-12 h-12 bg-gray-300 rounded-full mx-auto" style={{ width: '3rem', height: '3rem' }}></div>
+          )}
         </div>
-        <Link href={`/profile/${member.name.toLowerCase().replace(/\s+/g, '-')}`}>
-          <span className="text-gray-800 text-sm font-semibold mt-2">{member.name}</span>
+        <Link href={`/profile/${member.id || member.first_name.toLowerCase().replace(/\s+/g, '-')}`}>
+          <span className="text-gray-800 text-sm font-semibold mt-2">{member.first_name} {member.last_name}</span>
         </Link>
 
         {/* Toggle Button */}

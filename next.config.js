@@ -14,6 +14,7 @@ const nextConfig = {
         pathname: '/photos/**',
       }
     ],
+    domains: ['family-connect-app.s3.us-east-2.amazonaws.com'],
   },
   env: {
     NEXT_PUBLIC_AWS_S3_REGION: process.env.NEXT_PUBLIC_AWS_S3_REGION,
