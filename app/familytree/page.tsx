@@ -26,7 +26,7 @@ type PartialFamilyMember = Pick<FamilyMemberType, 'family_member_id' | 'first_na
 // Function to match and update familyTreeData with DB members
 const updateFamilyTreeData = (membersFromDB: PartialFamilyMember[], familyTreeData: FamilyMemberProps) => {
   const updateMember = (member: FamilyMemberProps) => {
-    const dbMember = membersFromDB.find(dbMem => dbMem.first_name === member.first_name);
+    const dbMember = membersFromDB.find(dbMem => dbMem.first_name === member.first_name && dbMem.last_name.includes(member.last_name));
     if (dbMember) {
       member.id = dbMember.family_member_id;
       member.first_name = dbMember.first_name;

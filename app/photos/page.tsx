@@ -67,7 +67,7 @@ const PhotoCount = ({ filtered, total }: { filtered: number, total: number }) =>
 
 // Utility function to extract all family member names
 const extractFamilyMemberNames = (member: FamilyMemberProps): string[] => {
-  let names = [member.name];
+  let names = [member.first_name];
   if (member.spouse) {
     names.push(member.spouse);
   }
@@ -423,13 +423,13 @@ const Photos = () => {
         //   isUploadOpen ? 'translate-y-4' : 'translate-y-0'
         // }`}
       >
-        <div className="flex items-center justify-center py-4 md:py-8 flex-wrap">
+        {/* <div className="flex items-center justify-center py-4 md:py-8 flex-wrap">
           <button type="button" className="border hover:bg-blue-700 focus:ring-4 focus:outline-none rounded-full text-base font-medium px-5 py-2.5 text-center me-3 mb-3 border-blue-500 text-blue-500 hover:text-white hover:bg-blue-500 bg-gray-900 focus:ring-blue-800">All categories</button>
           <button type="button" className="border border-gray-900 bg-gray-900 hover:border-gray-700 focus:ring-4 focus:outline-none  rounded-full text-base font-medium px-5 py-2.5 text-center me-3 mb-3 text-white focus:ring-gray-800">Shoes</button>
           <button type="button" className="border border-gray-900 bg-gray-900 hover:border-gray-700 focus:ring-4 focus:outline-none  rounded-full text-base font-medium px-5 py-2.5 text-center me-3 mb-3 text-white focus:ring-gray-800">Bags</button>
           <button type="button" className="border border-gray-900 bg-gray-900 hover:border-gray-700 focus:ring-4 focus:outline-none  rounded-full text-base font-medium px-5 py-2.5 text-center me-3 mb-3 text-white focus:ring-gray-800">Electronics</button>
           <button type="button" className="border border-gray-900 bg-gray-900 hover:border-gray-700 focus:ring-4 focus:outline-none  rounded-full text-base font-medium px-5 py-2.5 text-center me-3 mb-3 text-white focus:ring-gray-800">Gaming</button>
-        </div>
+        </div> */}
 
         <div className="flex justify-center mb-4">
           <PhotoCount filtered={filteredImages.length} total={images.length} />
