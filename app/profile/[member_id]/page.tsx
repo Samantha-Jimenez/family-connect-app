@@ -17,6 +17,11 @@ interface UserData {
   bio: string;
   phone_number: string;
   birthday: string;
+  birth_city: string;
+  birth_state: string;
+  profile_photo: string;
+  current_city: string;
+  current_state: string;
 }
 
 export default function ProfilePage() {
@@ -42,8 +47,10 @@ export default function ProfilePage() {
               phone_number: data.phone_number?.S || '',
               birthday: data.birthday?.S || '',
               profile_photo: data.profile_photo?.S || '',
-              city: data.city?.S || '',
-              state: data.state?.S || '',
+              current_city: data.current_city?.S || '',
+              current_state: data.current_state?.S || '',
+              birth_city: data.birth_city?.S || '',
+              birth_state: data.birth_state?.S || '',
             });
           } else {
             setError('Member not found');
@@ -78,7 +85,7 @@ export default function ProfilePage() {
       {/* <h1 className="text-4xl font-bold text-center mb-6 text-[#717568]">User Profile</h1> */}
       {/* User Info */}
       <div className="col-span-1 sm:col-span-2">
-        <ProfileUserInfoCard userId={member_id}/>
+        <ProfileUserInfoCard userId={member_id as string}/>
       </div>
       <div className="divider col-span-1 sm:col-span-2"></div>
       {/* Albums */}

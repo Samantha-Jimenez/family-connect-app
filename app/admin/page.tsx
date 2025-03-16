@@ -12,9 +12,11 @@ const initialFormData = {
   bio: '',
   phoneNumber: '',
   birthday: '',
+  birth_city: '',
+  birth_state: '',
   profilePhoto: '',
-  city: '',
-  state: '',
+  current_city: '',
+  current_state: '',
 };
 
 type FormDataKey = keyof typeof initialFormData;
@@ -117,8 +119,10 @@ const AdminPage = () => {
             { label: 'Phone Number', name: 'phoneNumber', type: 'text' },
             { label: 'Birthday', name: 'birthday', type: 'date' },
             { label: 'Profile Photo URL', name: 'profilePhoto', type: 'text' },
-            { label: 'City', name: 'city', type: 'text' },
-            { label: 'State', name: 'state', type: 'text' },
+            { label: 'Birth City', name: 'birth_city', type: 'text' },
+            { label: 'Birth State', name: 'birth_state', type: 'text' },
+            { label: 'Current City', name: 'current_city', type: 'text' },
+            { label: 'Current State', name: 'current_state', type: 'text' },
           ].map(({ label, name, type }) => (
             <div key={name} className="form-control">
               <label className="label">
@@ -170,9 +174,11 @@ const AdminPage = () => {
                           bio: member.bio,
                           phoneNumber: member.phone_number,
                           birthday: member.birthday,
+                          birth_city: member.birth_city,
+                          birth_state: member.birth_state,
                           profilePhoto: member.profile_photo,
-                          city: member.city,
-                          state: member.state,
+                          current_city: member.current_city,
+                          current_state: member.current_state,
                         });
                       }
                     }}

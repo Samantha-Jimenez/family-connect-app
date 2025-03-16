@@ -6,15 +6,24 @@ import { getAllFamilyMembers } from "@/hooks/dynamoDB";
 import { FamilyMember as FamilyMemberType } from "@/hooks/dynamoDB";
 import Image from "next/image";
 import { getFullImageUrl } from "@/utils/imageUtils";
+
 // Define FamilyMemberProps type
 export type FamilyMemberProps = {
   id?: string;
   first_name: string;
   last_name: string;
   profile_photo?: string;
-  spouse?: string;
+  spouse?: {
+    id?: string;
+    first_name: string;
+    last_name: string;
+    profile_photo?: string;
+  };
   previousSpouses?: {
-    name: string;
+    id?: string;
+    first_name: string;
+    last_name: string;
+    profile_photo?: string;
     children: FamilyMemberProps[];
   }[];
   children?: FamilyMemberProps[];
@@ -57,7 +66,7 @@ const FamilyMember = ({ member }: { member: FamilyMemberProps }) => {
       }));
 
       setMembers(formattedMembers as FamilyMemberProps[]);
-      updateFamilyTreeData(formattedMembers, familyTreeData);
+      updateFamilyTreeData(formattedMembers, familyTreeData as FamilyMemberProps);
     };
 
     fetchMembers();
@@ -129,7 +138,7 @@ const FamilyMember = ({ member }: { member: FamilyMemberProps }) => {
               <div key={`prev-${spouseIndex}`} className="flex flex-col items-center">
                 {/* Spouse card */}
                 <div className="bg-white shadow-md p-2 rounded-lg text-center w-24 mb-4">
-                  <p className="text-gray-700 text-xs font-medium">{spouse.name}</p>
+                  <p className="text-gray-700 text-xs font-medium">{spouse.first_name} {spouse.last_name}</p>
                 </div>
                 
                 {/* Connecting line */}
@@ -150,7 +159,7 @@ const FamilyMember = ({ member }: { member: FamilyMemberProps }) => {
                 {member.spouse && (
                   <>
                     <div className="bg-white shadow-md p-2 rounded-lg text-center w-24 mb-4">
-                      <p className="text-gray-700 text-xs font-medium">{member.spouse}</p>
+                      <p className="text-gray-700 text-xs font-medium">{member.spouse.first_name} {member.spouse.last_name}</p>
                     </div>
                     
                     {/* Connecting line */}
@@ -180,7 +189,7 @@ const FamilyTree = () => {
       <h1 className="text-4xl font-bold text-center mb-6 text-gray-800">Our Family Tree</h1>
       <div className="flex justify-center">
         <div className="flex flex-col md:flex-row md:items-start">
-          <FamilyMember member={familyTreeData} />
+          <FamilyMember member={familyTreeData as FamilyMemberProps} />
         </div>
       </div>
     </div>

@@ -69,7 +69,7 @@ const PhotoCount = ({ filtered, total }: { filtered: number, total: number }) =>
 const extractFamilyMemberNames = (member: FamilyMemberProps): string[] => {
   let names = [member.first_name];
   if (member.spouse) {
-    names.push(member.spouse);
+    names.push(member.spouse.first_name);
   }
   if (member.children) {
     member.children.forEach(child => {
@@ -78,7 +78,7 @@ const extractFamilyMemberNames = (member: FamilyMemberProps): string[] => {
   }
   if (member.previousSpouses) {
     member.previousSpouses.forEach(spouse => {
-      names.push(spouse.name);
+      names.push(`${spouse.first_name} ${spouse.last_name}`);
       spouse.children.forEach(child => {
         names = names.concat(extractFamilyMemberNames(child));
       });
@@ -132,14 +132,14 @@ const Photos = () => {
       setLoading(true);
       const response = await fetch('/api/photos');
       const data = await response.json();
-      
+
       if (data.error) {
         console.error('API returned error:', data.error);
         return;
       }
 
       if (data.photos) {
-        const photoUrls = data.photos.map((photo: any) => {          
+        const photoUrls = data.photos.map((photo: any) => {
           return {
             photo_id: photo.photo_id,
             s3_key: photo.s3_key,
@@ -200,9 +200,11 @@ const Photos = () => {
         bio: member.bio || '',
         phone_number: member.phone_number || '',
         birthday: member.birthday || '',
+        birth_city: member.birth_city || '',
+        birth_state: member.birth_state || '',
         profile_photo: member.profile_photo || '',
-        city: member.city || '',
-        state: member.state || ''
+        current_city: member.current_city || '',
+        current_state: member.current_state || ''
       }));
       setFamilyMembers(formattedMembers);
     } catch (error) {

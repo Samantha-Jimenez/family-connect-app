@@ -138,13 +138,14 @@ const Settings = () => {
 
         // Ensure parentData is an object before spreading
         if (typeof parentData === 'object' && parentData !== null) {
-          setUserData({
+          const updatedData = {
             ...userData,
             [parentField]: {
-              ...parentData, // Spread only if it's an object
+              ...(typeof parentData === 'object' && parentData !== null ? parentData : {}),
               [childField]: e.target.value,
             },
-          });
+          };
+          setUserData(updatedData);
         }
       } else {
         // Special handling for phone number formatting
