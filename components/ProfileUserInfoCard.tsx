@@ -12,9 +12,11 @@ interface UserData {
   bio: string;
   phone_number: string;
   birthday: string;
+  birth_city: string;
+  birth_state: string;
   profile_photo?: string;
-  city?: string;
-  state?: string;
+  current_city?: string;
+  current_state?: string;
 }
 
 export default function ProfileUserInfoCard({ userId }: { userId: string }) {
@@ -67,9 +69,11 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
             bio: data.bio?.S || '',
             phone_number: data.phone_number?.S || '',
             birthday: data.birthday?.S || '',
+            birth_city: data.birth_city?.S || '',
+            birth_state: data.birth_state?.S || '',
             profile_photo: data.profile_photo?.S || '',
-            city: data.city?.S || '',
-            state: data.state?.S || '',
+            current_city: data.current_city?.S || '',
+            current_state: data.current_state?.S || '',
           });
 
           if (data.profile_photo?.S) {
@@ -133,11 +137,20 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
             </div>
           </div>
           <div className="md:pl-8">
-            <h2 className="text-xl font-semibold text-black mb-2">Birthday</h2>
-            <p className="text-gray-500 mb-4 flex items-center">
+            <h2 className="text-xl font-semibold text-black mb-2">Birth</h2>
+            <p className="text-gray-500 flex items-center">
               {userData?.birthday ? (
                 <>
+                  <span className="icon-[mdi--date-range] h-5 mr-2" />
                   {formatBirthday(userData.birthday)} - <span className="text-xl ml-1">{getZodiacSign(userData.birthday)}</span>
+                </>
+              ) : ''}
+            </p>
+            <p className="text-gray-500 mb-4 flex items-center">
+              {userData?.birth_city || userData?.birth_state ? (
+                <>
+                  <span className="icon-[mdi--map-marker] h-5 mr-2" />
+                  {userData.birth_city}, {userData.birth_state}
                 </>
               ) : ''}
             </p>
@@ -153,8 +166,8 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
               </li>
               <li className="flex items-center">
                 <span className="icon-[mdi--map-marker] h-5 mr-2" />
-                {userData?.city && userData?.state 
-                  ? `${userData.city}, ${userData.state}`
+                {userData?.current_city && userData?.current_state 
+                  ? `${userData.current_city}, ${userData.current_state}`
                   : ''}
               </li>
             </ul>

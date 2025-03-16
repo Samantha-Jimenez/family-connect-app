@@ -65,9 +65,11 @@ export interface FamilyMember {
   bio: string;
   phone_number: string;
   birthday: string;
+  birth_city: string;
+  birth_state: string;
   profile_photo: string;
-  city: string;
-  state: string;
+  current_city: string;
+  current_state: string;
 }
 
 // Define relationship types
@@ -82,9 +84,11 @@ export const saveUserToDB = async (
   bio: string, 
   phone_number: string, 
   birthday: string,
+  birth_city: string,
+  birth_state: string,
   profile_photo?: string,
-  city?: string,
-  state?: string
+  current_city?: string,
+  current_state?: string
 ) => {
   try {
     const userAttributes = await fetchUserAttributes();
@@ -113,9 +117,11 @@ export const saveUserToDB = async (
         bio: { S: bio },
         phone_number: { S: phone_number },
         birthday: { S: birthday },
+        birth_city: { S: birth_city },
+        birth_state: { S: birth_state },
         profile_photo: { S: profile_photo || '' },
-        city: { S: city || '' },
-        state: { S: state || '' }
+        current_city: { S: current_city || '' },
+        current_state: { S: current_state || '' }
       },
     };
 
@@ -308,9 +314,11 @@ export const getAllFamilyMembers = async (): Promise<FamilyMember[]> => {
       bio: item.bio?.S || '',
       phone_number: item.phone_number?.S || '',
       birthday: item.birthday?.S || '',
+      birth_city: item.birth_city?.S || '',
+      birth_state: item.birth_state?.S || '',
       profile_photo: item.profile_photo?.S || '',
-      city: item.city?.S || '',
-      state: item.state?.S || '',
+      current_city: item.current_city?.S || '',
+      current_state: item.current_state?.S || '',
     }));
   } catch (error) {
     console.error("❌ Error fetching family members:", error);
@@ -344,9 +352,11 @@ export const getFamilyMembersWithoutEmail = async (): Promise<FamilyMember[]> =>
       bio: item.bio?.S || '',
       phone_number: item.phone_number?.S || '',
       birthday: item.birthday?.S || '',
+      birth_city: item.birth_city?.S || '',
+      birth_state: item.birth_state?.S || '',
       profile_photo: item.profile_photo?.S || '',
-      city: item.city?.S || '',
-      state: item.state?.S || '',
+      current_city: item.current_city?.S || '',
+      current_state: item.current_state?.S || '',
     }));
   } catch (error) {
     console.error("❌ Error fetching family members without email:", error);

@@ -19,9 +19,11 @@ interface UserData {
   bio: string;
   phone_number: string;
   birthday: string;
+  birth_city: string;
+  birth_state: string;
   profile_photo?: string;
-  city?: string;
-  state?: string;
+  current_city?: string;
+  current_state?: string;
 }
 
 const US_STATES = [
@@ -58,9 +60,11 @@ const Settings = () => {
           bio: data.bio?.S || '',
           phone_number: data.phone_number?.S || '',
           birthday: data.birthday?.S || '',
+          birth_city: data.birth_city?.S || '',
+          birth_state: data.birth_state?.S || '',
           profile_photo: data.profile_photo?.S || undefined,
-          city: data.city?.S || undefined,
-          state: data.state?.S || undefined,
+          current_city: data.current_city?.S || undefined,
+          current_state: data.current_state?.S || undefined,
         });
       } else {
         setUserData({
@@ -71,9 +75,11 @@ const Settings = () => {
           bio: '',
           phone_number: '',
           birthday: '',
+          birth_city: '',
+          birth_state: '',
           profile_photo: undefined,
-          city: undefined,
-          state: undefined,
+          current_city: undefined,
+          current_state: undefined,
         });
       }
     };
@@ -124,21 +130,38 @@ const Settings = () => {
   ) => {
     if (userData) {
       const fieldName = e.target.name.replace('floating_', ''); // Remove 'floating_' prefix
-      
-      // Special handling for phone number formatting
-      if (fieldName === 'phone') {
-        const formattedNumber = formatPhoneNumber(e.target.value);
+
+      // Check if the field is part of a nested object
+      if (fieldName.includes('.')) {
+        const [parentField, childField] = fieldName.split('.');
+        const parentData = userData[parentField as keyof UserData];
+
+        // Ensure parentData is an object before spreading
+        if (typeof parentData === 'object' && parentData !== null) {
+          setUserData({
+            ...userData,
+            [parentField]: {
+              ...parentData, // Spread only if it's an object
+              [childField]: e.target.value,
+            },
+          });
+        }
+      } else {
+        // Special handling for phone number formatting
+        if (fieldName === 'phone') {
+          const formattedNumber = formatPhoneNumber(e.target.value);
+          setUserData({
+            ...userData,
+            phone_number: formattedNumber,
+          });
+          return;
+        }
+
         setUserData({
           ...userData,
-          phone_number: formattedNumber,
+          [fieldName]: e.target.value,
         });
-        return;
       }
-
-      setUserData({
-        ...userData,
-        [fieldName]: e.target.value,
-      });
     }
     if (e.target.name === 'floating_email') {
       setAuthEmail(e.target.value);
@@ -215,9 +238,11 @@ const Settings = () => {
           userData?.bio || '',
           userData?.phone_number || '',
           userData?.birthday || '',
+          userData?.birth_city || '',
+          userData?.birth_state || '',
           result.key,
-          userData?.city || '',
-          userData?.state || ''
+          userData?.current_city || '',
+          userData?.current_state || ''
         );
 
         // Complete the progress
@@ -265,8 +290,10 @@ const Settings = () => {
       const bio = formData.get('floating_bio') as string || userData?.bio || '';
       const phone_number = formData.get('floating_phone') as string || userData?.phone_number || '';
       const birthday = formData.get('floating_birthday') as string || userData?.birthday || '';
-      const city = formData.get('floating_city') as string || userData?.city || '';
-      const state = formData.get('floating_state') as string || userData?.state || '';
+      const birth_city = formData.get('floating_birth_city') as string || userData?.birth_city || '';
+      const birth_state = formData.get('floating_birth_state') as string || userData?.birth_state || '';
+      const current_city = formData.get('floating_current_city') as string || userData?.current_city || '';
+      const current_state = formData.get('floating_current_state') as string || userData?.current_state || '';
       const email = authEmail || '';
 
       await saveUserToDB(
@@ -277,9 +304,11 @@ const Settings = () => {
         bio, 
         phone_number, 
         birthday,
+        birth_city,
+        birth_state,
         profilePhotoUrl,
-        city,
-        state
+        current_city,
+        current_state
       );
 
       // Update local state
@@ -292,9 +321,11 @@ const Settings = () => {
         bio,
         phone_number,
         birthday,
+        birth_city,
+        birth_state,
         profile_photo: profilePhotoUrl,
-        city,
-        state
+        current_city,
+        current_state
       } : null);
 
       // Refresh the user data in context
@@ -384,6 +415,35 @@ const Settings = () => {
               <label htmlFor="floating_last_name" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Last name</label>
             </div>
           </div>
+          <div className="grid md:grid-cols-2 md:gap-6">
+            <div className="relative z-0 w-full mb-5 group">
+              <input
+                type="text"
+                value={userData?.birth_city || ''}
+                name="floating_birth_city"
+                id="floating_birth_city"
+                onChange={handleInputChange}
+                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                placeholder=" "
+              />
+              <label htmlFor="floating_birth_city" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Birth City/Town</label>
+            </div>
+            <div className="relative z-0 w-full mb-5 group">
+              <select
+                value={userData?.birth_state || ''}
+                name="floating_birth_state"
+                id="floating_birth_state"
+                onChange={handleInputChange}
+                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+              >
+                <option value="">Select Birth State</option>
+                {US_STATES.map(state => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
+              </select>
+              <label htmlFor="floating_birth_state" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Birth State</label>
+            </div>
+          </div>
           <div className="relative z-0 w-full mb-5 group">
             <input 
               type="text" 
@@ -448,29 +508,29 @@ const Settings = () => {
             <div className="relative z-0 w-full mb-5 group">
               <input
                 type="text"
-                value={userData?.city || ''}
-                name="floating_city"
-                id="floating_city"
+                value={userData?.current_city || ''}
+                name="floating_current_city"
+                id="floating_current_city"
                 onChange={handleInputChange}
                 className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
                 placeholder=" "
               />
-              <label htmlFor="floating_city" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">City/Town</label>
+              <label htmlFor="floating_current_city" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Current City/Town</label>
             </div>
             <div className="relative z-0 w-full mb-5 group">
               <select
-                value={userData?.state || ''}
-                name="floating_state"
-                id="floating_state"
+                value={userData?.current_state || ''}
+                name="floating_current_state"
+                id="floating_current_state"
                 onChange={handleInputChange}
                 className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
               >
-                <option value="">Select State</option>
+                <option value="">Select Current State</option>
                 {US_STATES.map(state => (
                   <option key={state} value={state}>{state}</option>
                 ))}
               </select>
-              <label htmlFor="floating_state" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">State</label>
+              <label htmlFor="floating_current_state" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">State</label>
             </div>
           </div>
           <div className="flex gap-2">

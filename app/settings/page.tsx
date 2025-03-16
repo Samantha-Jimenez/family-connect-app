@@ -14,6 +14,10 @@ interface UserData {
   bio: string;
   phone_number: string;
   birthday: string;
+  birth_city: string;
+  birth_state: string;
+  current_city: string;
+  current_state: string;
 }
 
 const Settings = () => {
@@ -35,6 +39,10 @@ const Settings = () => {
           bio: data.bio?.S || '',
           phone_number: data.phone_number?.S || '',
           birthday: data.birthday?.S || '',
+          birth_city: data.birth_city?.S || '',
+          birth_state: data.birth_state?.S || '',
+          current_city: data.current_city?.S || '',
+          current_state: data.current_state?.S || '',
         });
         setUsername(data.username?.S || '');
       } else {
@@ -46,6 +54,10 @@ const Settings = () => {
           bio: '',
           phone_number: '',
           birthday: '',
+          birth_city: '',
+          birth_state: '',
+          current_city: '',
+          current_state: '',
         });
       }
     };
@@ -92,9 +104,21 @@ const Settings = () => {
     const bio = formData.get('floating_bio') as string || userData?.bio || '';
     const phone_number = formData.get('floating_phone') as string || userData?.phone_number || '';
     const birthday = formData.get('floating_birthday') as string || userData?.birthday || '';
+    const birth_city = formData.get('floating_birth_city') as string || userData?.birth_city || '';
+    const birth_state = formData.get('floating_birth_state') as string || userData?.birth_state || '';
     const email = authEmail || '';
 
-    await saveUserToDB(first_name, last_name, email, username, bio, phone_number, birthday);
+    await saveUserToDB(
+      first_name, 
+      last_name, 
+      email, 
+      username, 
+      bio, 
+      phone_number, 
+      birthday, 
+      birth_city,
+      birth_state
+    );
   };
 
   return (
