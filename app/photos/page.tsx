@@ -364,7 +364,7 @@ const Photos = () => {
           values={currentDateRange}
           step={86400000} // One day in milliseconds
           min={dateRange.min}
-          max={dateRange.max} // Use adjusted max
+          max={dateRange.max}
           onChange={handleRangeChange}
           renderTrack={({ props, children }) => (
             <div
@@ -382,12 +382,16 @@ const Photos = () => {
               {children}
             </div>
           )}
-          renderThumb={({ props }) => (
-            <div
-              {...props}
-              className="h-4 w-4 rounded-full bg-blue-500 focus:outline-none"
-            />
-          )}
+          renderThumb={({ props, isDragged }) => {
+            const { key, ...restProps } = props;
+            return (
+              <div
+                key={key}
+                {...restProps}
+                className={`h-4 w-4 rounded-full bg-blue-500 focus:outline-none ${isDragged ? 'shadow-lg' : ''}`}
+              />
+            );
+          }}
         />
       </div>
     );
@@ -514,24 +518,24 @@ const Photos = () => {
 
         <div id="default-carousel" className="relative w-full" data-carousel="slide">
           <div className="relative h-56 overflow-hidden rounded-lg md:h-96">
-              {filteredImages.map((photo, index) => (
-                  <div
-                      key={index}
-                      className={`absolute w-full h-full transition-opacity duration-700 ease-in-out ${
-                          index === currentIndex ? 'opacity-100' : 'opacity-0'
-                      }`}
-                  >
-                      <Image
-                          src={photo.url || '/fallback-image.jpg'}
-                          alt={photo.metadata?.description || 'Photo'}
-                          fill
-                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                          priority={index === 0}
-                          className="object-cover"
-                          onError={handleImageError}
-                      />
-                  </div>
-              ))}
+            {filteredImages.map((photo, index) => (
+              <div
+                key={index}
+                className={`absolute w-full h-full transition-opacity duration-700 ease-in-out ${
+                  index === currentIndex ? 'opacity-100' : 'opacity-0'
+                }`}
+              >
+                <Image
+                  src={photo.url || '/fallback-image.jpg'}
+                  alt={photo.metadata?.description || 'Photo'}
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  priority={index === 0}
+                  className="object-cover"
+                  onError={handleImageError}
+                />
+              </div>
+            ))}
           </div>
           <div className="absolute z-30 flex -translate-x-1/2 bottom-5 left-1/2 space-x-3 rtl:space-x-reverse">
               {filteredImages.map((_, index) => (
