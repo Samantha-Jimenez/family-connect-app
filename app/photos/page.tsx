@@ -113,8 +113,9 @@ const Photos = () => {
   }, []);
 
   useEffect(() => {
-    if (images.length > 0) {
-      const timestamps = images
+    const validFilteredImages = filteredImages.filter(img => img.metadata?.date_taken);
+    if (validFilteredImages.length > 0) {
+      const timestamps = validFilteredImages
         .map(img => dateToTimestamp(img.metadata?.date_taken || ''))
         .filter(timestamp => !isNaN(timestamp));
       
@@ -123,9 +124,20 @@ const Photos = () => {
       
       setDateRange({ min, max });
       setCurrentDateRange([min, max]);
-      setFilteredImages(images);
+    } else if (images.length > 0) {
+      // Fallback to all images if no filtered images are present
+      const validImages = images.filter(img => img.metadata?.date_taken);
+      const timestamps = validImages
+        .map(img => dateToTimestamp(img.metadata?.date_taken || ''))
+        .filter(timestamp => !isNaN(timestamp));
+      
+      const min = Math.min(...timestamps);
+      const max = Math.max(...timestamps);
+      
+      setDateRange({ min, max });
+      setCurrentDateRange([min, max]);
     }
-  }, [images]);
+  }, [images, filteredImages, selectedPerson, selectedLocation, selectedPersonId]);
 
   const fetchPhotos = async () => {
     try {
@@ -141,21 +153,23 @@ const Photos = () => {
       if (data.photos) {
         const photoUrls = data.photos.map((photo: any) => {
           return {
+            album_id: photo.album_id,
             photo_id: photo.photo_id,
             s3_key: photo.s3_key,
             uploaded_by: photo.uploaded_by,
             upload_date: photo.upload_date,
-            description: photo.description,
-            date_taken: photo.date_taken,
-            people_tagged: photo.people_tagged,
-            album_id: photo.album_id,
-            url: photo.url,
-            location: {
-              country: photo.location?.country || '',
-              state: photo.location?.state || '',
-              city: photo.location?.city || '',
-              neighborhood: photo.location?.neighborhood || ''
+            metadata: {
+              description: photo.metadata?.description,
+              date_taken: photo.metadata?.date_taken,
+              people_tagged: photo.metadata?.people_tagged,
+              location: {
+                country: photo.metadata?.location?.country || '',
+                state: photo.metadata?.location?.state || '',
+                city: photo.metadata?.location?.city || '',
+                neighborhood: photo.metadata?.location?.neighborhood || ''
+              },
             },
+            url: photo.url,
             lastModified: photo.lastModified ? new Date(photo.lastModified).toISOString() : undefined
           };
         });
@@ -316,15 +330,24 @@ const Photos = () => {
     return Array.from(locationSet);
   }, [images]);
 
-  const resetFilters = () => {
+  const resetFilters = async () => {
     setSelectedLocation(null);
     setSelectedPerson(null);
+    setSelectedPersonId(null);
     setCurrentDateRange([dateRange.min, dateRange.max]);
+    
+    // Fetch all photos again to reset the view
+    await fetchPhotos();
+    
+    // Reset the filtered images to all images
     setFilteredImages(images);
   };
 
   const renderDateRangeSlider = () => {
-    if (dateRange.min === 0 && dateRange.max === 0) return null;
+    if (dateRange.min === dateRange.max) return null;
+
+    // Check if there is more than one photo
+    // if (filteredImages.length <= 1) return null;
 
     return (
       <div className="mb-8 px-4">
@@ -341,7 +364,7 @@ const Photos = () => {
           values={currentDateRange}
           step={86400000} // One day in milliseconds
           min={dateRange.min}
-          max={dateRange.max}
+          max={dateRange.max} // Use adjusted max
           onChange={handleRangeChange}
           renderTrack={({ props, children }) => (
             <div
