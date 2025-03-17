@@ -66,6 +66,7 @@ export default function YourPhotosCard() {
               fill
               className="object-cover rounded"
               sizes="(max-width: 768px) 33vw, 20vw"
+              priority={true}
             />
           </div>
         ))}
