@@ -138,22 +138,22 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
           </div>
           <div className="md:pl-8">
             <h2 className="text-xl font-semibold text-black mb-2">Birth</h2>
-            <p className="text-gray-500 flex items-center">
+            <div className="text-gray-500 flex items-center">
               {userData?.birthday ? (
                 <>
                   <span className="icon-[mdi--date-range] h-5 mr-2" />
                   {formatBirthday(userData.birthday)} - <span className="text-xl ml-1">{getZodiacSign(userData.birthday)}</span>
                 </>
               ) : ''}
-            </p>
-            <p className="text-gray-500 mb-4 flex items-center">
+            </div>
+            <div className="text-gray-500 mb-4 flex items-center">
               {userData?.birth_city || userData?.birth_state ? (
                 <>
                   <span className="icon-[mdi--map-marker] h-5 mr-2" />
                   {userData.birth_city}, {userData.birth_state}
                 </>
               ) : ''}
-            </p>
+            </div>
             <h2 className="text-xl font-semibold text-black mb-1">Contact Information</h2>
             <ul className="text-gray-500">
               <li className="flex items-center">
