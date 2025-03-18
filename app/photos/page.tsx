@@ -175,6 +175,7 @@ const Photos = () => {
         });
         
         setImages(photoUrls);
+        setFilteredImages(photoUrls); // Initialize filteredImages with all photos
       }
     } catch (error) {
       console.error('Error fetching photos:', error);
