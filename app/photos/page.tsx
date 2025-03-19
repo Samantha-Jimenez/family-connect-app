@@ -638,7 +638,17 @@ const Photos = () => {
               {selectedPhoto.metadata?.people_tagged && (
                 <p className="text-sm text-gray-800 dark:text-gray-200">
                   <span className="font-bold">People Tagged: </span>
-                  {selectedPhoto.metadata?.people_tagged.map(person => person.name).join(', ')}
+                  {selectedPhoto.metadata?.people_tagged.map((person, index) => (
+                    <React.Fragment key={person.id}>
+                      {index > 0 && ', '}
+                      <a 
+                        href={`/profile/${person.id}`} 
+                        className="text-blue-500 hover:underline"
+                      >
+                        {person.name}
+                      </a>
+                    </React.Fragment>
+                  ))}
                 </p>
               )}
             </div>
