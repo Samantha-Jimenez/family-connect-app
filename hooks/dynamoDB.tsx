@@ -147,16 +147,21 @@ export const getUserData = async (userId: string) => {
     };
 
     const data = await dynamoDB.send(new GetItemCommand(params));
-    
-    return data.Item ? data.Item : null;
+
+    if (!data.Item) {
+      throw new Error('User not found');
+    }
+
+    // Extract first and last name from the response
+    const firstName = data.Item.first_name?.S || '';
+    const lastName = data.Item.last_name?.S || '';
+
+    return {
+      first_name: firstName,
+      last_name: lastName,
+    };
   } catch (error) {
     console.error("❌ Error fetching user data:", error);
-    if (error instanceof Error) {
-      console.error("Error details:", {
-        message: error.message,
-        name: error.name
-      });
-    }
     return null;
   }
 };

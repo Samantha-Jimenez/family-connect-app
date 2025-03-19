@@ -6,7 +6,7 @@ import PhotoUpload from '@/components/PhotoUpload';
 import { Range, getTrackBackground } from 'react-range';
 import { FamilyMemberProps } from '../familytree/page'; // Adjust the import path as necessary
 import { familyTreeData } from '../familytree/familyTreeData'; // Import familyTreeData
-import { FamilyMember, getAllFamilyMembers, getAllPhotosByTagged, PhotoData, TaggedPerson } from '@/hooks/dynamoDB'; // Import the functions
+import { FamilyMember, getAllFamilyMembers, getAllPhotosByTagged, PhotoData, TaggedPerson, getUserData } from '@/hooks/dynamoDB'; // Import the functions
 
 interface DateRange {
   min: number;
@@ -101,6 +101,7 @@ const Photos = () => {
   const [selectedPerson, setSelectedPerson] = useState<TaggedPerson | null>(null);
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
+  const [uploaderName, setUploaderName] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPhotos();
@@ -138,6 +139,12 @@ const Photos = () => {
       setCurrentDateRange([min, max]);
     }
   }, [images, filteredImages, selectedPerson, selectedLocation, selectedPersonId]);
+
+  useEffect(() => {
+    if (selectedPhoto?.uploaded_by) {
+      fetchUploaderName(selectedPhoto.uploaded_by);
+    }
+  }, [selectedPhoto]);
 
   const fetchPhotos = async () => {
     try {
@@ -398,6 +405,20 @@ const Photos = () => {
     );
   };
 
+  const fetchUploaderName = async (userId: string) => {
+    try {
+      const userDetails = await getUserData(userId);
+      if (userDetails) {
+        setUploaderName(`${userDetails.first_name} ${userDetails.last_name}`);
+      } else {
+        setUploaderName('Unknown User');
+      }
+    } catch (error) {
+      console.error('Error fetching uploader details:', error);
+      setUploaderName('Unknown User');
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -635,10 +656,10 @@ const Photos = () => {
                   {formatDate(selectedPhoto.metadata?.date_taken || '')}
                 </p>
               )}
-              {selectedPhoto.metadata?.people_tagged && (
+              {selectedPhoto.metadata?.people_tagged && selectedPhoto.metadata.people_tagged.length > 0 && (
                 <p className="text-sm text-gray-800 dark:text-gray-200">
                   <span className="font-bold">People Tagged: </span>
-                  {selectedPhoto.metadata?.people_tagged.map((person, index) => (
+                  {selectedPhoto.metadata.people_tagged.map((person, index) => (
                     <React.Fragment key={person.id}>
                       {index > 0 && ', '}
                       <a 
@@ -649,6 +670,17 @@ const Photos = () => {
                       </a>
                     </React.Fragment>
                   ))}
+                </p>
+              )}
+              {uploaderName && (
+                <p className="text-sm text-gray-800 dark:text-gray-200">
+                  <span className="font-bold">Uploaded By: </span>
+                  <a 
+                    href={`/profile/${selectedPhoto?.uploaded_by}`} 
+                    className="text-blue-500 hover:underline"
+                  >
+                    {uploaderName}
+                  </a>
                 </p>
               )}
             </div>
