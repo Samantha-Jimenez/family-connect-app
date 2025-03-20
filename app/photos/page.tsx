@@ -7,6 +7,7 @@ import { Range, getTrackBackground } from 'react-range';
 import { FamilyMemberProps } from '../familytree/page'; // Adjust the import path as necessary
 import { familyTreeData } from '../familytree/familyTreeData'; // Import familyTreeData
 import { FamilyMember, getAllFamilyMembers, getAllPhotosByTagged, PhotoData, TaggedPerson, getUserData } from '@/hooks/dynamoDB'; // Import the functions
+import { getCurrentUser } from 'aws-amplify/auth'; // Import your auth function
 
 interface DateRange {
   min: number;
@@ -102,6 +103,18 @@ const Photos = () => {
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [uploaderName, setUploaderName] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [formData, setFormData] = useState({
+    location: {
+      country: '',
+      state: '',
+      city: '',
+      neighborhood: ''
+    },
+    description: '',
+    peopleTagged: [] as TaggedPerson[]
+  });
 
   useEffect(() => {
     fetchPhotos();
@@ -143,6 +156,30 @@ const Photos = () => {
   useEffect(() => {
     if (selectedPhoto?.uploaded_by) {
       fetchUploaderName(selectedPhoto.uploaded_by);
+    }
+  }, [selectedPhoto]);
+
+  useEffect(() => {
+    // Fetch the current user's ID on component mount
+    const fetchCurrentUserId = async () => {
+      try {
+        const user = await getCurrentUser();
+        setCurrentUserId(user.userId); // Assuming user object has a userId property
+      } catch (error) {
+        console.error('Error fetching current user ID:', error);
+      }
+    };
+
+    fetchCurrentUserId();
+  }, []);
+
+  useEffect(() => {
+    if (selectedPhoto) {
+      setFormData({
+        location: selectedPhoto.metadata.location,
+        description: selectedPhoto.metadata.description || '',
+        peopleTagged: selectedPhoto.metadata.people_tagged || []
+      });
     }
   }, [selectedPhoto]);
 
@@ -419,6 +456,85 @@ const Photos = () => {
     }
   };
 
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Implement the logic to update the photo data
+    console.log('Form submitted:', formData);
+    setIsEditing(false);
+  };
+
+  const renderEditForm = () => (
+    <form className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Location</label>
+        <input
+          type="text"
+          value={formData.location.country}
+          onChange={(e) => setFormData({ ...formData, location: { ...formData.location, country: e.target.value } })}
+          placeholder="Country"
+          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+        />
+        <input
+          type="text"
+          value={formData.location.state}
+          onChange={(e) => setFormData({ ...formData, location: { ...formData.location, state: e.target.value } })}
+          placeholder="State"
+          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+        />
+        <input
+          type="text"
+          value={formData.location.city}
+          onChange={(e) => setFormData({ ...formData, location: { ...formData.location, city: e.target.value } })}
+          placeholder="City"
+          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+        />
+        <input
+          type="text"
+          value={formData.location.neighborhood}
+          onChange={(e) => setFormData({ ...formData, location: { ...formData.location, neighborhood: e.target.value } })}
+          placeholder="Neighborhood"
+          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+        <textarea
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">People Tagged</label>
+        <input
+          type="text"
+          value={formData.peopleTagged.map(person => person.name).join(', ')}
+          onChange={(e) => {
+            const names = e.target.value.split(',').map(name => name.trim());
+            setFormData({ ...formData, peopleTagged: names.map(name => ({ id: '', name })) });
+          }}
+          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+        />
+      </div>
+      <div className="flex justify-end space-x-2">
+        <button
+          type="button"
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          onClick={() => setIsEditing(false)}
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+          onClick={handleFormSubmit}
+        >
+          Save
+        </button>
+      </div>
+    </form>
+  );
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -631,65 +747,79 @@ const Photos = () => {
               />
             </div>
             <div className="space-y-2">
-              {selectedPhoto.metadata?.location && typeof selectedPhoto.metadata.location === 'object' && Object.values(selectedPhoto.metadata.location).some(val => val) && (
-                <div className="text-sm text-gray-800 dark:text-gray-200">
-                  <span className="font-bold">Location: </span>
-                  {[
-                    selectedPhoto.metadata.location.country,
-                    selectedPhoto.metadata.location.state,
-                    selectedPhoto.metadata.location.city,
-                    selectedPhoto.metadata.location.neighborhood
-                  ]
-                    .filter(Boolean)
-                    .join(', ')}
-                </div>
-              )}
-              {selectedPhoto.metadata?.description && (
-                <p className="text-sm text-gray-800 dark:text-gray-200">
-                  <span className="font-bold">Description: </span>
-                  {selectedPhoto.metadata?.description}
-                </p>
-              )}
-              {selectedPhoto.metadata?.date_taken && (
-                <p className="text-sm text-gray-800 dark:text-gray-200">
-                  <span className="font-bold">Date Taken: </span>
-                  {formatDate(selectedPhoto.metadata?.date_taken || '')}
-                </p>
-              )}
-              {selectedPhoto.metadata?.people_tagged && selectedPhoto.metadata.people_tagged.length > 0 && (
-                <p className="text-sm text-gray-800 dark:text-gray-200">
-                  <span className="font-bold">People Tagged: </span>
-                  {selectedPhoto.metadata.people_tagged.map((person, index) => (
-                    <React.Fragment key={person.id}>
-                      {index > 0 && ', '}
+              {isEditing ? renderEditForm() : (
+                <>
+                  {selectedPhoto.metadata?.location && typeof selectedPhoto.metadata.location === 'object' && Object.values(selectedPhoto.metadata.location).some(val => val) && (
+                    <div className="text-sm text-gray-800 dark:text-gray-200">
+                      <span className="font-bold">Location: </span>
+                      {[
+                        selectedPhoto.metadata.location.country,
+                        selectedPhoto.metadata.location.state,
+                        selectedPhoto.metadata.location.city,
+                        selectedPhoto.metadata.location.neighborhood
+                      ]
+                        .filter(Boolean)
+                        .join(', ')}
+                    </div>
+                  )}
+                  {selectedPhoto.metadata?.description && (
+                    <p className="text-sm text-gray-800 dark:text-gray-200">
+                      <span className="font-bold">Description: </span>
+                      {selectedPhoto.metadata?.description}
+                    </p>
+                  )}
+                  {selectedPhoto.metadata?.date_taken && (
+                    <p className="text-sm text-gray-800 dark:text-gray-200">
+                      <span className="font-bold">Date Taken: </span>
+                      {formatDate(selectedPhoto.metadata?.date_taken || '')}
+                    </p>
+                  )}
+                  {selectedPhoto.metadata?.people_tagged && selectedPhoto.metadata.people_tagged.length > 0 && (
+                    <p className="text-sm text-gray-800 dark:text-gray-200">
+                      <span className="font-bold">People Tagged: </span>
+                      {selectedPhoto.metadata.people_tagged.map((person, index) => (
+                        <React.Fragment key={person.id}>
+                          {index > 0 && ', '}
+                          <a 
+                            href={`/profile/${person.id}`} 
+                            className="text-blue-500 hover:underline"
+                          >
+                            {person.name}
+                          </a>
+                        </React.Fragment>
+                      ))}
+                    </p>
+                  )}
+                  {uploaderName && (
+                    <p className="text-sm text-gray-800 dark:text-gray-200">
+                      <span className="font-bold">Uploaded By: </span>
                       <a 
-                        href={`/profile/${person.id}`} 
+                        href={`/profile/${selectedPhoto?.uploaded_by}`} 
                         className="text-blue-500 hover:underline"
                       >
-                        {person.name}
+                        {uploaderName}
                       </a>
-                    </React.Fragment>
-                  ))}
-                </p>
-              )}
-              {uploaderName && (
-                <p className="text-sm text-gray-800 dark:text-gray-200">
-                  <span className="font-bold">Uploaded By: </span>
-                  <a 
-                    href={`/profile/${selectedPhoto?.uploaded_by}`} 
-                    className="text-blue-500 hover:underline"
-                  >
-                    {uploaderName}
-                  </a>
-                </p>
+                    </p>
+                  )}
+                </>
               )}
             </div>
-            <button
-              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-              onClick={closeModal}
-            >
-              Close
-            </button>
+            <div className="flex justify-end space-x-2">
+              {currentUserId === selectedPhoto?.uploaded_by && (
+                <button
+                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                  onClick={() => setIsEditing(true)}
+                >
+                  Edit
+                </button>
+              )}
+              <button
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                onClick={closeModal}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
