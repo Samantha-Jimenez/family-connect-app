@@ -9,7 +9,7 @@ import TaggedPhotosCard from "@/components/TaggedPhotosCard";
 import Panel from "@/components/Panel";
 import CallToAction from "@/components/CallToAction";
 import { usePathname } from 'next/navigation';
-import YourPhotosCard from "@/components/YourPhotosCard";
+import UploadedPhotosCard from "@/components/UploadedPhotosCard";
 import { useEffect, useState } from 'react';
 import Settings from "@/components/Settings";
 import { ToastProvider } from '../context/ToastContext';
@@ -90,7 +90,7 @@ const HomePage = () => {
                 </div>
 
                 <div className="mt-6">
-                  {activeTab === 'uploads' && <YourPhotosCard />}
+                  {activeTab === 'uploads' && <UploadedPhotosCard />}
                   {activeTab === 'tagged' && <TaggedPhotosCard />}
                   {activeTab === 'albums' && <p data-theme="light" className="italic">Albums feature coming soon...</p>}
                   {activeTab === 'settings' && <Settings />}
