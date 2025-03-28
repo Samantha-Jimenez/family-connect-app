@@ -3,15 +3,30 @@ import { useState, useEffect } from 'react';
 import { getCurrentUser } from 'aws-amplify/auth';
 import Image from 'next/image';
 import { PhotoData, TaggedPerson } from '@/hooks/dynamoDB';
+import PhotoModal from '@/components/PhotoModal';
 
 
 export default function TaggedPhotosCard() {
   const [taggedPhotos, setTaggedPhotos] = useState<PhotoData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPhoto, setSelectedPhoto] = useState<PhotoData | null>(null);
+  const [uploaderName, setUploaderName] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
 
   useEffect(() => {
     fetchTaggedPhotos();
+    fetchCurrentUserId();
   }, []);
+
+  const fetchCurrentUserId = async () => {
+    try {
+      const user = await getCurrentUser();
+      setCurrentUserId(user.userId);
+    } catch (error) {
+      console.error('Error fetching current user ID:', error);
+    }
+  };
 
   const fetchTaggedPhotos = async () => {
     try {
@@ -34,6 +49,38 @@ export default function TaggedPhotosCard() {
     }
   };
 
+  const handleImageClick = (photo: PhotoData) => {
+    setSelectedPhoto(photo);
+    fetchUploaderName(photo.uploaded_by);
+  };
+
+  const fetchUploaderName = async (userId: string) => {
+    try {
+      const userDetails = await getUserData(userId);
+      if (userDetails) {
+        setUploaderName(`${userDetails.first_name} ${userDetails.last_name}`);
+      } else {
+        setUploaderName('Unknown User');
+      }
+    } catch (error) {
+      console.error('Error fetching uploader details:', error);
+      setUploaderName('Unknown User');
+    }
+  };
+
+  const closeModal = () => {
+    setSelectedPhoto(null);
+  };
+
+  const handleImageError: React.ReactEventHandler<HTMLImageElement> = (e) => {
+    console.error('Error loading image:', e.currentTarget.src);
+  };
+
+  const renderEditForm = () => {
+    // Implement the form rendering logic if needed
+    return <div>Edit form goes here</div>;
+  };
+
   if (loading) {
     return (
       <div className="card bg-white text-black shadow-lg p-6">
@@ -50,7 +97,7 @@ export default function TaggedPhotosCard() {
       
       <div className="mt-4 grid grid-cols-3 gap-2">
         {taggedPhotos.slice(0, 6).map((photo, index) => (
-          <div key={photo.photo_id} className="relative aspect-square">
+          <div key={photo.photo_id} className="relative aspect-square" onClick={() => handleImageClick(photo)}>
             <Image
               src={photo.url || ''}
               alt={`Tagged Photo ${index + 1}`}
@@ -62,12 +109,18 @@ export default function TaggedPhotosCard() {
         ))}
       </div>
 
-      {/* <button 
-        className="btn btn-outline mt-4 bg-[#ffdaad] border-0 text-gray-700 w-full"
-        onClick={() => window.location.href = '/your-photos'}
-      >
-        View All Tagged Photos
-      </button> */}
+      {selectedPhoto && (
+        <PhotoModal
+          photo={selectedPhoto}
+          uploaderName={uploaderName}
+          currentUserId={currentUserId}
+          isEditing={isEditing}
+          setIsEditing={setIsEditing}
+          closeModal={closeModal}
+          handleImageError={handleImageError}
+          renderEditForm={renderEditForm}
+        />
+      )}
     </div>
   );
 }
