@@ -3,18 +3,16 @@ import { Amplify } from "aws-amplify";
 import { AuthProvider } from '../context/AuthContext';
 import ProfileUserInfoCard from "@/components/ProfileUserInfoCard";
 import TaggedPhotosCard from "@/components/TaggedPhotosCard";
-// import FavoritedPhotosCard from "@/components/FavoritedPhotosCard";
-// import FamilyMembersCard from "@/components/FamilyMembersCard";
-// import RecentUploadsCard from "@/components/RecentUploadsCard";
 import Panel from "@/components/Panel";
 import CallToAction from "@/components/CallToAction";
-import { usePathname } from 'next/navigation';
 import UploadedPhotosCard from "@/components/UploadedPhotosCard";
 import { useEffect, useState } from 'react';
 import Settings from "@/components/Settings";
 import { ToastProvider } from '../context/ToastContext';
 import { UserProvider } from '../context/UserContext';
 import { useAuthenticator } from '@aws-amplify/ui-react';
+import FavoritedPhotosCard from "@/components/FavoritedPhotosCard";
+
 // Move Amplify configuration into a try-catch block
 try {
   const awsconfig = require("../aws-exports").default;
@@ -23,7 +21,7 @@ try {
   console.error("Error configuring Amplify:", error);
 }
 
-type Tab = 'uploads' | 'tagged' | 'albums' | 'settings';
+type Tab = 'uploads' | 'tagged' | 'favorites' | 'albums' | 'settings';
 
 const HomePage = () => {
   const { user } = useAuthenticator();
@@ -75,6 +73,12 @@ const HomePage = () => {
                   >
                     Tagged
                   </a>
+                  <a
+                    className={`tab tab-lg ${activeTab === 'favorites' ? 'tab-active' : ''}`}
+                    onClick={() => setActiveTab('favorites')}
+                  >
+                    Favorites
+                  </a>
                   <a 
                     className={`tab tab-lg ${activeTab === 'albums' ? 'tab-active' : ''}`}
                     onClick={() => setActiveTab('albums')}
@@ -92,19 +96,11 @@ const HomePage = () => {
                 <div className="mt-6">
                   {activeTab === 'uploads' && <UploadedPhotosCard />}
                   {activeTab === 'tagged' && <TaggedPhotosCard />}
+                  {activeTab === 'favorites' && <FavoritedPhotosCard />}
                   {activeTab === 'albums' && <p data-theme="light" className="italic">Albums feature coming soon...</p>}
                   {activeTab === 'settings' && <Settings />}
                 </div>
               </div>
-              {/* <div className="col-span-1">
-                <FavoritedPhotosCard />
-              </div> */}
-              {/* <div className="col-span-1 sm:col-span-2">
-                <RecentUploadsCard />
-              </div>
-              <div className="col-span-1 sm:col-span-2">
-                <FamilyMembersCard />
-              </div> */}
             </div>
           </div>
         </UserProvider>
