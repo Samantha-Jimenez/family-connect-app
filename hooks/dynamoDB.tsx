@@ -551,3 +551,32 @@ export const getAllPhotosByTagged = async (taggedUserIds: string[]): Promise<Pho
     return [];
   }
 };
+
+export const getUserAlbums = async (userId: string) => {
+  try {
+    const params = {
+      TableName: TABLES.ALBUMS,
+      FilterExpression: "created_by = :userId",
+      ExpressionAttributeValues: {
+        ":userId": { S: userId }
+      }
+    };
+
+    const command = new ScanCommand(params);
+    const response = await dynamoDB.send(command);
+
+    if (!response.Items) {
+      return [];
+    }
+
+    return response.Items.map(item => ({
+      album_id: item.album_id?.S || '',
+      name: item.name?.S || '',
+      description: item.description?.S || '',
+      created_date: item.created_date?.S || ''
+    }));
+  } catch (error) {
+    console.error("❌ Error fetching user albums:", error);
+    return [];
+  }
+};

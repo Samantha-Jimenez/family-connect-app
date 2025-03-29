@@ -12,6 +12,7 @@ import { ToastProvider } from '../context/ToastContext';
 import { UserProvider } from '../context/UserContext';
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import FavoritedPhotosCard from "@/components/FavoritedPhotosCard";
+import AlbumsCard from "@/components/AlbumsCard";
 
 // Move Amplify configuration into a try-catch block
 try {
@@ -97,7 +98,7 @@ const HomePage = () => {
                   {activeTab === 'uploads' && <UploadedPhotosCard />}
                   {activeTab === 'tagged' && <TaggedPhotosCard />}
                   {activeTab === 'favorites' && <FavoritedPhotosCard />}
-                  {activeTab === 'albums' && <p data-theme="light" className="italic">Albums feature coming soon...</p>}
+                  {activeTab === 'albums' && <AlbumsCard />}
                   {activeTab === 'settings' && <Settings />}
                 </div>
               </div>

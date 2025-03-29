@@ -1,9 +1,9 @@
 "use client";
-
 import { useState, useEffect } from 'react';
 import { getCurrentUser } from 'aws-amplify/auth';
 import Image from 'next/image';
 import PhotoModal from '@/components/PhotoModal';
+import { getUserData } from '@/hooks/dynamoDB';
 
 interface Photo {
   photo_id: string;
