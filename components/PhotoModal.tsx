@@ -1,6 +1,6 @@
 import React, { MouseEvent, useState, useEffect } from 'react';
 import Image from 'next/image';
-import { PhotoData, TaggedPerson, getUserAlbums, addPhotoToAlbum, savePhotoToDB } from '@/hooks/dynamoDB';
+import { PhotoData, TaggedPerson, getUserAlbums, addPhotoToAlbum, savePhotoToDB, getAlbumById } from '@/hooks/dynamoDB';
 import { useAuthenticator } from '@aws-amplify/ui-react';
 
 interface PhotoModalProps {
@@ -46,6 +46,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const [selectedAlbumId, setSelectedAlbumId] = useState('');
   const [editedDescription, setEditedDescription] = useState(photo.metadata?.description || '');
   const [editedDateTaken, setEditedDateTaken] = useState(photo.metadata?.date_taken || '');
+  const [albumName, setAlbumName] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAlbums = async () => {
@@ -55,8 +56,16 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       }
     };
 
+    const fetchAlbumName = async () => {
+      if (photo.album_id) {
+        const album = await getAlbumById(photo.album_id);
+        setAlbumName(album?.name || null);
+      }
+    };
+
     fetchAlbums();
-  }, [user]);
+    fetchAlbumName();
+  }, [user, photo.album_id]);
 
   const handleAddToAlbum = async () => {
     try {
@@ -169,6 +178,12 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                 <p className="text-sm text-gray-800 dark:text-gray-200">
                   <span className="font-bold">Date Taken: </span>
                   {formatDate(photo.metadata?.date_taken || '')}
+                </p>
+              )}
+              {albumName && (
+                <p className="text-sm text-gray-800 dark:text-gray-200">
+                  <span className="font-bold">Album: </span>
+                  {albumName}
                 </p>
               )}
               {photo.metadata?.people_tagged && photo.metadata.people_tagged.length > 0 && (

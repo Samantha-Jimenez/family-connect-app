@@ -2,13 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createAlbum, addPhotoToAlbum, getUserAlbums, getPhotosByAlbum } from '../hooks/dynamoDB';
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import Image from 'next/image';
-
-// Define the type for photo objects
-interface Photo {
-  photo_id: string;
-  url: string;
-  description: string;
-}
+import { PhotoData } from '../hooks/dynamoDB';
 
 // Define the type for album objects
 interface Album {
@@ -25,12 +19,11 @@ const AlbumsCard = () => {
   const [photoId, setPhotoId] = useState('');
   const [albumId, setAlbumId] = useState('');
   const [showToast, setShowToast] = useState(false);
-  const [albums, setAlbums] = useState<Album[]>([]); // Explicitly define the type for albums
+  const [albums, setAlbums] = useState<Album[]>([]);
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
-  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [photos, setPhotos] = useState<PhotoData[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [photoCounts, setPhotoCounts] = useState<{ [key: string]: number }>({});
-
   useEffect(() => {
     const fetchAlbums = async () => {
       if (user && user.userId) {
@@ -82,7 +75,7 @@ const AlbumsCard = () => {
     }
   };
 
-  const handleAlbumClick = async (album: Album) => { // Use the defined type for album
+  const handleAlbumClick = async (album: Album) => {
     try {
       const albumPhotos = await getPhotosByAlbum(album.album_id);
       setPhotos(albumPhotos);
@@ -161,8 +154,12 @@ const AlbumsCard = () => {
             <div className="grid grid-cols-2 gap-4">
               {photos.map((photo) => (
                 <div key={photo.photo_id} className="p-2 bg-gray-200 rounded-lg">
-                  <Image src={photo.url} alt={photo.description} className="w-full h-auto rounded-lg" width={500} height={300} />
-                  <p className="text-sm text-black">{photo.description}</p>
+                  {photo.url ? (
+                    <Image src={photo.url} alt={photo.metadata?.description || ''} className="w-full h-auto rounded-lg" width={500} height={300} />
+                  ) : (
+                    <div className="w-full h-auto rounded-lg bg-gray-300">No Image Available</div>
+                  )}
+                  <p className="text-sm text-black">{photo.metadata?.description || ''}</p>
                 </div>
               ))}
             </div>

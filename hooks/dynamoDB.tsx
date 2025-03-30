@@ -2,6 +2,8 @@ import { DynamoDBClient, PutItemCommand, GetItemCommand, UpdateItemCommand, Scan
 import { fetchUserAttributes } from '@aws-amplify/auth';
 import { getCurrentUser } from "aws-amplify/auth";
 import { v4 as uuidv4 } from 'uuid';
+import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 // Set up DynamoDB client
 const dynamoDB = new DynamoDBClient({ 
@@ -10,6 +12,14 @@ const dynamoDB = new DynamoDBClient({
     accessKeyId: process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID!,
     secretAccessKey: process.env.NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY!,
   }
+});
+
+const s3Client = new S3Client({
+  region: process.env.NEXT_PUBLIC_AWS_PROJECT_REGION,
+  credentials: {
+    accessKeyId: process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY!,
+  },
 });
 
 // Add these table name constants at the top of the file after the imports
@@ -598,13 +608,77 @@ export const getPhotosByAlbum = async (albumId: string) => {
       return [];
     }
 
-    return response.Items.map(item => ({
-      photo_id: item.photo_id?.S || '',
-      url: item.url?.S || '',
-      description: item.description?.S || '',
+    const bucketName = process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME;
+
+    const photos = await Promise.all(response.Items.map(async (item) => {
+      const s3Key = item.s3_key?.S || '';
+
+      const getObjectCommand = new GetObjectCommand({
+        Bucket: bucketName,
+        Key: s3Key,
+      });
+
+      try {
+        const url = await getSignedUrl(s3Client, getObjectCommand, { expiresIn: 3600 });
+        return {
+          photo_id: item.photo_id?.S || '',
+          s3_key: s3Key,
+          uploaded_by: item.uploaded_by?.S || '',
+          upload_date: item.upload_date?.S || '',
+          album_id: item.album_id?.S || '',
+          url,
+          metadata: {
+            location: {
+              country: item.location?.M?.country?.S || '',
+              state: item.location?.M?.state?.S || '',
+              city: item.location?.M?.city?.S || '',
+              neighborhood: item.location?.M?.neighborhood?.S || ''
+            },
+            description: item.description?.S || '',
+            date_taken: item.date_taken?.S || '',
+            people_tagged: item.people_tagged?.L ? item.people_tagged.L.map(tagged => ({
+              id: tagged.M?.id.S || '',
+              name: tagged.M?.name.S || ''
+            })) : [],
+          },
+          lastModified: item.lastModified?.S || ''
+        };
+      } catch (error) {
+        console.error('Error generating signed URL for key:', s3Key, error);
+        return null;
+      }
     }));
+
+    return photos.filter(photo => photo !== null);
   } catch (error) {
     console.error("❌ Error fetching photos by album:", error);
     return [];
+  }
+};
+
+export const getAlbumById = async (albumId: string) => {
+  try {
+    const params = {
+      TableName: TABLES.ALBUMS,
+      Key: {
+        album_id: { S: albumId }
+      }
+    };
+
+    const data = await dynamoDB.send(new GetItemCommand(params));
+
+    if (!data.Item) {
+      throw new Error('Album not found');
+    }
+
+    return {
+      album_id: data.Item.album_id?.S || '',
+      name: data.Item.name?.S || '',
+      description: data.Item.description?.S || '',
+      created_date: data.Item.created_date?.S || ''
+    };
+  } catch (error) {
+    console.error("❌ Error fetching album by ID:", error);
+    return null;
   }
 };
