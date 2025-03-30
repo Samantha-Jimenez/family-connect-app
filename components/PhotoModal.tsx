@@ -1,6 +1,7 @@
-import React, { MouseEvent } from 'react';
+import React, { MouseEvent, useState, useEffect } from 'react';
 import Image from 'next/image';
-import { PhotoData, TaggedPerson } from '@/hooks/dynamoDB';
+import { PhotoData, TaggedPerson, getUserAlbums, addPhotoToAlbum } from '@/hooks/dynamoDB';
+import { useAuthenticator } from '@aws-amplify/ui-react';
 
 interface PhotoModalProps {
   photo: PhotoData;
@@ -40,6 +41,32 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   handleImageError,
   renderEditForm
 }) => {
+  const { user } = useAuthenticator();
+  const [albums, setAlbums] = useState([]);
+  const [selectedAlbumId, setSelectedAlbumId] = useState('');
+
+  useEffect(() => {
+    const fetchAlbums = async () => {
+      if (user && user.userId) {
+        const userAlbums = await getUserAlbums(user.userId);
+        setAlbums(userAlbums);
+      }
+    };
+
+    fetchAlbums();
+  }, [user]);
+
+  const handleAddToAlbum = async () => {
+    try {
+      if (selectedAlbumId) {
+        await addPhotoToAlbum(photo.photo_id, selectedAlbumId);
+        console.log('Photo added to album successfully!');
+      }
+    } catch (error) {
+      console.error('Error adding photo to album:', error);
+    }
+  };
+
   const handleModalClick = (e: MouseEvent) => {
     e.stopPropagation();
   };
@@ -115,7 +142,30 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             </>
           )}
         </div>
-        <div className="flex justify-end space-x-2">
+        {currentUserId === photo?.uploaded_by && (
+          <div className="mt-4">
+            <select
+              value={selectedAlbumId}
+              onChange={(e) => setSelectedAlbumId(e.target.value)}
+              className="select select-bordered w-full mb-2"
+            >
+              <option value="">Select an album</option>
+              {albums.map((album) => (
+                <option key={album.album_id} value={album.album_id}>
+                  {album.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handleAddToAlbum}
+              className="btn btn-primary w-full"
+              disabled={!selectedAlbumId}
+            >
+              Add to Album
+            </button>
+          </div>
+        )}
+        <div className="flex justify-end space-x-2 mt-4">
           {currentUserId === photo?.uploaded_by && (
             <button
               className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"

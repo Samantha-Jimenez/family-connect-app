@@ -580,3 +580,31 @@ export const getUserAlbums = async (userId: string) => {
     return [];
   }
 };
+
+export const getPhotosByAlbum = async (albumId: string) => {
+  try {
+    const params = {
+      TableName: TABLES.PHOTOS,
+      FilterExpression: "album_id = :albumId",
+      ExpressionAttributeValues: {
+        ":albumId": { S: albumId }
+      }
+    };
+
+    const command = new ScanCommand(params);
+    const response = await dynamoDB.send(command);
+
+    if (!response.Items) {
+      return [];
+    }
+
+    return response.Items.map(item => ({
+      photo_id: item.photo_id?.S || '',
+      url: item.url?.S || '',
+      description: item.description?.S || '',
+    }));
+  } catch (error) {
+    console.error("❌ Error fetching photos by album:", error);
+    return [];
+  }
+};
