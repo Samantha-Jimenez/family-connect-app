@@ -1,6 +1,6 @@
 import React, { MouseEvent, useState, useEffect } from 'react';
 import Image from 'next/image';
-import { PhotoData, TaggedPerson, getUserAlbums, addPhotoToAlbum } from '@/hooks/dynamoDB';
+import { PhotoData, TaggedPerson, getUserAlbums, addPhotoToAlbum, savePhotoToDB } from '@/hooks/dynamoDB';
 import { useAuthenticator } from '@aws-amplify/ui-react';
 
 interface PhotoModalProps {
@@ -44,6 +44,8 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const { user } = useAuthenticator();
   const [albums, setAlbums] = useState([]);
   const [selectedAlbumId, setSelectedAlbumId] = useState('');
+  const [editedDescription, setEditedDescription] = useState(photo.metadata?.description || '');
+  const [editedDateTaken, setEditedDateTaken] = useState(photo.metadata?.date_taken || '');
 
   useEffect(() => {
     const fetchAlbums = async () => {
@@ -67,12 +69,34 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     }
   };
 
+  const handleSave = async () => {
+    try {
+      await savePhotoToDB({
+        ...photo,
+        metadata: {
+          ...photo.metadata,
+          description: editedDescription,
+          date_taken: editedDateTaken,
+        },
+      });
+      console.log('Photo data saved successfully!');
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error saving photo data:', error);
+    }
+  };
+
   const handleModalClick = (e: MouseEvent) => {
     e.stopPropagation();
   };
 
+  const handleCloseModal = () => {
+    setIsEditing(false);
+    closeModal();
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={closeModal}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleCloseModal}>
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-2xl w-full m-4" onClick={handleModalClick}>
         <div className="relative mb-4">
           <Image
@@ -85,7 +109,42 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           />
         </div>
         <div className="space-y-2">
-          {isEditing ? renderEditForm() : (
+          {isEditing ? (
+            <div>
+              <div className="mb-2">
+                <label className="block text-sm font-bold mb-1">Description:</label>
+                <input
+                  type="text"
+                  value={editedDescription}
+                  onChange={(e) => setEditedDescription(e.target.value)}
+                  className="input input-bordered w-full"
+                />
+              </div>
+              <div className="mb-2">
+                <label className="block text-sm font-bold mb-1">Date Taken:</label>
+                <input
+                  type="date"
+                  value={editedDateTaken}
+                  onChange={(e) => setEditedDateTaken(e.target.value)}
+                  className="input input-bordered w-full"
+                />
+              </div>
+              <div className="flex justify-end space-x-2 mt-4">
+                <button
+                  onClick={handleSave}
+                  className="btn btn-primary"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className="btn btn-secondary"
+                >
+                  Close Edit
+                </button>
+              </div>
+            </div>
+          ) : (
             <>
               {photo.metadata?.location && typeof photo.metadata.location === 'object' && Object.values(photo.metadata.location).some(val => val) && (
                 <div className="text-sm text-gray-800 dark:text-gray-200">
@@ -142,7 +201,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             </>
           )}
         </div>
-        {currentUserId === photo?.uploaded_by && (
+        {isEditing && currentUserId === photo?.uploaded_by && (
           <div className="mt-4">
             <select
               value={selectedAlbumId}
@@ -166,7 +225,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           </div>
         )}
         <div className="flex justify-end space-x-2 mt-4">
-          {currentUserId === photo?.uploaded_by && (
+          {currentUserId === photo?.uploaded_by && !isEditing && (
             <button
               className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
               onClick={() => setIsEditing(true)}
@@ -176,7 +235,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           )}
           <button
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            onClick={closeModal}
+            onClick={handleCloseModal}
           >
             Close
           </button>

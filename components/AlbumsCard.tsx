@@ -1,6 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { createAlbum, addPhotoToAlbum, getUserAlbums, getPhotosByAlbum } from '../hooks/dynamoDB';
 import { useAuthenticator } from '@aws-amplify/ui-react';
+import Image from 'next/image';
+
+// Define the type for photo objects
+interface Photo {
+  photo_id: string;
+  url: string;
+  description: string;
+}
+
+// Define the type for album objects
+interface Album {
+  album_id: string;
+  name: string;
+  description: string;
+  created_date: string;
+}
 
 const AlbumsCard = () => {
   const { user } = useAuthenticator();
@@ -9,16 +25,25 @@ const AlbumsCard = () => {
   const [photoId, setPhotoId] = useState('');
   const [albumId, setAlbumId] = useState('');
   const [showToast, setShowToast] = useState(false);
-  const [albums, setAlbums] = useState([]);
-  const [selectedAlbum, setSelectedAlbum] = useState(null);
-  const [photos, setPhotos] = useState([]);
+  const [albums, setAlbums] = useState<Album[]>([]); // Explicitly define the type for albums
+  const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
+  const [photos, setPhotos] = useState<Photo[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [photoCounts, setPhotoCounts] = useState<{ [key: string]: number }>({});
 
   useEffect(() => {
     const fetchAlbums = async () => {
       if (user && user.userId) {
         const userAlbums = await getUserAlbums(user.userId);
         setAlbums(userAlbums);
+
+        // Fetch photo counts for each album
+        const counts: { [key: string]: number } = {};
+        for (const album of userAlbums) {
+          const albumPhotos = await getPhotosByAlbum(album.album_id);
+          counts[album.album_id] = albumPhotos.length;
+        }
+        setPhotoCounts(counts);
       }
     };
 
@@ -35,6 +60,14 @@ const AlbumsCard = () => {
       // Refresh albums list
       const userAlbums = await getUserAlbums(user.userId);
       setAlbums(userAlbums);
+
+      // Refresh photo counts
+      const counts: { [key: string]: number } = {};
+      for (const album of userAlbums) {
+        const albumPhotos = await getPhotosByAlbum(album.album_id);
+        counts[album.album_id] = albumPhotos.length;
+      }
+      setPhotoCounts(counts);
     } catch (error) {
       console.error('Error creating album:', error);
     }
@@ -49,7 +82,7 @@ const AlbumsCard = () => {
     }
   };
 
-  const handleAlbumClick = async (album) => {
+  const handleAlbumClick = async (album: Album) => { // Use the defined type for album
     try {
       const albumPhotos = await getPhotosByAlbum(album.album_id);
       setPhotos(albumPhotos);
@@ -116,6 +149,7 @@ const AlbumsCard = () => {
             <h3 className="text-lg font-semibold text-black">{album.name}</h3>
             <p className="text-sm text-black">{album.description}</p>
             <p className="text-xs text-gray-500">Created on: {new Date(album.created_date).toLocaleDateString()}</p>
+            <p className="text-xs text-gray-500">Photos: {photoCounts[album.album_id] || 0}</p>
           </div>
         ))}
       </div>
@@ -127,7 +161,7 @@ const AlbumsCard = () => {
             <div className="grid grid-cols-2 gap-4">
               {photos.map((photo) => (
                 <div key={photo.photo_id} className="p-2 bg-gray-200 rounded-lg">
-                  <img src={photo.url} alt={photo.description} className="w-full h-auto rounded-lg" />
+                  <Image src={photo.url} alt={photo.description} className="w-full h-auto rounded-lg" width={500} height={300} />
                   <p className="text-sm text-black">{photo.description}</p>
                 </div>
               ))}
