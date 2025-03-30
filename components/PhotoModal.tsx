@@ -284,6 +284,26 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                     </button> */}
                   </div>
                 )}
+                <div className="flex justify-end space-x-2 mb-2">
+                  <button
+                    className="btn bg-green-500 text-white border-0"
+                    onClick={handleSave}
+                  >
+                    Save
+                  </button>
+                  <button
+                    className="btn bg-red-500 text-white border-0"
+                    onClick={handleDelete}
+                  >
+                    Delete
+                  </button>
+                  <button
+                    onClick={() => setIsEditing(false)}
+                    className="btn bg-gray-600 text-white border-0"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             ) : (
               <>
@@ -351,14 +371,14 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           <div className="flex justify-end space-x-2 mt-auto">
             {currentUserId === photo?.uploaded_by && !isEditing && (
               <button
-                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                className="btn border-0 bg-green-500 text-white rounded hover:bg-green-600"
                 onClick={() => setIsEditing(true)}
               >
                 Edit
               </button>
             )}
             <button
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              className="btn border-0 bg-blue-500 text-white rounded hover:bg-blue-600"
               onClick={handleCloseModal}
             >
               Close
