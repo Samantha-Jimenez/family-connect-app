@@ -682,3 +682,21 @@ export const getAlbumById = async (albumId: string) => {
     return null;
   }
 };
+
+export const deletePhotoById = async (photoId: string) => {
+  try {
+    const params = {
+      TableName: TABLES.PHOTOS,
+      Key: {
+        photo_id: { S: photoId }
+      }
+    };
+
+    const command = new DeleteItemCommand(params);
+    await dynamoDB.send(command);
+    console.log(`Photo with ID ${photoId} deleted successfully.`);
+  } catch (error) {
+    console.error("❌ Error deleting photo:", error);
+    throw error;
+  }
+};

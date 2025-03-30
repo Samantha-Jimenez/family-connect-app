@@ -1,6 +1,6 @@
 import React, { MouseEvent, useState, useEffect } from 'react';
 import Image from 'next/image';
-import { PhotoData, TaggedPerson, getUserAlbums, addPhotoToAlbum, savePhotoToDB, getAlbumById } from '@/hooks/dynamoDB';
+import { PhotoData, TaggedPerson, getUserAlbums, addPhotoToAlbum, savePhotoToDB, getAlbumById, deletePhotoById } from '@/hooks/dynamoDB';
 import { useAuthenticator } from '@aws-amplify/ui-react';
 
 interface PhotoModalProps {
@@ -95,6 +95,16 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     }
   };
 
+  const handleDelete = async () => {
+    try {
+      await deletePhotoById(photo.photo_id);
+      console.log('Photo deleted successfully!');
+      closeModal(); // Close the modal after deletion
+    } catch (error) {
+      console.error('Error deleting photo:', error);
+    }
+  };
+
   const handleModalClick = (e: MouseEvent) => {
     e.stopPropagation();
   };
@@ -144,6 +154,12 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                   className="btn btn-primary"
                 >
                   Save
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                >
+                  Delete
                 </button>
                 <button
                   onClick={() => setIsEditing(false)}
