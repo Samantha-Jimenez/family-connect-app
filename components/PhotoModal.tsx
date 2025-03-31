@@ -1,7 +1,7 @@
 import React, { MouseEvent, useState, useEffect } from 'react';
 import Image from 'next/image';
 import Select from 'react-select';
-import { PhotoData, TaggedPerson, getUserAlbums, addPhotoToAlbum, savePhotoToDB, getAlbumById, deletePhotoById, getAllFamilyMembers, AlbumData } from '@/hooks/dynamoDB';
+import { PhotoData, TaggedPerson, getUserAlbums, addPhotoToAlbum, savePhotoToDB, getAlbumById, deletePhotoById, getAllFamilyMembers, AlbumData, checkIfPhotoIsFavorited, removePhotoFromFavorites, addPhotoToFavorites } from '@/hooks/dynamoDB';
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -57,6 +57,8 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   });
   const [editedTaggedPeople, setEditedTaggedPeople] = useState<TaggedPerson[]>(photo.metadata?.people_tagged || []);
   const [familyMembers, setFamilyMembers] = useState<TaggedPerson[]>([]);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
     const fetchAlbums = async () => {
@@ -82,10 +84,18 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       }
     };
 
+    const fetchFavoriteStatus = async () => {
+      if (user && photo.photo_id) {
+        const favorited = await checkIfPhotoIsFavorited(user.userId, photo.photo_id);
+        setIsFavorited(favorited);
+      }
+    };
+
     fetchAlbums();
     fetchAlbumName();
     loadFamilyMembers();
-  }, [user, photo.album_id]);
+    fetchFavoriteStatus();
+  }, [user, photo.album_id, photo.photo_id]);
 
   const handleAddToAlbum = async () => {
     try {
@@ -136,6 +146,23 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     closeModal();
   };
 
+  const toggleFavorite = async () => {
+    try {
+      if (user && photo.photo_id) {
+        setIsAnimating(true); // Start animation
+        if (isFavorited) {
+          await removePhotoFromFavorites(user.userId, photo.photo_id);
+        } else {
+          await addPhotoToFavorites(user.userId, photo.photo_id);
+        }
+        setIsFavorited(!isFavorited);
+        setTimeout(() => setIsAnimating(false), 300); // End animation after 300ms
+      }
+    } catch (error) {
+      console.error('Error toggling favorite status:', error);
+    }
+  };
+
   // Transform familyMembers into UserOption format for react-select
   const familyMemberOptions = familyMembers.map((member) => ({
     value: member.family_member_id,
@@ -145,7 +172,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleCloseModal}>
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-4xl w-full m-4 flex" onClick={handleModalClick}>
-        <div className="w-1/2 pr-4">
+        <div className="w-1/2 pr-4 relative">
           <Image
             src={photo.url || '/fallback-image.jpg'}
             alt="Selected photo"
@@ -154,6 +181,9 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             className="object-contain rounded-lg"
             onError={handleImageError}
           />
+          <div className={`absolute top-2 right-6 cursor-pointer transition-transform duration-300 ${isAnimating ? 'scale-125' : ''}`} onClick={toggleFavorite}>
+            {isFavorited ? <span className="icon-[mdi--cards-heart] w-5 h-5 text-red-500" /> : <span className="icon-[mdi--cards-heart] w-5 h-5 text-white" />}
+          </div>
         </div>
         <div className="w-1/2 pl-4 flex flex-col justify-between">
           <div>
