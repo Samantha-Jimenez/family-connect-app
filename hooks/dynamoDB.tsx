@@ -700,3 +700,132 @@ export const deletePhotoById = async (photoId: string) => {
     throw error;
   }
 };
+
+export const addPhotoToFavorites = async (userId: string, photoId: string) => {
+  try {
+    const params = {
+      TableName: TABLES.PHOTOS,
+      Key: {
+        photo_id: { S: photoId }
+      },
+      UpdateExpression: "ADD favorited_by :userId",
+      ExpressionAttributeValues: {
+        ":userId": { SS: [userId] }
+      }
+    };
+
+    await dynamoDB.send(new UpdateItemCommand(params));
+    console.log("✅ Photo added to favorites successfully!");
+  } catch (error) {
+    console.error("❌ Error adding photo to favorites:", error);
+    throw error;
+  }
+};
+
+export const removePhotoFromFavorites = async (userId: string, photoId: string) => {
+  try {
+    const params = {
+      TableName: TABLES.PHOTOS,
+      Key: {
+        photo_id: { S: photoId }
+      },
+      UpdateExpression: "DELETE favorited_by :userId",
+      ExpressionAttributeValues: {
+        ":userId": { SS: [userId] }
+      }
+    };
+
+    await dynamoDB.send(new UpdateItemCommand(params));
+    console.log("✅ Photo removed from favorites successfully!");
+  } catch (error) {
+    console.error("❌ Error removing photo from favorites:", error);
+    throw error;
+  }
+};
+
+export const checkIfPhotoIsFavorited = async (userId: string, photoId: string): Promise<boolean> => {
+  try {
+    const params = {
+      TableName: TABLES.PHOTOS,
+      Key: {
+        photo_id: { S: photoId }
+      }
+    };
+
+    const data = await dynamoDB.send(new GetItemCommand(params));
+
+    if (!data.Item || !data.Item.favorited_by) {
+      return false;
+    }
+
+    return data.Item.favorited_by.SS.includes(userId);
+  } catch (error) {
+    console.error("❌ Error checking if photo is favorited:", error);
+    return false;
+  }
+};
+
+export const getFavoritedPhotosByUser = async (userId: string): Promise<PhotoData[]> => {
+  try {
+    const params = {
+      TableName: TABLES.PHOTOS,
+      FilterExpression: "contains(favorited_by, :userId)",
+      ExpressionAttributeValues: {
+        ":userId": { S: userId }
+      }
+    };
+
+    const command = new ScanCommand(params);
+    const response = await dynamoDB.send(command);
+
+    if (!response.Items) {
+      return [];
+    }
+
+    const bucketName = process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME;
+
+    const photos = await Promise.all(response.Items.map(async (item) => {
+      const s3Key = item.s3_key?.S || '';
+
+      const getObjectCommand = new GetObjectCommand({
+        Bucket: bucketName,
+        Key: s3Key,
+      });
+
+      try {
+        const url = await getSignedUrl(s3Client, getObjectCommand, { expiresIn: 3600 });
+        return {
+          photo_id: item.photo_id?.S || '',
+          s3_key: s3Key,
+          uploaded_by: item.uploaded_by?.S || '',
+          upload_date: item.upload_date?.S || '',
+          album_id: item.album_id?.S || '',
+          url,
+          metadata: {
+            location: {
+              country: item.location?.M?.country?.S || '',
+              state: item.location?.M?.state?.S || '',
+              city: item.location?.M?.city?.S || '',
+              neighborhood: item.location?.M?.neighborhood?.S || ''
+            },
+            description: item.description?.S || '',
+            date_taken: item.date_taken?.S || '',
+            people_tagged: item.people_tagged?.L ? item.people_tagged.L.map(tagged => ({
+              id: tagged.M?.id.S || '',
+              name: tagged.M?.name.S || ''
+            })) : [],
+          },
+          lastModified: item.lastModified?.S || ''
+        };
+      } catch (error) {
+        console.error('Error generating signed URL for key:', s3Key, error);
+        return null;
+      }
+    }));
+
+    return photos.filter(photo => photo !== null);
+  } catch (error) {
+    console.error("❌ Error fetching favorited photos:", error);
+    return [];
+  }
+};
