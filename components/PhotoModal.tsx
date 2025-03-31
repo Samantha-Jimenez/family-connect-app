@@ -78,7 +78,10 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     const loadFamilyMembers = async () => {
       try {
         const members = await getAllFamilyMembers();
-        setFamilyMembers(members);
+        setFamilyMembers(members.map(member => ({
+          id: member.family_member_id,
+          name: `${member.first_name} ${member.last_name}`
+        })));
       } catch (error) {
         console.error('Error loading family members:', error);
       }
@@ -165,8 +168,8 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
 
   // Transform familyMembers into UserOption format for react-select
   const familyMemberOptions = familyMembers.map((member) => ({
-    value: member.family_member_id,
-    label: `${member.first_name} ${member.last_name}`
+    value: member.id,
+    label: member.name
   }));
 
   return (

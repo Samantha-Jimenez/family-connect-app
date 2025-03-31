@@ -3,20 +3,12 @@ import { useState, useEffect } from 'react';
 import { getCurrentUser } from 'aws-amplify/auth';
 import Image from 'next/image';
 import PhotoModal from '@/components/PhotoModal';
-import { getUserData } from '@/hooks/dynamoDB';
-
-interface Photo {
-  photo_id: string;
-  s3_key: string;
-  uploaded_by: string;
-  upload_date: string;
-  url?: string;
-}
+import { getUserData, PhotoData } from '@/hooks/dynamoDB';
 
 export default function UploadedPhotosCard() {
-  const [userPhotos, setUserPhotos] = useState<Photo[]>([]);
+  const [userPhotos, setUserPhotos] = useState<PhotoData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<PhotoData | null>(null);
   const [uploaderName, setUploaderName] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -46,7 +38,7 @@ export default function UploadedPhotosCard() {
       const data = await response.json();
       
       // Simplified filtering - just check the uploaded_by field
-      const filteredPhotos = data.photos.filter((photo: Photo) => 
+      const filteredPhotos = data.photos.filter((photo: PhotoData) => 
         photo.uploaded_by === user.userId
       );
 
@@ -58,7 +50,7 @@ export default function UploadedPhotosCard() {
     }
   };
 
-  const handleImageClick = (photo: Photo) => {
+  const handleImageClick = (photo: PhotoData) => {
     setSelectedPhoto(photo);
     fetchUploaderName(photo.uploaded_by);
   };

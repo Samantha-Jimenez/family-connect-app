@@ -2,15 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createAlbum, addPhotoToAlbum, getUserAlbums, getPhotosByAlbum } from '../hooks/dynamoDB';
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import Image from 'next/image';
-import { PhotoData } from '../hooks/dynamoDB';
-
-// Define the type for album objects
-interface Album {
-  album_id: string;
-  name: string;
-  description: string;
-  created_date: string;
-}
+import { PhotoData, AlbumData } from '../hooks/dynamoDB';
 
 const AlbumsCard = () => {
   const { user } = useAuthenticator();
@@ -19,8 +11,8 @@ const AlbumsCard = () => {
   const [photoId, setPhotoId] = useState('');
   const [albumId, setAlbumId] = useState('');
   const [showToast, setShowToast] = useState(false);
-  const [albums, setAlbums] = useState<Album[]>([]);
-  const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
+  const [albums, setAlbums] = useState<AlbumData[]>([]);
+  const [selectedAlbum, setSelectedAlbum] = useState<AlbumData | null>(null);
   const [photos, setPhotos] = useState<PhotoData[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [photoCounts, setPhotoCounts] = useState<{ [key: string]: number }>({});
@@ -75,7 +67,7 @@ const AlbumsCard = () => {
     }
   };
 
-  const handleAlbumClick = async (album: Album) => {
+  const handleAlbumClick = async (album: AlbumData) => {
     try {
       const albumPhotos = await getPhotosByAlbum(album.album_id);
       setPhotos(albumPhotos);

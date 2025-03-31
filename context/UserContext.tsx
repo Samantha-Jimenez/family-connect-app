@@ -41,17 +41,17 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       if (data) {
         // Handle DynamoDB attribute types
         setUserData({
-          first_name: data.first_name?.S || '',
-          last_name: data.last_name?.S || '',
+          first_name: data.first_name || '',
+          last_name: data.last_name || '',
           email: userAttributes.email || '',
-          username: data.username?.S || '',
-          bio: data.bio?.S || '',
-          phone_number: data.phone_number?.S || '',
-          birthday: data.birthday?.S || '',
+          username: data.username || '',
+          bio: data.bio || '',
+          phone_number: data.phone_number || '',
+          birthday: data.birthday || '',
           userId: user.userId,
-          profile_photo: data.profile_photo?.S || '',
-          city: data.city?.S || '',
-          state: data.state?.S || '',
+          profile_photo: data.profile_photo || '',
+          city: data.city || '',
+          state: data.state || '',
         });
       }
     } catch (error) {

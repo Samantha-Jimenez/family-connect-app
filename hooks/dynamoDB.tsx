@@ -162,13 +162,21 @@ export const getUserData = async (userId: string) => {
       throw new Error('User not found');
     }
 
-    // Extract first and last name from the response
-    const firstName = data.Item.first_name?.S || '';
-    const lastName = data.Item.last_name?.S || '';
-
     return {
-      first_name: firstName,
-      last_name: lastName,
+      first_name: data.Item.first_name?.S || '',
+      last_name: data.Item.last_name?.S || '',
+      email: data.Item.email?.S || '',
+      username: data.Item.username?.S || '',
+      bio: data.Item.bio?.S || '',
+      phone_number: data.Item.phone_number?.S || '',
+      birthday: data.Item.birthday?.S || '',
+      birth_city: data.Item.birth_city?.S || '',
+      birth_state: data.Item.birth_state?.S || '',
+      profile_photo: data.Item.profile_photo?.S || undefined,
+      current_city: data.Item.current_city?.S || '',
+      current_state: data.Item.current_state?.S || '',
+      city: data.Item.city?.S || '',
+      state: data.Item.state?.S || ''
     };
   } catch (error) {
     console.error("❌ Error fetching user data:", error);
@@ -562,7 +570,7 @@ export const getAllPhotosByTagged = async (taggedUserIds: string[]): Promise<Pho
   }
 };
 
-export const getUserAlbums = async (userId: string) => {
+export const getUserAlbums = async (userId: string): Promise<AlbumData[]> => {
   try {
     const params = {
       TableName: TABLES.ALBUMS,
@@ -583,7 +591,8 @@ export const getUserAlbums = async (userId: string) => {
       album_id: item.album_id?.S || '',
       name: item.name?.S || '',
       description: item.description?.S || '',
-      created_date: item.created_date?.S || ''
+      created_date: item.created_date?.S || '',
+      created_by: item.created_by?.S || ''
     }));
   } catch (error) {
     console.error("❌ Error fetching user albums:", error);
@@ -758,7 +767,8 @@ export const checkIfPhotoIsFavorited = async (userId: string, photoId: string): 
       return false;
     }
 
-    return data.Item.favorited_by.SS.includes(userId);
+    const favoritedBy = data.Item.favorited_by as { SS: string[] };
+    return favoritedBy.SS.includes(userId);
   } catch (error) {
     console.error("❌ Error checking if photo is favorited:", error);
     return false;

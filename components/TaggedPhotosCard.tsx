@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { getCurrentUser } from 'aws-amplify/auth';
 import Image from 'next/image';
-import { PhotoData, TaggedPerson } from '@/hooks/dynamoDB';
+import { getUserData, PhotoData, TaggedPerson } from '@/hooks/dynamoDB';
 import PhotoModal from '@/components/PhotoModal';
 
 

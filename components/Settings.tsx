@@ -53,18 +53,18 @@ const Settings = () => {
       const data = await getUserData(user.userId);
       if (data) {
         setUserData({
-          first_name: data.first_name?.S || '',
-          last_name: data.last_name?.S || '',
+          first_name: data.first_name || '',
+          last_name: data.last_name || '',
           email: authEmail || '',
           username: authUsername || '',
-          bio: data.bio?.S || '',
-          phone_number: data.phone_number?.S || '',
-          birthday: data.birthday?.S || '',
-          birth_city: data.birth_city?.S || '',
-          birth_state: data.birth_state?.S || '',
-          profile_photo: data.profile_photo?.S || undefined,
-          current_city: data.current_city?.S || undefined,
-          current_state: data.current_state?.S || undefined,
+          bio: data.bio || '',
+          phone_number: data.phone_number || '',
+          birthday: data.birthday || '',
+          birth_city: data.birth_city || '',
+          birth_state: data.birth_state || '',
+          profile_photo: data.profile_photo || undefined,
+          current_city: data.current_city || undefined,
+          current_state: data.current_state || undefined,
         });
       } else {
         setUserData({
