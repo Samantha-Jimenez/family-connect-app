@@ -1,7 +1,7 @@
 import React, { MouseEvent, useState, useEffect } from 'react';
 import Image from 'next/image';
 import Select from 'react-select';
-import { PhotoData, TaggedPerson, getUserAlbums, addPhotoToAlbum, savePhotoToDB, getAlbumById, deletePhotoById, getAllFamilyMembers, AlbumData, checkIfPhotoIsFavorited, removePhotoFromFavorites, addPhotoToFavorites, addCommentToPhoto, getCommentsForPhoto, getUserNameById, deleteCommentFromPhoto } from '@/hooks/dynamoDB';
+import { PhotoData, TaggedPerson, getUserAlbums, addPhotoToAlbum, savePhotoToDB, getAlbumById, deletePhotoById, getAllFamilyMembers, AlbumData, checkIfPhotoIsFavorited, removePhotoFromFavorites, addPhotoToFavorites, addCommentToPhoto, getCommentsForPhoto, getUserNameById, deleteCommentFromPhoto, editCommentInPhoto } from '@/hooks/dynamoDB';
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -61,6 +61,8 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const [isAnimating, setIsAnimating] = useState(false);
   const [comments, setComments] = useState<{ text: string; author: string; userId: string }[]>([]);
   const [newComment, setNewComment] = useState('');
+  const [editingCommentIndex, setEditingCommentIndex] = useState<number | null>(null);
+  const [editedCommentText, setEditedCommentText] = useState('');
 
   useEffect(() => {
     const fetchAlbums = async () => {
@@ -203,6 +205,26 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
         setComments(comments.filter((_, i) => i !== index));
       } catch (error) {
         console.error('Error deleting comment:', error);
+      }
+    }
+  };
+
+  const handleEditComment = async (index: number) => {
+    if (editedCommentText.trim() && user) {
+      try {
+        // Update the comment in the database
+        await editCommentInPhoto(photo.photo_id, user.userId, index, editedCommentText);
+
+        // Update the comment in the local state
+        const updatedComments = [...comments];
+        updatedComments[index].text = editedCommentText;
+        setComments(updatedComments);
+
+        // Reset editing state
+        setEditingCommentIndex(null);
+        setEditedCommentText('');
+      } catch (error) {
+        console.error('Error editing comment:', error);
       }
     }
   };
@@ -446,16 +468,52 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
               <div className="mb-2">
                 {comments.map((comment, index) => (
                   <div key={index} className="flex justify-between items-center mb-1">
-                    <p className="text-sm text-gray-800 dark:text-gray-200">
-                      <span className="font-bold">{comment.author}:</span> {comment.text}
-                    </p>
-                    {comment.userId === user.userId && (
-                      <button
-                        onClick={() => handleDeleteComment(index)}
-                        className="text-red-500 hover:underline"
-                      >
-                        Delete
-                      </button>
+                    {editingCommentIndex === index ? (
+                      <div className="flex items-center w-full">
+                        <input
+                          type="text"
+                          value={editedCommentText}
+                          onChange={(e) => setEditedCommentText(e.target.value)}
+                          className="input input-bordered w-full text-black bg-white border-gray-300"
+                        />
+                        <button
+                          onClick={() => handleEditComment(index)}
+                          className="btn bg-green-500 text-white ml-2"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => setEditingCommentIndex(null)}
+                          className="btn bg-gray-500 text-white ml-2"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-sm text-gray-800 dark:text-gray-200">
+                          <span className="font-bold">{comment.author}:</span> {comment.text}
+                        </p>
+                        {comment.userId === user.userId && (
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => {
+                                setEditingCommentIndex(index);
+                                setEditedCommentText(comment.text);
+                              }}
+                              className="text-blue-500 hover:underline"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteComment(index)}
+                              className="text-red-500 hover:underline"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 ))}

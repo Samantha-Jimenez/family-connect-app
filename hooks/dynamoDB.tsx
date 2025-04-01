@@ -934,3 +934,30 @@ export const deleteCommentFromPhoto = async (photoId: string, userId: string, co
     throw error;
   }
 };
+
+export const editCommentInPhoto = async (photoId: string, userId: string, commentIndex: number, newText: string) => {
+  try {
+    const params = {
+      TableName: TABLES.PHOTOS,
+      Key: {
+        photo_id: { S: photoId }
+      },
+      UpdateExpression: `SET comments[${commentIndex}].#text = :newText`,
+      ConditionExpression: `comments[${commentIndex}].userId = :userId`,
+      ExpressionAttributeNames: {
+        "#text": "text"
+      },
+      ExpressionAttributeValues: {
+        ":newText": { S: newText },
+        ":userId": { S: userId }
+      }
+    };
+
+    await dynamoDB.send(new UpdateItemCommand(params));
+    console.log("✅ Comment edited successfully!");
+  } catch (error) {
+    console.error("❌ Error editing comment in photo:", error);
+    throw error;
+  }
+};
+
