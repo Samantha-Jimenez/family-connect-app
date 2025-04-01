@@ -1,7 +1,7 @@
 import React, { MouseEvent, useState, useEffect } from 'react';
 import Image from 'next/image';
 import Select from 'react-select';
-import { PhotoData, TaggedPerson, getUserAlbums, addPhotoToAlbum, savePhotoToDB, getAlbumById, deletePhotoById, getAllFamilyMembers, AlbumData, checkIfPhotoIsFavorited, removePhotoFromFavorites, addPhotoToFavorites } from '@/hooks/dynamoDB';
+import { PhotoData, TaggedPerson, getUserAlbums, addPhotoToAlbum, savePhotoToDB, getAlbumById, deletePhotoById, getAllFamilyMembers, AlbumData, checkIfPhotoIsFavorited, removePhotoFromFavorites, addPhotoToFavorites, addCommentToPhoto, getCommentsForPhoto, getUserNameById, deleteCommentFromPhoto } from '@/hooks/dynamoDB';
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -59,6 +59,8 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const [familyMembers, setFamilyMembers] = useState<TaggedPerson[]>([]);
   const [isFavorited, setIsFavorited] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [comments, setComments] = useState<{ text: string; author: string; userId: string }[]>([]);
+  const [newComment, setNewComment] = useState('');
 
   useEffect(() => {
     const fetchAlbums = async () => {
@@ -94,10 +96,18 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       }
     };
 
+    const fetchComments = async () => {
+      if (photo.photo_id) {
+        const photoComments = await getCommentsForPhoto(photo.photo_id);
+        setComments(photoComments);
+      }
+    };
+
     fetchAlbums();
     fetchAlbumName();
     loadFamilyMembers();
     fetchFavoriteStatus();
+    fetchComments();
   }, [user, photo.album_id, photo.photo_id]);
 
   const handleAddToAlbum = async () => {
@@ -163,6 +173,33 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       }
     } catch (error) {
       console.error('Error toggling favorite status:', error);
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (newComment.trim() && user) {
+      try {
+        const userName = await getUserNameById(user.userId);
+        if (userName) {
+          const authorName = `${userName.firstName} ${userName.lastName}`;
+          await addCommentToPhoto(photo.photo_id, user.userId, newComment, authorName);
+          setComments([...comments, { text: newComment, author: authorName, userId: user.userId }]);
+          setNewComment('');
+        }
+      } catch (error) {
+        console.error('Error adding comment:', error);
+      }
+    }
+  };
+
+  const handleDeleteComment = async (index: number) => {
+    if (user) {
+      try {
+        await deleteCommentFromPhoto(photo.photo_id, user.userId, index);
+        setComments(comments.filter((_, i) => i !== index));
+      } catch (error) {
+        console.error('Error deleting comment:', error);
+      }
     }
   };
 
@@ -400,6 +437,41 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                 )}
               </>
             )}
+            <div className="mt-4">
+              <h3 className="text-lg font-bold mb-2 text-black">Comments</h3>
+              <div className="mb-2">
+                {comments.map((comment, index) => (
+                  <div key={index} className="flex justify-between items-center mb-1">
+                    <p className="text-sm text-gray-800 dark:text-gray-200">
+                      <span className="font-bold">{comment.author}:</span> {comment.text}
+                    </p>
+                    {comment.userId === user.userId && (
+                      <button
+                        onClick={() => handleDeleteComment(index)}
+                        className="text-red-500 hover:underline"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center">
+                <input
+                  type="text"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  className="input input-bordered w-full text-black bg-white border-gray-300"
+                  placeholder="Add a comment..."
+                />
+                <button
+                  onClick={handleAddComment}
+                  className="btn bg-blue-500 text-white ml-2"
+                >
+                  Post
+                </button>
+              </div>
+            </div>
           </div>
           <div className="flex justify-end space-x-2 mt-auto">
             {currentUserId === photo?.uploaded_by && !isEditing && (

@@ -839,3 +839,98 @@ export const getFavoritedPhotosByUser = async (userId: string): Promise<PhotoDat
     return [];
   }
 };
+
+export const addCommentToPhoto = async (photoId: string, userId: string, comment: string, author: string) => {
+  try {
+    const params = {
+      TableName: TABLES.PHOTOS,
+      Key: {
+        photo_id: { S: photoId }
+      },
+      UpdateExpression: "SET comments = list_append(if_not_exists(comments, :emptyList), :comment)",
+      ExpressionAttributeValues: {
+        ":comment": { L: [{ M: { userId: { S: userId }, text: { S: comment }, author: { S: author } } }] },
+        ":emptyList": { L: [] }
+      }
+    };
+
+    await dynamoDB.send(new UpdateItemCommand(params));
+    console.log("✅ Comment added to photo successfully!");
+  } catch (error) {
+    console.error("❌ Error adding comment to photo:", error);
+    throw error;
+  }
+};
+
+export const getCommentsForPhoto = async (photoId: string): Promise<{ text: string; author: string }[]> => {
+  try {
+    const params = {
+      TableName: TABLES.PHOTOS,
+      Key: {
+        photo_id: { S: photoId }
+      }
+    };
+
+    const data = await dynamoDB.send(new GetItemCommand(params));
+
+    if (!data.Item || !data.Item.comments || !data.Item.comments.L) {
+      return [];
+    }
+
+    return data.Item.comments.L.map((comment: any) => ({
+      userId: comment.M?.userId?.S || '',
+      text: comment.M?.text?.S || '',
+      author: comment.M?.author?.S || 'Unknown'
+    }));
+  } catch (error) {
+    console.error("❌ Error fetching comments for photo:", error);
+    return [];
+  }
+};
+
+export const getUserNameById = async (userId: string): Promise<{ firstName: string; lastName: string } | null> => {
+  try {
+    const params = {
+      TableName: TABLES.FAMILY,
+      Key: {
+        family_member_id: { S: userId }
+      }
+    };
+
+    const data = await dynamoDB.send(new GetItemCommand(params));
+
+    if (!data.Item) {
+      return null;
+    }
+
+    return {
+      firstName: data.Item.first_name?.S || '',
+      lastName: data.Item.last_name?.S || ''
+    };
+  } catch (error) {
+    console.error("❌ Error fetching user name by ID:", error);
+    return null;
+  }
+};
+
+export const deleteCommentFromPhoto = async (photoId: string, userId: string, commentIndex: number) => {
+  try {
+    const params = {
+      TableName: TABLES.PHOTOS,
+      Key: {
+        photo_id: { S: photoId }
+      },
+      UpdateExpression: `REMOVE comments[${commentIndex}]`,
+      ConditionExpression: `comments[${commentIndex}].userId = :userId`,
+      ExpressionAttributeValues: {
+        ":userId": { S: userId }
+      }
+    };
+
+    await dynamoDB.send(new UpdateItemCommand(params));
+    console.log("✅ Comment deleted successfully!");
+  } catch (error) {
+    console.error("❌ Error deleting comment from photo:", error);
+    throw error;
+  }
+};
