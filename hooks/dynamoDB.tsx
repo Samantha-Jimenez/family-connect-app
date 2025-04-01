@@ -862,7 +862,7 @@ export const addCommentToPhoto = async (photoId: string, userId: string, comment
   }
 };
 
-export const getCommentsForPhoto = async (photoId: string): Promise<{ text: string; author: string }[]> => {
+export const getCommentsForPhoto = async (photoId: string): Promise<{ text: string; author: string; userId: string }[]> => {
   try {
     const params = {
       TableName: TABLES.PHOTOS,

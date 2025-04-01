@@ -99,7 +99,11 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     const fetchComments = async () => {
       if (photo.photo_id) {
         const photoComments = await getCommentsForPhoto(photo.photo_id);
-        setComments(photoComments);
+        setComments(photoComments.map(comment => ({
+          text: comment.text,
+          author: comment.author,
+          userId: comment.userId
+        })));
       }
     };
 
