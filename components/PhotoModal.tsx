@@ -59,7 +59,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const [familyMembers, setFamilyMembers] = useState<TaggedPerson[]>([]);
   const [isFavorited, setIsFavorited] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [comments, setComments] = useState<{ text: string; author: string; userId: string }[]>([]);
+  const [comments, setComments] = useState<{ text: string; author: string; userId: string; timestamp: string }[]>([]);
   const [newComment, setNewComment] = useState('');
   const [editingCommentIndex, setEditingCommentIndex] = useState<number | null>(null);
   const [editedCommentText, setEditedCommentText] = useState('');
@@ -104,7 +104,8 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
         setComments(photoComments.map(comment => ({
           text: comment.text,
           author: comment.author,
-          userId: comment.userId
+          userId: comment.userId,
+          timestamp: comment.timestamp
         })));
       }
     };
@@ -189,7 +190,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
         if (userName) {
           const authorName = `${userName.firstName} ${userName.lastName}`;
           await addCommentToPhoto(photo.photo_id, user.userId, newComment, authorName);
-          setComments([...comments, { text: newComment, author: authorName, userId: user.userId }]);
+          setComments([...comments, { text: newComment, author: authorName, userId: user.userId, timestamp: new Date().toISOString() }]);
           setNewComment('');
         }
       } catch (error) {
@@ -493,6 +494,9 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                       <>
                         <p className="text-sm text-gray-800 dark:text-gray-200">
                           <span className="font-bold">{comment.author}:</span> {comment.text}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(comment.timestamp).toLocaleString()}
                         </p>
                         {comment.userId === user.userId && (
                           <div className="flex space-x-2">

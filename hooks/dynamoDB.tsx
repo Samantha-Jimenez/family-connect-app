@@ -842,6 +842,7 @@ export const getFavoritedPhotosByUser = async (userId: string): Promise<PhotoDat
 
 export const addCommentToPhoto = async (photoId: string, userId: string, comment: string, author: string) => {
   try {
+    const timestamp = new Date().toISOString();
     const params = {
       TableName: TABLES.PHOTOS,
       Key: {
@@ -849,7 +850,7 @@ export const addCommentToPhoto = async (photoId: string, userId: string, comment
       },
       UpdateExpression: "SET comments = list_append(if_not_exists(comments, :emptyList), :comment)",
       ExpressionAttributeValues: {
-        ":comment": { L: [{ M: { userId: { S: userId }, text: { S: comment }, author: { S: author } } }] },
+        ":comment": { L: [{ M: { userId: { S: userId }, text: { S: comment }, author: { S: author }, timestamp: { S: timestamp } } }] },
         ":emptyList": { L: [] }
       }
     };
@@ -862,7 +863,7 @@ export const addCommentToPhoto = async (photoId: string, userId: string, comment
   }
 };
 
-export const getCommentsForPhoto = async (photoId: string): Promise<{ text: string; author: string; userId: string }[]> => {
+export const getCommentsForPhoto = async (photoId: string): Promise<{ text: string; author: string; userId: string; timestamp: string }[]> => {
   try {
     const params = {
       TableName: TABLES.PHOTOS,
@@ -880,7 +881,8 @@ export const getCommentsForPhoto = async (photoId: string): Promise<{ text: stri
     return data.Item.comments.L.map((comment: any) => ({
       userId: comment.M?.userId?.S || '',
       text: comment.M?.text?.S || '',
-      author: comment.M?.author?.S || 'Unknown'
+      author: comment.M?.author?.S || 'Unknown',
+      timestamp: comment.M?.timestamp?.S || ''
     }));
   } catch (error) {
     console.error("❌ Error fetching comments for photo:", error);
