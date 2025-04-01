@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { getUserNameById } from '@/hooks/dynamoDB';
 
 interface EventModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (title: string, start: string, end?: string, allDay?: boolean, location?: string) => void;
+  onSubmit: (title: string, start: string, userId: string, end?: string, allDay?: boolean, location?: string) => void;
   onDelete?: () => void;
   selectedDate: string;
   event?: {
@@ -13,6 +15,7 @@ interface EventModalProps {
     end?: string;
     allDay?: boolean;
     location?: string;
+    userId?: string;
   } | null;
   mode?: 'add' | 'edit';
 }
@@ -26,6 +29,7 @@ export default function EventModal({
   event,
   mode = 'add'
 }: EventModalProps) {
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(mode === 'add');
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -34,6 +38,19 @@ export default function EventModal({
   const [endTime, setEndTime] = useState('');
   const [isAllDay, setIsAllDay] = useState(false);
   const [location, setLocation] = useState('');
+  const [creatorName, setCreatorName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (event?.userId) {
+      getUserNameById(event.userId).then((name) => {
+        if (name) {
+          setCreatorName(`${name.firstName} ${name.lastName}`);
+        } else {
+          setCreatorName('Unknown');
+        }
+      });
+    }
+  }, [event]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -142,11 +159,8 @@ export default function EventModal({
             endDateTime.setMinutes(endDateTime.getMinutes() - endDateTime.getTimezoneOffset());
           }
         } else {
-          // Create dates in local timezone
           const [startHours, startMinutes] = startTime.split(':').map(Number);
           const [endHours, endMinutes] = endTime ? endTime.split(':').map(Number) : [0, 0];
-
-          // Parse the date strings and create Date objects
           const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
           startDateTime = new Date(startYear, startMonth - 1, startDay);
           startDateTime.setHours(startHours, startMinutes, 0);
@@ -158,17 +172,17 @@ export default function EventModal({
           }
         }
         
-        // Validate dates
         if (isNaN(startDateTime.getTime())) {
           throw new Error('Invalid start date/time');
         }
         if (endDateTime && isNaN(endDateTime.getTime())) {
           throw new Error('Invalid end date/time');
         }
-        
+        console.log(user.username);
         onSubmit(
           title.trim(), 
           startDateTime.toISOString(), 
+          user.userId,
           endDateTime?.toISOString(),
           isAllDay,
           location.trim() || undefined
@@ -211,10 +225,11 @@ export default function EventModal({
       handleClose();
     }
   };
+  console.log(event);
 
   return (
     <dialog className={`modal ${isOpen ? 'modal-open' : ''}`}>
-      <div className="modal-box">
+      <div className="modal-box bg-gray-100">
         {isEditing ? (
           <>
             <h3 className="font-bold text-lg">
@@ -317,14 +332,23 @@ export default function EventModal({
               </div>
 
               <div className="modal-action">
-                {mode === 'edit' && onDelete && (
-                  <button
-                    type="button"
-                    onClick={onDelete}
-                    className="btn btn-error"
-                  >
-                    Delete
-                  </button>
+                {event?.userId === user.userId && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={onDelete}
+                      className="btn btn-error"
+                    >
+                      Delete
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditing(true)}
+                      className="btn btn-primary"
+                    >
+                      Edit
+                    </button>
+                  </>
                 )}
                 <button
                   type="button"
@@ -384,29 +408,42 @@ export default function EventModal({
                   <div>{location}</div>
                 </div>
               )}
+
+              {event?.userId && (
+                <div>
+                  <div className="text-sm font-semibold text-gray-500">
+                    Created By
+                  </div>
+                  <div>{creatorName}</div>
+                </div>
+              )}
             </div>
 
             <div className="modal-action">
-              <button
-                type="button"
-                onClick={onDelete}
-                className="btn btn-error"
-              >
-                Delete
-              </button>
+              {event?.userId === user.userId && (
+                <>
+                  <button
+                    type="button"
+                    onClick={onDelete}
+                    className="btn btn-error"
+                  >
+                    Delete
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(true)}
+                    className="btn btn-primary"
+                  >
+                    Edit
+                  </button>
+                </>
+              )}
               <button
                 type="button"
                 onClick={handleClose}
                 className="btn"
               >
                 Close
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsEditing(true)}
-                className="btn btn-primary"
-              >
-                Edit
               </button>
             </div>
           </>

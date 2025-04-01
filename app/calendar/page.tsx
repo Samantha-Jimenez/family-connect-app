@@ -83,7 +83,7 @@ export default function Calendar() {
     }
   };
 
-  const handleAddEvent = (title: string, start: string, end?: string, allDay?: boolean, location?: string) => {
+  const handleAddEvent = (title: string, start: string, userId: string, end?: string, allDay?: boolean, location?: string) => {
     const newEvent = {
       id: crypto.randomUUID(),
       title,
@@ -91,19 +91,19 @@ export default function Calendar() {
       end,
       allDay,
       location,
-      userId: user?.userId
+      userId
     };
     setEvents(currentEvents => [...currentEvents, newEvent]);
     setIsModalOpen(false);
   };
 
-  const handleEditEvent = (title: string, start: string, end?: string, allDay?: boolean, location?: string) => {
+  const handleEditEvent = (title: string, start: string, userId: string, end?: string, allDay?: boolean, location?: string) => {
     if (!selectedEvent?.id) return;
     
     setEvents(currentEvents =>
       currentEvents.map(event =>
         event.id === selectedEvent.id
-          ? { ...event, title, start, end, allDay, location }
+          ? { ...event, title, start, end, allDay, location, userId }
           : event
       )
     );
