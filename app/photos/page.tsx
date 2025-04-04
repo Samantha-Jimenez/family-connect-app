@@ -9,6 +9,7 @@ import { familyTreeData } from '../familytree/familyTreeData'; // Import familyT
 import { FamilyMember, getAllFamilyMembers, getAllPhotosByTagged, PhotoData, TaggedPerson, getUserData } from '@/hooks/dynamoDB'; // Import the functions
 import { getCurrentUser } from 'aws-amplify/auth'; // Import your auth function
 import PhotoModal from '@/components/PhotoModal';
+import Select from 'react-select';
 
 interface DateRange {
   min: number;
@@ -100,7 +101,7 @@ const Photos = () => {
   const [currentDateRange, setCurrentDateRange] = useState<[number, number]>([0, 0]);
   const [filteredImages, setFilteredImages] = useState<PhotoData[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
-  const [selectedPerson, setSelectedPerson] = useState<TaggedPerson | null>(null);
+  const [selectedPeople, setSelectedPeople] = useState<TaggedPerson[]>([]);
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [uploaderName, setUploaderName] = useState<string | null>(null);
@@ -152,7 +153,7 @@ const Photos = () => {
       setDateRange({ min, max });
       setCurrentDateRange([min, max]);
     }
-  }, [images, filteredImages, selectedPerson, selectedLocation, selectedPersonId]);
+  }, [images, filteredImages, selectedPeople, selectedLocation, selectedPersonId]);
 
   useEffect(() => {
     if (selectedPhoto?.uploaded_by) {
@@ -315,13 +316,15 @@ const Photos = () => {
     // e.currentTarget.src = '/fallback-image.jpg';
   };
 
-  const filterImagesByDateRangeLocationAndPerson = (range: [number, number], location: string | null, person: TaggedPerson | null) => {
+  const filterImagesByDateRangeLocationAndPeople = (range: [number, number], location: string | null, people: TaggedPerson[]) => {
     const filtered = images.filter(image => {
       const timestamp = dateToTimestamp(image.metadata?.date_taken || '');
       const matchesDateRange = timestamp >= range[0] && timestamp <= range[1];
       const matchesLocation = !location || (image.metadata?.location && Object.values(image.metadata.location).includes(location));
-      const matchesPerson = !person || (image.metadata?.people_tagged && image.metadata.people_tagged.some(tagged => tagged.id === person.id));
-      return matchesDateRange && matchesLocation && matchesPerson;
+      const matchesPeople = people.every(person => 
+        image.metadata?.people_tagged?.some(tagged => tagged.id === person.id)
+      );
+      return matchesDateRange && matchesLocation && matchesPeople;
     });
     setFilteredImages(filtered);
   };
@@ -329,39 +332,30 @@ const Photos = () => {
   const handleRangeChange = (values: number[]) => {
     const rangeValues: [number, number] = [values[0], values[1]];
     setCurrentDateRange(rangeValues);
-    const taggedPerson = selectedPersonId && selectedPerson ? { id: selectedPersonId, name: selectedPerson.name } : null;
-    filterImagesByDateRangeLocationAndPerson(rangeValues, selectedLocation, taggedPerson);
+    const taggedPerson = selectedPersonId && selectedPeople.length > 0 ? selectedPeople.map(person => ({ id: selectedPersonId, name: person.name })) : null;
+    filterImagesByDateRangeLocationAndPeople(rangeValues, selectedLocation, taggedPerson);
   };
 
   const handleLocationChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const location = event.target.value || null;
     setSelectedLocation(location);
-    filterImagesByDateRangeLocationAndPerson(currentDateRange, location, selectedPerson);
+    filterImagesByDateRangeLocationAndPeople(currentDateRange, location, selectedPeople);
   };
 
-  const handlePersonChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const personName = event.target.value || null;
+  const handlePersonChange = (selectedOptions: any) => {
+    const people = selectedOptions.map((option: any) => ({
+      id: mapNameToId(option.value) || '',
+      name: option.value,
+    }));
 
-    if (personName) {
-      const personId = mapNameToId(personName);
-      if (personId) {
-        const taggedPerson: TaggedPerson = { id: personId, name: personName };
-        setSelectedPerson(taggedPerson); // Set as TaggedPerson
-        setSelectedPersonId(personId);
-        // Fetch photos by tagged user when a person is selected
-        await fetchPhotosByTaggedUser(personId);
-      } else {
-        console.error('No ID found for the selected person');
-        setSelectedPerson(null);
-        setSelectedPersonId(null);
-      }
-    } else {
-      console.log("no person selected");
-      setSelectedPerson(null); // Reset to null if no person is selected
-      setSelectedPersonId(null);
-      setFilteredImages(images); // Reset to all images if no person is selected
-    }
+    setSelectedPeople(people);
+    filterImagesByDateRangeLocationAndPeople(currentDateRange, selectedLocation, people);
   };
+
+  const personOptions = familyMembers.map(member => ({
+    value: `${member.first_name} ${member.last_name}`,
+    label: `${member.first_name} ${member.last_name}`,
+  }));
 
   const uniqueLocations = useMemo(() => {
     const locations = images.map(image => image.metadata?.location).filter(Boolean);
@@ -378,7 +372,7 @@ const Photos = () => {
 
   const resetFilters = async () => {
     setSelectedLocation(null);
-    setSelectedPerson(null);
+    setSelectedPeople([]);
     setSelectedPersonId(null);
     setCurrentDateRange([dateRange.min, dateRange.max]);
     
@@ -628,19 +622,15 @@ const Photos = () => {
           <label htmlFor="person-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Filter by Person:
           </label>
-          <select
+          <Select
             id="person-filter"
-            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-            value={selectedPerson ? selectedPerson.name : ''}
+            isMulti
+            options={personOptions}
+            className="basic-multi-select text-black"
+            classNamePrefix="select"
             onChange={handlePersonChange}
-          >
-            <option value="">All People</option>
-            {familyMembers.map((member, index) => (
-              <option key={index} value={member.first_name + ' ' + member.last_name}>
-                {member.first_name + ' ' + member.last_name}
-              </option>
-            ))}
-          </select>
+            value={selectedPeople.map(person => ({ value: person.name, label: person.name }))}
+          />
         </div>
 
         {/* Clear Filters Button */}
