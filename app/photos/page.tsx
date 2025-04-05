@@ -706,7 +706,7 @@ const Photos = () => {
               options={countries}
               isMulti
               onChange={(options) => {
-                setSelectedCountry(options);
+                setSelectedCountry(options as LocationOption[]);
                 setSelectedState([]);
                 setSelectedCity([]);
                 setSelectedNeighborhood([]);
@@ -725,7 +725,7 @@ const Photos = () => {
               options={states}
               isMulti
               onChange={(options) => {
-                setSelectedState(options);
+                setSelectedState(options as LocationOption[]);
                 setSelectedCity([]);
                 setSelectedNeighborhood([]);
                 handleLocationChange(); // Fetch photos on change
@@ -744,7 +744,7 @@ const Photos = () => {
               options={cities}
               isMulti
               onChange={(options) => {
-                setSelectedCity(options);
+                setSelectedCity(options as LocationOption[]);
                 setSelectedNeighborhood([]);
                 handleLocationChange(); // Fetch photos on change
               }}  
@@ -762,7 +762,7 @@ const Photos = () => {
               options={neighborhoods}
               isMulti
               onChange={(options) => {
-                setSelectedNeighborhood(options);
+                setSelectedNeighborhood(options as LocationOption[]);
                 handleLocationChange(); // Fetch photos on change
               }}
               placeholder="Select Neighborhood"
