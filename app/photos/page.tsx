@@ -10,6 +10,7 @@ import { FamilyMember, getAllFamilyMembers, getAllPhotosByTagged, PhotoData, Tag
 import { getCurrentUser } from 'aws-amplify/auth'; // Import your auth function
 import PhotoModal from '@/components/PhotoModal';
 import Select from 'react-select';
+import makeAnimated from 'react-select/animated';
 
 interface DateRange {
   min: number;
@@ -90,6 +91,47 @@ const extractFamilyMemberNames = (member: FamilyMemberProps): string[] => {
   return names;
 };
 
+// Define your options types
+interface LocationOption {
+  value: string;
+  label: string;
+}
+
+// State name mapping for normalization
+const stateNameMap: { [key: string]: string } = {
+  'CA': 'California',
+  'NY': 'New York',
+  // Add other state abbreviations as needed
+};
+
+function cleanAndGroupLocations(data: PhotoData[]) {
+  const grouped: { [key: string]: { [key: string]: { [key: string]: string[] } } } = {};
+
+  for (const item of data) {
+    const location = item.metadata.location;
+    let country = location.country.trim() || "United States";
+    let state = location.state.trim();
+    let city = location.city.trim();
+    let neighborhood = location.neighborhood.trim();
+
+    if (!state && !city) continue; // skip entries with no meaningful location
+
+    state = stateNameMap[state] || state; // normalize short state codes
+
+    if (!grouped[country]) grouped[country] = {};
+    if (!grouped[country][state]) grouped[country][state] = {};
+    if (!grouped[country][state][city]) grouped[country][state][city] = [];
+
+    if (neighborhood && !grouped[country][state][city].includes(neighborhood)) {
+      grouped[country][state][city].push(neighborhood);
+    } else if (!neighborhood && !grouped[country][state][city].includes("")) {
+      grouped[country][state][city].push("");
+    }
+  }
+  console.log('grouped', grouped);
+  return grouped;
+}
+
 const Photos = () => {
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [images, setImages] = useState<PhotoData[]>([]);
@@ -117,6 +159,19 @@ const Photos = () => {
     description: '',
     peopleTagged: [] as TaggedPerson[]
   });
+  const [locationHierarchy, setLocationHierarchy] = useState<any>({}); // Adjust type as needed
+
+  const [countries, setCountries] = useState<LocationOption[]>([]);
+  const [states, setStates] = useState<LocationOption[]>([]);
+  const [cities, setCities] = useState<LocationOption[]>([]);
+  const [neighborhoods, setNeighborhoods] = useState<LocationOption[]>([]);
+
+  const [selectedCountry, setSelectedCountry] = useState<LocationOption[]>([]);
+  const [selectedState, setSelectedState] = useState<LocationOption[]>([]);
+  const [selectedCity, setSelectedCity] = useState<LocationOption[]>([]);
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState<LocationOption[]>([]);
+
+  const animatedComponents = makeAnimated();
 
   useEffect(() => {
     fetchPhotos();
@@ -184,6 +239,55 @@ const Photos = () => {
       });
     }
   }, [selectedPhoto]);
+
+  useEffect(() => {
+    const groupedLocations = cleanAndGroupLocations(images);
+    setLocationHierarchy(groupedLocations);
+  }, [images]);
+
+  useEffect(() => {
+    const countriesList = Object.keys(locationHierarchy);
+    setCountries(countriesList.map(country => ({ value: country, label: country })));
+  }, [locationHierarchy]);
+
+  useEffect(() => {
+    if (selectedCountry.length > 0) {
+      const statesList = selectedCountry.flatMap(country => 
+        Object.keys(locationHierarchy[country.value] || {})
+      );
+      setStates(statesList.map(state => ({ value: state, label: state })));
+    } else {
+      setStates([]);
+      setSelectedState([]);
+      setSelectedCity([]);
+      setSelectedNeighborhood([]);
+    }
+  }, [selectedCountry, locationHierarchy]);
+
+  useEffect(() => {
+    if (selectedState.length > 0 && selectedCountry.length > 0) {
+      const citiesList = selectedState.flatMap(state => 
+        Object.keys(locationHierarchy[selectedCountry[0].value]?.[state.value] || {})
+      );
+      setCities(citiesList.map(city => ({ value: city, label: city })));
+    } else {
+      setCities([]);
+      setSelectedCity([]);
+      setSelectedNeighborhood([]);
+    }
+  }, [selectedState, selectedCountry, locationHierarchy]);
+
+  useEffect(() => {
+    if (selectedCity.length > 0 && selectedState.length > 0 && selectedCountry.length > 0) {
+      const neighborhoodsList = selectedCity.flatMap(city => 
+        locationHierarchy[selectedCountry[0].value]?.[selectedState[0].value]?.[city.value] || []
+      );
+      setNeighborhoods(neighborhoodsList.map(neighborhood => ({ value: neighborhood, label: neighborhood })));
+    } else {
+      setNeighborhoods([]);
+      setSelectedNeighborhood([]);
+    }
+  }, [selectedCity, selectedState, selectedCountry, locationHierarchy]);
 
   const fetchPhotos = async () => {
     try {
@@ -338,9 +442,13 @@ const Photos = () => {
     filterImagesByDateRangeLocationAndPeople(rangeValues, selectedLocation, taggedPerson);
   };
 
-  const handleLocationChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const location = event.target.value || null;
-    setSelectedLocation(location);
+  const handleLocationChange = async () => {
+    const location = selectedNeighborhood?.length > 0 ? selectedNeighborhood.map(n => n.value).join(',') : selectedCity.length > 0 ? selectedCity.map(c => c.value).join(',') : selectedState.length > 0 ? selectedState.map(s => s.value).join(',') : selectedCountry.length > 0 ? selectedCountry.map(c => c.value).join(',') : null;
+    if (location) {
+      const response = await fetch(`/api/photos?location=${location}`); // Adjust API endpoint
+      const data = await response.json();
+      setImages(data.photos); // Update images based on the selected location
+    }
     filterImagesByDateRangeLocationAndPeople(currentDateRange, location, selectedPeople);
   };
 
@@ -358,19 +466,6 @@ const Photos = () => {
     value: `${member.first_name} ${member.last_name}`,
     label: `${member.first_name} ${member.last_name}`,
   }));
-
-  const uniqueLocations = useMemo(() => {
-    const locations = images.map(image => image.metadata?.location).filter(Boolean);
-    const locationSet = new Set<string>();
-    locations.forEach(location => {
-      if (location) {
-        Object.values(location).forEach(loc => {
-          if (loc) locationSet.add(loc);
-        });
-      }
-    });
-    return Array.from(locationSet);
-  }, [images]);
 
   const resetFilters = async () => {
     setSelectedLocation(null);
@@ -394,11 +489,11 @@ const Photos = () => {
     return (
       <div className="mb-8 px-4">
         {/* Add the photo count display */}
-        <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+        {/* <div className="mb-4 text-sm text-gray-200">
           {formatPhotoCount(filteredImages.length, images.length)}
-        </div>
+        </div> */}
 
-        <div className="mb-2 flex justify-between text-sm text-gray-600">
+        <div className="mb-2 flex justify-between text-sm text-gray-400">
           <span>{timestampToDate(currentDateRange[0])}</span>
           <span>{timestampToDate(currentDateRange[1])}</span>
         </div>
@@ -595,36 +690,94 @@ const Photos = () => {
           <button type="button" className="border border-gray-900 bg-gray-900 hover:border-gray-700 focus:ring-4 focus:outline-none  rounded-full text-base font-medium px-5 py-2.5 text-center me-3 mb-3 text-white focus:ring-gray-800">Gaming</button>
         </div> */}
 
-        <div className="flex justify-center mb-4">
+        {/* <div className="flex justify-center mb-4">
           <PhotoCount filtered={filteredImages.length} total={images.length} />
-        </div>
+        </div> */}
 
         {/* Location filter dropdown */}
-        <div className="mb-4">
-          <label htmlFor="location-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Filter by Location:
-          </label>
-          <select
-            id="location-filter"
-            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-            value={selectedLocation || ''}
-            onChange={handleLocationChange}
-          >
-            <option value="">All Locations</option>
-            {uniqueLocations.map((location, index) => (
-              <option key={index} value={location}>
-                {location}
-              </option>
-            ))}
-          </select>
+        <div className="flex flex-wrap mb-4">
+          <div className="w-1/2 p-2"> {/* First column */}
+            <label htmlFor="country-filter" className="block text-sm font-medium text-gray-400">
+              Filter by Country:
+            </label>
+            <Select
+              components={animatedComponents}
+              className="basic-multi-select text-black"
+              options={countries}
+              isMulti
+              onChange={(options) => {
+                setSelectedCountry(options);
+                setSelectedState([]);
+                setSelectedCity([]);
+                setSelectedNeighborhood([]);
+                handleLocationChange(); // Fetch photos on change
+              }}
+              placeholder="Select Country"
+            />
+          </div>
+          <div className="w-1/2 p-2"> {/* Second column */}
+            <label htmlFor="state-filter" className="block text-sm font-medium text-gray-400">
+              Filter by State:
+            </label>
+            <Select
+              components={animatedComponents}
+              className="basic-multi-select text-black"
+              options={states}
+              isMulti
+              onChange={(options) => {
+                setSelectedState(options);
+                setSelectedCity([]);
+                setSelectedNeighborhood([]);
+                handleLocationChange(); // Fetch photos on change
+              }}
+              placeholder="Select State"
+              isDisabled={selectedCountry.length === 0}
+            />
+          </div>
+          <div className="w-1/2 p-2"> {/* Third column */}
+            <label htmlFor="city-filter" className="block text-sm font-medium text-gray-400">
+              Filter by City:
+            </label>
+            <Select
+              components={animatedComponents}
+              className="basic-multi-select text-black"
+              options={cities}
+              isMulti
+              onChange={(options) => {
+                setSelectedCity(options);
+                setSelectedNeighborhood([]);
+                handleLocationChange(); // Fetch photos on change
+              }}  
+              placeholder="Select City"
+              isDisabled={selectedState.length === 0}
+            />
+          </div>
+          <div className="w-1/2 p-2"> {/* Fourth column */}
+            <label htmlFor="neighborhood-filter" className="block text-sm font-medium text-gray-400">
+              Filter by Neighborhood:
+            </label>
+            <Select
+              components={animatedComponents}
+              className="basic-multi-select text-black"
+              options={neighborhoods}
+              isMulti
+              onChange={(options) => {
+                setSelectedNeighborhood(options);
+                handleLocationChange(); // Fetch photos on change
+              }}
+              placeholder="Select Neighborhood"
+              isDisabled={selectedCity.length === 0}
+            />
+          </div>
         </div>
 
         {/* Person filter dropdown */}
-        <div className="mb-4">
-          <label htmlFor="person-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <div className="mb-4 px-2">
+          <label htmlFor="person-filter" className="block text-sm font-medium text-gray-400">
             Filter by Person:
           </label>
           <Select
+            components={animatedComponents}
             id="person-filter"
             isMulti
             options={personOptions}
@@ -636,7 +789,7 @@ const Photos = () => {
         </div>
 
         {/* Clear Filters Button */}
-        <div className="mb-4">
+        <div className="mb-4 px-2">
           <button
             onClick={resetFilters}
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
@@ -646,6 +799,10 @@ const Photos = () => {
         </div>
 
         {renderDateRangeSlider()}
+
+        <div className="mb-4 text-sm text-gray-200">
+          {formatPhotoCount(filteredImages.length, images.length)}
+        </div>
 
         <div id="default-carousel" className="relative w-full" data-carousel="slide">
           <div className="relative h-56 overflow-hidden rounded-lg md:h-96">
@@ -723,6 +880,10 @@ const Photos = () => {
             />
           </div>
         ))}
+      </div>
+
+      <div className="flex justify-center mb-4 mt-10">
+          <PhotoCount filtered={filteredImages.length} total={images.length} />
       </div>
 
       {/* Photo Modal */}
