@@ -47,7 +47,7 @@ interface CalendarEvent {
 }
 
 export default function Calendar() {
-  const { events, setEvents } = useCalendar();
+  const { events, setEvents, rsvpEvent } = useCalendar();
   const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
@@ -214,6 +214,7 @@ export default function Calendar() {
         selectedDate={selectedDate}
         event={selectedEvent}
         mode={modalMode}
+        rsvpEvent={rsvpEvent}
       />
     </div>
   )

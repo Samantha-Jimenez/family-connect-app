@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { getUserNameById } from '@/hooks/dynamoDB';
+import { CalendarEvent } from '@/context/CalendarContext';
 
 interface EventModalProps {
   isOpen: boolean;
@@ -8,16 +9,9 @@ interface EventModalProps {
   onSubmit: (title: string, start: string, userId: string, end?: string, allDay?: boolean, location?: string) => void;
   onDelete?: () => void;
   selectedDate: string;
-  event?: {
-    id?: string;
-    title: string;
-    start: string;
-    end?: string;
-    allDay?: boolean;
-    location?: string;
-    userId?: string;
-  } | null;
+  event?: CalendarEvent | null;
   mode?: 'add' | 'edit';
+  rsvpEvent: (eventId: string, status: 'yes' | 'no' | 'maybe') => void;
 }
 
 export default function EventModal({
@@ -27,7 +21,8 @@ export default function EventModal({
   onDelete,
   selectedDate,
   event,
-  mode = 'add'
+  mode = 'add',
+  rsvpEvent,
 }: EventModalProps) {
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(mode === 'add');
@@ -39,6 +34,7 @@ export default function EventModal({
   const [isAllDay, setIsAllDay] = useState(false);
   const [location, setLocation] = useState('');
   const [creatorName, setCreatorName] = useState<string | null>(null);
+  const [rsvpStatus, setRsvpStatus] = useState<'yes' | 'no' | 'maybe' | null>(null);
 
   useEffect(() => {
     if (event?.userId) {
@@ -99,6 +95,12 @@ export default function EventModal({
 
     resetToEventValues();
   }, [event, mode, selectedDate, setTitle, setIsAllDay, setLocation, setStartDate, setStartTime, setEndDate, setEndTime]);
+
+  useEffect(() => {
+    if (event) {
+      setRsvpStatus(event.extendedProps?.rsvpStatus || null);
+    }
+  }, [event]);
 
   const formatDateTime = (date: string, time?: string) => {
     try {
@@ -225,6 +227,14 @@ export default function EventModal({
       handleClose();
     }
   };
+
+  const handleRsvp = (status: 'yes' | 'no' | 'maybe') => {
+    setRsvpStatus(status);
+    if (event?.id) {
+      rsvpEvent(event.id, status);
+    }
+  };
+
   console.log(event);
 
   return (
@@ -445,6 +455,15 @@ export default function EventModal({
               >
                 Close
               </button>
+            </div>
+
+            <div className="modal-action">
+              <div className="text-sm font-semibold text-gray-500">
+                Your RSVP Status: {rsvpStatus ? rsvpStatus.charAt(0).toUpperCase() + rsvpStatus.slice(1) : 'Not Responded'}
+              </div>
+              <button onClick={() => handleRsvp('yes')} className="btn btn-success">RSVP Yes</button>
+              <button onClick={() => handleRsvp('no')} className="btn btn-error">RSVP No</button>
+              <button onClick={() => handleRsvp('maybe')} className="btn btn-warning">RSVP Maybe</button>
             </div>
           </>
         )}

@@ -18,12 +18,15 @@ export interface CalendarEvent {
   createdBy?: string;
   extendedProps?: {
     category?: 'birthday' | 'holiday' | 'family-event' | 'appointment';
-  }
-  rrule?: {
-    freq: 'daily' | 'weekly' | 'monthly' | 'yearly';
-    interval?: number;
-    byweekday?: number[];
-    until?: string;
+    rrule?: {
+      freq: 'daily' | 'weekly' | 'monthly' | 'yearly';
+      interval?: number;
+      byweekday?: number[];
+      until?: string;
+    };
+    userId?: string;
+    location?: string;
+    rsvpStatus?: 'yes' | 'no' | 'maybe' | null;
   };
   userId?: string;
 }
@@ -32,6 +35,7 @@ interface CalendarContextType {
   events: CalendarEvent[];
   setEvents: React.Dispatch<React.SetStateAction<CalendarEvent[]>>;
   addEvent: (title: string, start: string, end?: string, allDay?: boolean, location?: string, createdBy?: string) => void;
+  rsvpEvent: (eventId: string, status: 'yes' | 'no' | 'maybe') => void;
 }
 
 const CalendarContext = createContext<CalendarContextType | undefined>(undefined);
@@ -73,13 +77,28 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
     }
   }, [events, isInitialized]);
 
+  // Add a new method to handle RSVP
+  const rsvpEvent = (eventId: string, status: 'yes' | 'no' | 'maybe') => {
+    setEvents(currentEvents => {
+      const updatedEvents = currentEvents.map(event =>
+        event.id === eventId
+          ? { ...event, rsvpStatus: status } // Update the rsvpStatus
+          : event
+      );
+
+      // Save to localStorage using the updated events state
+      localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
+      return updatedEvents; // Return the updated events
+    });
+  };
+
   // Only render the provider when we have a user
   if (!user) {
     return null;
   }
 
   return (
-    <CalendarContext.Provider value={{ events, setEvents, addEvent }}>
+    <CalendarContext.Provider value={{ events, setEvents, addEvent, rsvpEvent }}>
       {children}
     </CalendarContext.Provider>
   );

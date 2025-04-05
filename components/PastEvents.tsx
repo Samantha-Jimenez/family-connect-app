@@ -16,10 +16,11 @@ interface Event {
     byweekday?: number[];
     until?: string;
   };
+  rsvpStatus?: 'yes' | 'no' | 'maybe' | null;
 }
 
 const PastEvents = () => {
-  const { events } = useCalendar();
+  const { events } = useCalendar() as { events: Event[] };
   const router = useRouter();
 
   // Function to get the last occurrence of a recurring event
@@ -52,11 +53,10 @@ const PastEvents = () => {
     return eventStart < now ? eventStart : null;
   };
 
-  const sortedEvents = (events || [])
+  const sortedEvents: (Event & { lastOccurrence: Date | null })[] = (events || [])
     .map(event => ({
       ...event,
       lastOccurrence: getLastOccurrence(event),
-      location: event.location
     }))
     .filter(event => event.lastOccurrence !== null)
     .sort((a, b) => b.lastOccurrence!.getTime() - a.lastOccurrence!.getTime()) // Reverse sort for past events

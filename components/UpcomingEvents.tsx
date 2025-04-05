@@ -52,11 +52,10 @@ const UpcomingEvents = () => {
     return eventStart;
   };
 
-  const sortedEvents = (events || [])
+  const sortedEvents: (Event & { nextOccurrence: Date | null })[] = (events || [])
     .map(event => ({
       ...event,
       nextOccurrence: getNextOccurrence(event),
-      location: event.location
     }))
     .filter(event => event.nextOccurrence !== null)
     .sort((a, b) => a.nextOccurrence!.getTime() - b.nextOccurrence!.getTime())
