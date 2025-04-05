@@ -332,7 +332,9 @@ const Photos = () => {
   const handleRangeChange = (values: number[]) => {
     const rangeValues: [number, number] = [values[0], values[1]];
     setCurrentDateRange(rangeValues);
-    const taggedPerson = selectedPersonId && selectedPeople.length > 0 ? selectedPeople.map(person => ({ id: selectedPersonId, name: person.name })) : null;
+    const taggedPerson = selectedPersonId && selectedPeople.length > 0 
+        ? selectedPeople.map(person => ({ id: selectedPersonId, name: person.name })) 
+        : [];
     filterImagesByDateRangeLocationAndPeople(rangeValues, selectedLocation, taggedPerson);
   };
 
