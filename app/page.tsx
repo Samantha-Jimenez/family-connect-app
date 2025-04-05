@@ -99,7 +99,7 @@ const HomePage = () => {
 
                   <div className="mt-6">
                     {activeTab === 'uploads' && <UploadedPhotosCard />}
-                    {activeTab === 'tagged' && <TaggedPhotosCard />}
+                    {activeTab === 'tagged' && <TaggedPhotosCard userId={user.userId} />}
                     {activeTab === 'favorites' && <FavoritedPhotosCard />}
                     {activeTab === 'albums' && <AlbumsCard userId={user.userId} auth={true}/>}
                     {activeTab === 'settings' && <Settings />}

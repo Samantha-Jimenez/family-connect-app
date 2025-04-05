@@ -9,6 +9,7 @@ import UpcomingEvents from "@/components/UpcomingEvents";
 import { getUserDataById } from '@/hooks/dynamoDB';
 import { FamilyMember } from '@/hooks/dynamoDB';
 import AlbumsCard from "@/components/AlbumsCard";
+import TaggedPhotosCard from "@/components/TaggedPhotosCard";
 
 interface UserData {
   first_name: string;
@@ -95,11 +96,7 @@ export default function ProfilePage() {
       <UpcomingEvents />
       <div className="divider col-span-1 sm:col-span-2"></div>
       {/* Tagged Photos */}
-      <div className="card bg-white text-black shadow-lg p-6 col-span-1 sm:col-span-2">
-        <h2 className="text-xl font-bold">🏷️ Tagged Photos</h2>
-        <p className="mt-2">See all photos you are tagged in.</p>
-        <button className="btn btn-outline mt-4 bg-[#ffdaad] border-0 text-gray-700">View Tags</button>
-      </div>
+      <TaggedPhotosCard userId={member_id as string} />
       <div className="divider col-span-1 sm:col-span-2"></div>
       {/* Family Tree */}
       <div className="card bg-white text-black shadow-lg p-6 col-span-1 sm:col-span-2">

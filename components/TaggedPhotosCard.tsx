@@ -6,7 +6,7 @@ import { getUserData, PhotoData, TaggedPerson } from '@/hooks/dynamoDB';
 import PhotoModal from '@/components/PhotoModal';
 
 
-export default function TaggedPhotosCard() {
+export default function TaggedPhotosCard({ userId }: { userId: string }) {
   const [taggedPhotos, setTaggedPhotos] = useState<PhotoData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoData | null>(null);
@@ -21,8 +21,7 @@ export default function TaggedPhotosCard() {
 
   const fetchCurrentUserId = async () => {
     try {
-      const user = await getCurrentUser();
-      setCurrentUserId(user.userId);
+      setCurrentUserId(userId);
     } catch (error) {
       console.error('Error fetching current user ID:', error);
     }
@@ -30,8 +29,7 @@ export default function TaggedPhotosCard() {
 
   const fetchTaggedPhotos = async () => {
     try {
-      const user = await getCurrentUser();
-      if (!user?.userId) {
+      if (!userId) {
         throw new Error("User not authenticated");
       }
 
@@ -39,7 +37,7 @@ export default function TaggedPhotosCard() {
       const data = await response.json();
       // Filter photos where the current user is tagged
       const filteredPhotos = data.photos.filter((photo: PhotoData) => {
-        return photo.metadata?.people_tagged?.some((person: TaggedPerson) => person.id === user.userId);
+        return photo.metadata?.people_tagged?.some((person: TaggedPerson) => person.id === userId);
       });
       setTaggedPhotos(filteredPhotos);
     } catch (error) {
