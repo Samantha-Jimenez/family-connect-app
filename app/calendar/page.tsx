@@ -1,5 +1,5 @@
 "use client"; // Required for Next.js App Router
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -13,6 +13,7 @@ import iCalendarPlugin from '@fullcalendar/icalendar'
 import { useCalendar } from '@/context/CalendarContext';
 import { useAuth } from '@/context/AuthContext';
 import { EventApi } from '@fullcalendar/core';
+import { DEFAULT_EVENTS } from './calendarData'; // Import your default events
 
 interface CalendarEvent {
   id?: string;
@@ -52,6 +53,23 @@ export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+
+  useEffect(() => {
+    // Initialize events with DEFAULT_EVENTS if events are empty
+    if (events.length === 0) {
+      setEvents(DEFAULT_EVENTS);
+    } else {
+      // Combine DEFAULT_EVENTS with existing events, ensuring no duplicates
+      const combinedEvents = [...events, ...DEFAULT_EVENTS].filter((event, index, self) =>
+        index === self.findIndex((e) => e.id === event.id)
+      );
+
+      // Only update state if combinedEvents is different from current events
+      if (JSON.stringify(combinedEvents) !== JSON.stringify(events)) {
+        setEvents(combinedEvents);
+      }
+    }
+  }, [events, setEvents]);
 
   const handleDateClick = (info: { date: Date }) => {
     setSelectedEvent(null);
@@ -93,8 +111,14 @@ export default function Calendar() {
       location,
       userId
     };
-    setEvents(currentEvents => [...currentEvents, newEvent]);
-    setIsModalOpen(false);
+
+    // Check if the event already exists based on title and start time
+    const eventExists = events.some(event => event.title === newEvent.title && event.start === newEvent.start);
+    if (!eventExists) {
+      setEvents(currentEvents => [...currentEvents, newEvent]);
+    } else {
+      console.warn('Event already exists:', newEvent);
+    }
   };
 
   const handleEditEvent = (title: string, start: string, userId: string, end?: string, allDay?: boolean, location?: string) => {
@@ -117,6 +141,10 @@ export default function Calendar() {
       currentEvents.filter(event => event.id !== selectedEvent.id)
     );
     setIsModalOpen(false);
+  };
+
+  const handleResetEvents = () => {
+    setEvents([]); // Clear all events
   };
 
   return (
@@ -176,6 +204,7 @@ export default function Calendar() {
           console.log('Event mouse entered:', info.event.title, info.event.extendedProps);
           // Show tooltip or additional info on hover
         }}
+        timeZone="UTC"
       />
       <EventModal
         isOpen={isModalOpen}

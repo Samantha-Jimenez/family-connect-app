@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext'; // Import your auth context
 import { v4 as uuidv4 } from 'uuid';
+import { DEFAULT_EVENTS } from '@/app/calendar/calendarData'; // Ensure this import is correct
 
 export interface CalendarEvent {
   id?: string;
@@ -34,17 +35,6 @@ interface CalendarContextType {
 }
 
 const CalendarContext = createContext<CalendarContextType | undefined>(undefined);
-
-const DEFAULT_EVENTS: CalendarEvent[] = [{
-  id: '1',
-  title: "Family Game Night",
-  start: "2024-03-22T19:00:00.000Z", // Use a fixed date instead of dynamic
-  rrule: {
-    freq: 'weekly',
-    interval: 1,
-    byweekday: [5]
-  }
-}];
 
 export function CalendarProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
