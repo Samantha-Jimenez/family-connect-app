@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { createAlbum, addPhotoToAlbum, getUserAlbums, getPhotosByAlbum } from '../hooks/dynamoDB';
-import { useAuthenticator } from '@aws-amplify/ui-react';
 import Image from 'next/image';
 import { PhotoData, AlbumData } from '../hooks/dynamoDB';
 
-const AlbumsCard = () => {
-  const { user } = useAuthenticator();
+const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
   const [albumName, setAlbumName] = useState('');
   const [albumDescription, setAlbumDescription] = useState('');
   const [photoId, setPhotoId] = useState('');
@@ -18,8 +16,8 @@ const AlbumsCard = () => {
   const [photoCounts, setPhotoCounts] = useState<{ [key: string]: number }>({});
   useEffect(() => {
     const fetchAlbums = async () => {
-      if (user && user.userId) {
-        const userAlbums = await getUserAlbums(user.userId);
+      if (userId) {
+        const userAlbums = await getUserAlbums(userId);
         setAlbums(userAlbums);
 
         // Fetch photo counts for each album
@@ -33,7 +31,7 @@ const AlbumsCard = () => {
     };
 
     fetchAlbums();
-  }, [user]);
+  }, [userId]);
 
   const handleCreateAlbum = async () => {
     try {
@@ -43,7 +41,7 @@ const AlbumsCard = () => {
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000); // Hide toast after 3 seconds
       // Refresh albums list
-      const userAlbums = await getUserAlbums(user.userId);
+      const userAlbums = await getUserAlbums(userId);
       setAlbums(userAlbums);
 
       // Refresh photo counts
@@ -80,6 +78,8 @@ const AlbumsCard = () => {
 
   return (
     <div className="p-4 bg-white shadow-lg rounded-lg relative">
+      {auth && (
+        <>
       <h2 className="text-xl font-bold mb-4 text-black">Create Album</h2>
       <div className="mb-4">
         <input
@@ -114,6 +114,8 @@ const AlbumsCard = () => {
       <button onClick={handleAddPhotoToAlbum} className="btn btn-secondary w-full">
         Add Photo
       </button>
+      </>
+      )}
 
       {showToast && (
         <div className="toast toast-top toast-end">

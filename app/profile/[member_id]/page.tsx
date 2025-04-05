@@ -8,6 +8,7 @@ import { fetchUserAttributes } from "aws-amplify/auth";
 import UpcomingEvents from "@/components/UpcomingEvents";
 import { getUserDataById } from '@/hooks/dynamoDB';
 import { FamilyMember } from '@/hooks/dynamoDB';
+import AlbumsCard from "@/components/AlbumsCard";
 
 interface UserData {
   first_name: string;
@@ -89,11 +90,7 @@ export default function ProfilePage() {
       </div>
       <div className="divider col-span-1 sm:col-span-2"></div>
       {/* Albums */}
-      <div className="card bg-white text-black shadow-lg p-6">
-        <h2 className="text-xl font-bold">📸 Albums</h2>
-        <p className="mt-2">View and organize your photo albums.</p>
-        <button className="btn btn-outline mt-4 bg-[#ffdaad] border-0 text-gray-700">Go to Albums</button>
-      </div>
+      <AlbumsCard userId={member_id as string} auth={false}/>
       {/* <div className="divider divider-horizontal"></div> */}
       <UpcomingEvents />
       <div className="divider col-span-1 sm:col-span-2"></div>
