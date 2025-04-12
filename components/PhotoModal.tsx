@@ -239,7 +239,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleCloseModal}>
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-4xl w-full m-4 grid grid-cols-2 gap-4 max-h-[670px]" onClick={handleModalClick}>
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-4xl md:w-full w-auto m-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[670px] overflow-y-auto md:overflow-y-hidden" onClick={handleModalClick}>
         <div className="relative">
           <Image
             src={photo.url || '/fallback-image.jpg'}
@@ -249,8 +249,11 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             className="object-contain rounded-lg"
             onError={handleImageError}
           />
-          <div className={`absolute top-2 right-6 cursor-pointer transition-transform duration-300 ${isAnimating ? 'scale-125' : ''}`} onClick={toggleFavorite}>
+          <div className={`absolute top-[0.6rem] right-[0.7rem] cursor-pointer transition-transform duration-300 ${isAnimating ? 'scale-125' : ''}`} onClick={toggleFavorite}>
             {isFavorited ? <span className="icon-[mdi--cards-heart] w-5 h-5 text-red-500" /> : <span className="icon-[mdi--cards-heart] w-5 h-5 text-white" />}
+          </div>
+          <div className="absolute top-[-1.6rem] right-[-0.9rem] cursor-pointer block md:hidden" onClick={handleCloseModal}>
+            <span className="text-gray-600 text-2xl">&times;</span>
           </div>
           <div className="flex justify-end space-x-2 mt-auto">
           {currentUserId === photo?.uploaded_by && !isEditing && (
@@ -265,7 +268,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
         </div>
         
         <div className="relative flex flex-col justify-between h-full">
-          <div className="absolute top-[-1.15rem] right-[-0.5rem] cursor-pointer" onClick={handleCloseModal}>
+          <div className="absolute top-[-1.2rem] right-[-0.5rem] cursor-pointer hidden md:block" onClick={handleCloseModal}>
             <span className="text-gray-600 text-2xl">&times;</span>
           </div>
           <div className="">
