@@ -265,6 +265,28 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           <div className="absolute top-[-1.6rem] right-[-0.9rem] cursor-pointer block md:hidden" onClick={handleCloseModal}>
             <span className="text-gray-600 text-2xl">&times;</span>
           </div>
+          {isEditing && currentUserId === photo?.uploaded_by && (
+          <div className="flex absolute bottom-0 right-0 space-x-2 mb-2">
+            <button
+              className="btn bg-green-500 text-white border-0"
+              onClick={handleSave}
+            >
+              Save
+            </button>
+            <button
+              className="btn bg-red-500 text-white border-0"
+              onClick={handleDelete}
+            >
+              Delete
+            </button>
+            <button
+              onClick={() => setIsEditing(false)}
+              className="btn bg-gray-600 text-white border-0"
+            >
+              Cancel
+            </button>
+          </div>
+          )}
           <div className="flex justify-end space-x-2 mt-auto">
             {currentUserId === photo?.uploaded_by && !isEditing && (
               <button
@@ -411,26 +433,6 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                     </select>
                   </div>
                 )}
-                <div className="flex absolute bottom-0 right-0 space-x-2 mb-2">
-                  <button
-                    className="btn bg-green-500 text-white border-0"
-                    onClick={handleSave}
-                  >
-                    Save
-                  </button>
-                  <button
-                    className="btn bg-red-500 text-white border-0"
-                    onClick={handleDelete}
-                  >
-                    Delete
-                  </button>
-                  <button
-                    onClick={() => setIsEditing(false)}
-                    className="btn bg-gray-600 text-white border-0"
-                  >
-                    Cancel
-                  </button>
-                </div>
               </div>
             ) : (
               <>
