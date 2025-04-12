@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { getUserNameById } from '@/hooks/dynamoDB';
 import { CalendarEvent } from '@/context/CalendarContext';
+import ConfirmationModal from './ConfirmationModal';
 
 interface EventModalProps {
   isOpen: boolean;
@@ -35,6 +36,7 @@ export default function EventModal({
   const [location, setLocation] = useState('');
   const [creatorName, setCreatorName] = useState<string | null>(null);
   const [rsvpStatus, setRsvpStatus] = useState<'yes' | 'no' | 'maybe' | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (event?.userId) {
@@ -180,7 +182,7 @@ export default function EventModal({
         if (endDateTime && isNaN(endDateTime.getTime())) {
           throw new Error('Invalid end date/time');
         }
-        console.log(user.username);
+        
         onSubmit(
           title.trim(), 
           startDateTime.toISOString(), 
@@ -189,6 +191,9 @@ export default function EventModal({
           isAllDay,
           location.trim() || undefined
         );
+
+        // Close the modal after successful submission
+        onClose();
       } catch (error) {
         console.error('Error submitting event:', error);
         alert('Please enter valid date and time values');
@@ -235,7 +240,12 @@ export default function EventModal({
     }
   };
 
-  console.log(event);
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete();
+      setIsConfirmOpen(false);
+    }
+  };
 
   return (
     <dialog className={`modal ${isOpen ? 'modal-open' : ''}`}>
@@ -342,11 +352,11 @@ export default function EventModal({
               </div>
 
               <div className="modal-action">
-                {event?.userId === user.userId && (
+                {(event?.userId === user.userId || user.userId === "f16b1510-0001-705f-8680-28689883e706") && (
                   <>
                     <button
                       type="button"
-                      onClick={onDelete}
+                      onClick={() => setIsConfirmOpen(true)}
                       className="btn btn-error"
                     >
                       Delete
@@ -430,11 +440,11 @@ export default function EventModal({
             </div>
 
             <div className="modal-action">
-              {event?.userId === user.userId || user.userId === "f16b1510-0001-705f-8680-28689883e706" && (
+              {(event?.userId === user.userId || user.userId === "f16b1510-0001-705f-8680-28689883e706") && (
                 <>
                   <button
                     type="button"
-                    onClick={onDelete}
+                    onClick={() => setIsConfirmOpen(true)}
                     className="btn btn-error"
                   >
                     Delete
@@ -471,6 +481,12 @@ export default function EventModal({
       <div className="modal-backdrop" onClick={handleClose}>
         <button className="cursor-default">close</button>
       </div>
+      <ConfirmationModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleDelete}
+        message="Are you sure you want to delete this event?"
+      />
     </dialog>
   );
 } 
