@@ -20,10 +20,10 @@ const PhotoComments = ({ comments, editingCommentIndex, setEditingCommentIndex, 
     <div className="grid h-full">
         <div className="mt-4 border-t pt-2">
             <h3 className="text-lg font-bold mb-2 text-black">Comments</h3>
-            <div className="mb-2 overflow-y-scroll max-h-[269px] scrollbar scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-gray-600 scrollbar-thumb-rounded-full">
+            <div className="mb-2 overflow-y-scroll overflow-x-hidden max-h-[269px] scrollbar scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-gray-400 scrollbar-thumb-rounded-full scrollbar-track-rounded-full">
                 <div className="grid grid-cols-1 gap-2">
                     {comments.map((comment, index) => (
-                        <div key={index} className="grid grid-cols-[1fr_auto] items-start gap-2">
+                        <div key={index} className="grid grid-cols-[1fr_auto] items-start gap-2 pr-[10px]">
                             {editingCommentIndex === index ? (
                                 <div className="flex items-center w-full">
                                     <input
@@ -61,7 +61,9 @@ const PhotoComments = ({ comments, editingCommentIndex, setEditingCommentIndex, 
                                                 {new Date(comment.timestamp).toLocaleString()}
                                             </time> */}
                                         </div>
-                                        <div className="chat-bubble bg-gray-200 text-gray-800 text-sm px-2 py-0.5 min-h-3">{comment.text}</div>
+                                        <div className="chat-bubble bg-gray-200 text-gray-800 text-sm px-2 py-0.5 min-h-3 max-w-[80%] break-words">
+                                            {comment.text}
+                                        </div>
                                         <time className="chat-footer opacity-50 text-gray-600">
                                             {new Date(comment.timestamp).toLocaleString()}
                                         </time>

@@ -24,7 +24,7 @@ module.exports = {
     addDynamicIconSelectors(), 
     require('tailwind-scrollbar')({
       nocompatible: true,
-      preferredStrategy: 'pseudoelements',
+      // preferredStrategy: 'pseudoelements',
     }),
   ],
   daisyui: {},
