@@ -16,6 +16,14 @@ interface PhotoCommentsProps {
 
 const PhotoComments = ({ comments, editingCommentIndex, setEditingCommentIndex, editedCommentText, setEditedCommentText, newComment, setNewComment, handleAddComment, handleEditComment, handleDeleteComment }: PhotoCommentsProps) => {
     const { user } = useAuthenticator();
+
+    const confirmDeleteComment = (index: number) => {
+        const confirmDelete = window.confirm("Are you sure you want to delete this comment?");
+        if (confirmDelete) {
+            handleDeleteComment(index);
+        }
+    };
+
     return (
     <div className="grid h-full">
         <div className="mt-4 border-t pt-2">
@@ -34,13 +42,13 @@ const PhotoComments = ({ comments, editingCommentIndex, setEditingCommentIndex, 
                                     />
                                     <button
                                         onClick={() => handleEditComment(index)}
-                                        className="btn bg-green-500 text-white ml-2"
+                                        className="btn bg-green-500 text-white ml-2 border-0"
                                     >
                                         Save
                                     </button>
                                     <button
                                         onClick={() => setEditingCommentIndex(null)}
-                                        className="btn bg-gray-500 text-white ml-2"
+                                        className="btn bg-gray-500 text-white ml-2 border-0"
                                     >
                                         Cancel
                                     </button>
@@ -80,7 +88,7 @@ const PhotoComments = ({ comments, editingCommentIndex, setEditingCommentIndex, 
                                                 Edit
                                             </button>
                                             <button
-                                                onClick={() => handleDeleteComment(index)}
+                                                onClick={() => confirmDeleteComment(index)}
                                                 className="text-red-500 hover:underline text-xs"
                                             >
                                                 Delete
