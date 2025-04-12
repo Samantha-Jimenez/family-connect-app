@@ -840,7 +840,7 @@ export const getFavoritedPhotosByUser = async (userId: string): Promise<PhotoDat
   }
 };
 
-export const addCommentToPhoto = async (photoId: string, userId: string, comment: string, author: string) => {
+export const addCommentToPhoto = async (photoId: string, userId: string, comment: string, author: string, profilePhoto: string) => {
   try {
     const timestamp = new Date().toISOString();
     const params = {
@@ -850,7 +850,7 @@ export const addCommentToPhoto = async (photoId: string, userId: string, comment
       },
       UpdateExpression: "SET comments = list_append(if_not_exists(comments, :emptyList), :comment)",
       ExpressionAttributeValues: {
-        ":comment": { L: [{ M: { userId: { S: userId }, text: { S: comment }, author: { S: author }, timestamp: { S: timestamp } } }] },
+        ":comment": { L: [{ M: { userId: { S: userId }, text: { S: comment }, author: { S: author }, timestamp: { S: timestamp }, profilePhoto: { S: profilePhoto } } }] },
         ":emptyList": { L: [] }
       }
     };
@@ -863,7 +863,7 @@ export const addCommentToPhoto = async (photoId: string, userId: string, comment
   }
 };
 
-export const getCommentsForPhoto = async (photoId: string): Promise<{ text: string; author: string; userId: string; timestamp: string }[]> => {
+export const getCommentsForPhoto = async (photoId: string): Promise<{ text: string; author: string; userId: string; timestamp: string; profilePhoto: string }[]> => {
   try {
     const params = {
       TableName: TABLES.PHOTOS,
@@ -882,7 +882,8 @@ export const getCommentsForPhoto = async (photoId: string): Promise<{ text: stri
       userId: comment.M?.userId?.S || '',
       text: comment.M?.text?.S || '',
       author: comment.M?.author?.S || 'Unknown',
-      timestamp: comment.M?.timestamp?.S || ''
+      timestamp: comment.M?.timestamp?.S || '',
+      profilePhoto: comment.M?.profilePhoto?.S || ''
     }));
   } catch (error) {
     console.error("❌ Error fetching comments for photo:", error);
@@ -963,3 +964,24 @@ export const editCommentInPhoto = async (photoId: string, userId: string, commen
   }
 };
 
+export const getProfilePhotoById = async (userId: string): Promise<string | null> => {
+  try {
+    const params = {
+      TableName: TABLES.FAMILY,
+      Key: {
+        family_member_id: { S: userId }
+      }
+    };
+
+    const data = await dynamoDB.send(new GetItemCommand(params));
+
+    if (!data.Item || !data.Item.profile_photo) {
+      return null;
+    }
+
+    return data.Item.profile_photo.S || null;
+  } catch (error) {
+    console.error("❌ Error fetching profile photo by ID:", error);
+    return null;
+  }
+};

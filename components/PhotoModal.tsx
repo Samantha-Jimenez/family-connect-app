@@ -1,7 +1,7 @@
 import React, { MouseEvent, useState, useEffect } from 'react';
 import Image from 'next/image';
 import Select from 'react-select';
-import { PhotoData, TaggedPerson, getUserAlbums, addPhotoToAlbum, savePhotoToDB, getAlbumById, deletePhotoById, getAllFamilyMembers, AlbumData, checkIfPhotoIsFavorited, removePhotoFromFavorites, addPhotoToFavorites, addCommentToPhoto, getCommentsForPhoto, getUserNameById, deleteCommentFromPhoto, editCommentInPhoto } from '@/hooks/dynamoDB';
+import { PhotoData, TaggedPerson, getUserAlbums, addPhotoToAlbum, savePhotoToDB, getAlbumById, deletePhotoById, getAllFamilyMembers, AlbumData, checkIfPhotoIsFavorited, removePhotoFromFavorites, addPhotoToFavorites, addCommentToPhoto, getCommentsForPhoto, getUserNameById, deleteCommentFromPhoto, editCommentInPhoto, getProfilePhotoById } from '@/hooks/dynamoDB';
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import { v4 as uuidv4 } from 'uuid';
 import PhotoComments from './PhotoComments';
@@ -60,10 +60,11 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const [familyMembers, setFamilyMembers] = useState<TaggedPerson[]>([]);
   const [isFavorited, setIsFavorited] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [comments, setComments] = useState<{ text: string; author: string; userId: string; timestamp: string }[]>([]);
+  const [comments, setComments] = useState<{ text: string; author: string; userId: string; timestamp: string; commenterPhoto: string }[]>([]);
   const [newComment, setNewComment] = useState('');
   const [editingCommentIndex, setEditingCommentIndex] = useState<number | null>(null);
   const [editedCommentText, setEditedCommentText] = useState('');
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAlbums = async () => {
@@ -106,8 +107,16 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           text: comment.text,
           author: comment.author,
           userId: comment.userId,
-          timestamp: comment.timestamp
+          timestamp: comment.timestamp,
+          commenterPhoto: comment.profilePhoto
         })));
+      }
+    };
+
+    const fetchProfilePhoto = async () => {
+      if (user) {
+        const photoUrl = await getProfilePhotoById(user.userId);
+        setProfilePhoto(photoUrl);
       }
     };
 
@@ -116,6 +125,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     loadFamilyMembers();
     fetchFavoriteStatus();
     fetchComments();
+    fetchProfilePhoto();
   }, [user, photo.album_id, photo.photo_id]);
 
   const handleAddToAlbum = async () => {
@@ -190,8 +200,8 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
         const userName = await getUserNameById(user.userId);
         if (userName) {
           const authorName = `${userName.firstName} ${userName.lastName}`;
-          await addCommentToPhoto(photo.photo_id, user.userId, newComment, authorName);
-          setComments([...comments, { text: newComment, author: authorName, userId: user.userId, timestamp: new Date().toISOString() }]);
+          await addCommentToPhoto(photo.photo_id, user.userId, newComment, authorName, profilePhoto || '');
+          setComments([...comments, { text: newComment, author: authorName, userId: user.userId, timestamp: new Date().toISOString(), commenterPhoto: profilePhoto || '' }]);
           setNewComment('');
         }
       } catch (error) {
@@ -256,15 +266,24 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             <span className="text-gray-600 text-2xl">&times;</span>
           </div>
           <div className="flex justify-end space-x-2 mt-auto">
-          {currentUserId === photo?.uploaded_by && !isEditing && (
-            <button
-              className="btn border-0 bg-green-500 text-white rounded hover:bg-green-600 w-full mt-2.5"
-              onClick={() => setIsEditing(true)}
-            >
-              Edit
-            </button>
-          )}
-        </div>
+            {currentUserId === photo?.uploaded_by && !isEditing && (
+              <button
+                className="btn border-0 bg-green-500 text-white rounded hover:bg-green-600 w-full mt-2.5"
+                onClick={() => setIsEditing(true)}
+              >
+                Edit
+              </button>
+            )}
+          </div>
+          <div className={`absolute top-[0.6rem] right-[0.7rem] cursor-pointer transition-transform duration-300`}>
+            {profilePhoto && (
+              <img
+                src={profilePhoto}
+                alt="User Profile"
+                className="w-10 h-10 rounded-full border border-gray-300"
+              />
+            )}
+          </div>
         </div>
         
         <div className="relative flex flex-col justify-between h-full">
@@ -515,16 +534,6 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
         </div>
             )}
         </div>
-        {/* <div className="flex justify-end space-x-2 mt-auto">
-          {currentUserId === photo?.uploaded_by && !isEditing && (
-            <button
-              className="btn border-0 bg-green-500 text-white rounded hover:bg-green-600 w-full"
-              onClick={() => setIsEditing(true)}
-            >
-              Edit
-            </button>
-          )}
-        </div> */}
       </div>
     </div>
   );

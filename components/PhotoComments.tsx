@@ -1,8 +1,10 @@
 import React from 'react'
 import { useAuthenticator } from '@aws-amplify/ui-react';
+import Image from 'next/image';
+import { getFullImageUrl } from '@/utils/imageUtils';
 
 interface PhotoCommentsProps {
-  comments: { text: string; author: string; userId: string; timestamp: string }[];
+  comments: { text: string; author: string; userId: string; timestamp: string; commenterPhoto: string }[];
   editingCommentIndex: number | null;
   setEditingCommentIndex: (index: number | null) => void;
   editedCommentText: string;
@@ -16,6 +18,7 @@ interface PhotoCommentsProps {
 
 const PhotoComments = ({ comments, editingCommentIndex, setEditingCommentIndex, editedCommentText, setEditedCommentText, newComment, setNewComment, handleAddComment, handleEditComment, handleDeleteComment }: PhotoCommentsProps) => {
     const { user } = useAuthenticator();
+    console.log('comments', comments)
 
     const confirmDeleteComment = (index: number) => {
         const confirmDelete = window.confirm("Are you sure you want to delete this comment?");
@@ -58,9 +61,17 @@ const PhotoComments = ({ comments, editingCommentIndex, setEditingCommentIndex, 
                                     <div className="chat chat-start">
                                         <div className="chat-image avatar">
                                             <div className="w-10 rounded-full">
-                                                <img
-                                                    alt="Tailwind CSS chat bubble component"
-                                                    src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp" />
+                                                {/* <img
+                                                    alt="User Avatar"
+                                                    src={comment.commenterPhoto}
+                                                /> */}
+                                            <Image
+                                                src={getFullImageUrl(comment.commenterPhoto) || '/fallback-image.jpg'}
+                                                alt="Commenters Profile Photo"
+                                                width={40}
+                                                height={40}
+                                                className="object-contain rounded-full"
+                                            />
                                             </div>
                                         </div>
                                         <div className="chat-header text-black">
