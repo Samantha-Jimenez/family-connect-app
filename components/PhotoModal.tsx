@@ -4,6 +4,7 @@ import Select from 'react-select';
 import { PhotoData, TaggedPerson, getUserAlbums, addPhotoToAlbum, savePhotoToDB, getAlbumById, deletePhotoById, getAllFamilyMembers, AlbumData, checkIfPhotoIsFavorited, removePhotoFromFavorites, addPhotoToFavorites, addCommentToPhoto, getCommentsForPhoto, getUserNameById, deleteCommentFromPhoto, editCommentInPhoto } from '@/hooks/dynamoDB';
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import { v4 as uuidv4 } from 'uuid';
+import PhotoComments from './PhotoComments';
 
 interface PhotoModalProps {
   photo: PhotoData;
@@ -238,8 +239,8 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleCloseModal}>
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-4xl w-full m-4 flex" onClick={handleModalClick}>
-        <div className="w-1/2 pr-4 relative">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-4xl w-full m-4 grid grid-cols-2 gap-4 max-h-[670px]" onClick={handleModalClick}>
+        <div className="relative">
           <Image
             src={photo.url || '/fallback-image.jpg'}
             alt="Selected photo"
@@ -251,13 +252,27 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           <div className={`absolute top-2 right-6 cursor-pointer transition-transform duration-300 ${isAnimating ? 'scale-125' : ''}`} onClick={toggleFavorite}>
             {isFavorited ? <span className="icon-[mdi--cards-heart] w-5 h-5 text-red-500" /> : <span className="icon-[mdi--cards-heart] w-5 h-5 text-white" />}
           </div>
+          <div className="flex justify-end space-x-2 mt-auto">
+          {currentUserId === photo?.uploaded_by && !isEditing && (
+            <button
+              className="btn border-0 bg-green-500 text-white rounded hover:bg-green-600 w-full mt-2.5"
+              onClick={() => setIsEditing(true)}
+            >
+              Edit
+            </button>
+          )}
         </div>
-        <div className="w-1/2 pl-4 flex flex-col justify-between">
-          <div>
+        </div>
+        
+        <div className="relative flex flex-col justify-between h-full">
+          <div className="absolute top-[-1.15rem] right-[-0.5rem] cursor-pointer" onClick={handleCloseModal}>
+            <span className="text-gray-600 text-2xl">&times;</span>
+          </div>
+          <div className="">
             {isEditing ? (
               <div>
                 <div className="mb-1">
-                  <label className="block text-sm font-bold mb-1">Description:</label>
+                  <label className="block text-sm font-bold mb-1 text-black">Description:</label>
                   <input
                     type="text"
                     value={editedDescription}
@@ -266,7 +281,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                   />
                 </div>
                 <div className="mb-1">
-                  <h3 className="block text-sm font-bold">Location Details:</h3>
+                  <h3 className="block text-sm font-bold text-black">Location Details:</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     <div>
                       <label className="block text-sm font-medium text-gray-500 mb-1">
@@ -317,7 +332,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                   </div>
                 </div>
                 <div className="mb-1">
-                  <label className="block text-sm font-bold mb-1">Date Taken:</label>
+                  <label className="block text-sm font-bold mb-1 text-black">Date Taken:</label>
                   <input
                     type="date"
                     value={editedDateTaken}
@@ -326,7 +341,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                   />
                 </div>
                 <div className="mb-1">
-                  <label className="block text-sm font-bold mb-1">Tagged People:</label>
+                  <label className="block text-sm font-bold mb-1 text-black">Tagged People:</label>
                   <Select
                     isMulti
                     options={familyMemberOptions}
@@ -357,7 +372,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                 </div>
                 {isEditing && currentUserId === photo?.uploaded_by && (
                   <div className="">
-                    <label className="block text-sm font-bold mb-1">Album:</label>
+                    <label className="block text-sm font-bold mb-1 text-black">Album:</label>
                     <select
                       value={selectedAlbumId}
                       onChange={(e) => setSelectedAlbumId(e.target.value)}
@@ -372,16 +387,9 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                         </option>
                       ))}
                     </select>
-                    {/* <button
-                      onClick={handleAddToAlbum}
-                      className="btn btn-primary w-full"
-                      disabled={!selectedAlbumId}
-                    >
-                      Add to Album
-                    </button> */}
                   </div>
                 )}
-                <div className="flex justify-end space-x-2 mb-2">
+                <div className="flex absolute bottom-0 right-0 space-x-2 mb-2">
                   <button
                     className="btn bg-green-500 text-white border-0"
                     onClick={handleSave}
@@ -405,14 +413,12 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             ) : (
               <>
                 {photo.metadata?.description && (
-                  <p className="text-sm text-gray-800 dark:text-gray-200 mb-1">
-                    <span className="font-bold">Description: </span>
+                  <p className="text-xl text-gray-800 dark:text-gray-200 mb-1 pr-[10px]">
                     {photo.metadata?.description}
                   </p>
                 )}
                 {photo.metadata?.location && typeof photo.metadata.location === 'object' && Object.values(photo.metadata.location).some(val => val) && (
-                  <div className="text-sm text-gray-800 dark:text-gray-200 mb-1 ">
-                    <span className="font-bold">Location: </span>
+                  <div className="text-sm text-gray-500 dark:text-gray-200 mb-1 ">
                     {[
                       photo.metadata.location.country,
                       photo.metadata.location.state,
@@ -436,8 +442,9 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                   </p>
                 )}
                 {photo.metadata?.people_tagged && photo.metadata.people_tagged.length > 0 && (
-                  <p className="text-sm text-gray-800 dark:text-gray-200 mb-1">
+                  <p className="text-sm text-gray-800 dark:text-gray-200 mb-1 mt-6">
                     <span className="font-bold">People Tagged: </span>
+                    <p>
                     {photo.metadata.people_tagged.map((person, index) => (
                       <React.Fragment key={person.id}>
                         {index > 0 && ', '}
@@ -449,113 +456,72 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                         </a>
                       </React.Fragment>
                     ))}
+                    </p>
                   </p>
                 )}
                 {uploaderName && (
                   <p className="text-sm text-gray-800 dark:text-gray-200">
                     <span className="font-bold">Uploaded By: </span>
+                    <p>
                     <a 
                       href={`/profile/${photo?.uploaded_by}`} 
                       className="text-blue-500 hover:underline"
                     >
                       {uploaderName}
                     </a>
+                    </p>
                   </p>
                 )}
               </>
             )}
-            <div className="mt-4">
-              <h3 className="text-lg font-bold mb-2 text-black">Comments</h3>
-              <div className="mb-2">
-                {comments.map((comment, index) => (
-                  <div key={index} className="flex justify-between items-center mb-1">
-                    {editingCommentIndex === index ? (
-                      <div className="flex items-center w-full">
-                        <input
-                          type="text"
-                          value={editedCommentText}
-                          onChange={(e) => setEditedCommentText(e.target.value)}
-                          className="input input-bordered w-full text-black bg-white border-gray-300"
-                        />
-                        <button
-                          onClick={() => handleEditComment(index)}
-                          className="btn bg-green-500 text-white ml-2"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => setEditingCommentIndex(null)}
-                          className="btn bg-gray-500 text-white ml-2"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <p className="text-sm text-gray-800 dark:text-gray-200">
-                          <span className="font-bold">{comment.author}:</span> {comment.text}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {new Date(comment.timestamp).toLocaleString()}
-                        </p>
-                        {comment.userId === user.userId && (
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => {
-                                setEditingCommentIndex(index);
-                                setEditedCommentText(comment.text);
-                              }}
-                              className="text-blue-500 hover:underline"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteComment(index)}
-                              className="text-red-500 hover:underline"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <div className="flex items-center">
-                <input
-                  type="text"
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  className="input input-bordered w-full text-black bg-white border-gray-300"
-                  placeholder="Add a comment..."
-                />
-                <button
-                  onClick={handleAddComment}
-                  className="btn bg-blue-500 text-white ml-2"
-                >
-                  Post
-                </button>
-              </div>
-            </div>
-          </div>
-          <div className="flex justify-end space-x-2 mt-auto">
-            {currentUserId === photo?.uploaded_by && !isEditing && (
-              <button
-                className="btn border-0 bg-green-500 text-white rounded hover:bg-green-600"
-                onClick={() => setIsEditing(true)}
-              >
-                Edit
-              </button>
+            {!isEditing && (
+            <PhotoComments 
+                comments={comments} 
+                editingCommentIndex={editingCommentIndex} 
+                setEditingCommentIndex={setEditingCommentIndex} 
+                editedCommentText={editedCommentText} 
+                setEditedCommentText={setEditedCommentText} 
+                newComment={newComment} 
+                setNewComment={setNewComment} 
+                handleAddComment={handleAddComment} 
+                handleEditComment={handleEditComment} 
+                handleDeleteComment={handleDeleteComment} 
+            />
             )}
-            <button
-              className="btn border-0 bg-blue-500 text-white rounded hover:bg-blue-600"
-              onClick={handleCloseModal}
-            >
-              Close
-            </button>
           </div>
+          {!isEditing && (
+          <div className="flex items-center justify-end mt-4">
+            <input
+                type="text"
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                        handleAddComment();
+                    }
+                }}
+                className="input input-bordered w-full text-black bg-white border-gray-300 rounded-md shadow-sm"
+                placeholder="Add a comment..."
+            />
+            <button
+                onClick={handleAddComment}
+                className="btn bg-blue-500 text-white ml-2 rounded-md shadow hover:bg-blue-600 transition border-0"
+            >
+                Post
+            </button>
         </div>
+            )}
+        </div>
+        {/* <div className="flex justify-end space-x-2 mt-auto">
+          {currentUserId === photo?.uploaded_by && !isEditing && (
+            <button
+              className="btn border-0 bg-green-500 text-white rounded hover:bg-green-600 w-full"
+              onClick={() => setIsEditing(true)}
+            >
+              Edit
+            </button>
+          )}
+        </div> */}
       </div>
     </div>
   );
