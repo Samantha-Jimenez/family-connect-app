@@ -20,7 +20,7 @@ const PhotoComments = ({ comments, editingCommentIndex, setEditingCommentIndex, 
     <div className="grid h-full">
         <div className="mt-4 border-t pt-2">
             <h3 className="text-lg font-bold mb-2 text-black">Comments</h3>
-            <div className="mb-2 overflow-y-auto max-h-[269px]">
+            <div className="mb-2 overflow-y-scroll max-h-[269px] scrollbar scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-gray-600 scrollbar-thumb-rounded-full">
                 <div className="grid grid-cols-1 gap-2">
                     {comments.map((comment, index) => (
                         <div key={index} className="grid grid-cols-[1fr_auto] items-start gap-2">

@@ -1,5 +1,6 @@
-const { addDynamicIconSelectors } = require('@iconify/tailwind')
-const daisyui = require('daisyui')
+// family-connect-app/tailwind.config.js
+const { addDynamicIconSelectors } = require('@iconify/tailwind');
+const daisyui = require('daisyui');
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -18,6 +19,13 @@ module.exports = {
       },
     },
   },
-  plugins: [daisyui, addDynamicIconSelectors()],
+  plugins: [
+    daisyui, 
+    addDynamicIconSelectors(), 
+    require('tailwind-scrollbar')({
+      nocompatible: true,
+      preferredStrategy: 'pseudoelements',
+    }),
+  ],
   daisyui: {},
 }
