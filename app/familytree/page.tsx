@@ -6,8 +6,8 @@ import { getAllFamilyMembers } from "@/hooks/dynamoDB";
 import { FamilyMember as FamilyMemberType } from "@/hooks/dynamoDB";
 import Image from "next/image";
 import { getFullImageUrl } from "@/utils/imageUtils";
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
-// Define FamilyMemberProps type
 export type FamilyMemberProps = {
   id?: string;
   first_name: string;
@@ -29,10 +29,8 @@ export type FamilyMemberProps = {
   children?: FamilyMemberProps[];
 };
 
-// Define a Partial type for FamilyMember
 type PartialFamilyMember = Pick<FamilyMemberType, 'family_member_id' | 'first_name' | 'last_name' | 'profile_photo'>;
 
-// Function to match and update familyTreeData with DB members
 const updateFamilyTreeData = (membersFromDB: PartialFamilyMember[], familyTreeData: FamilyMemberProps) => {
   const updateMember = (member: FamilyMemberProps) => {
     const dbMember = membersFromDB.find(dbMem => dbMem.first_name === member.first_name && dbMem.last_name.includes(member.last_name));
@@ -49,18 +47,16 @@ const updateFamilyTreeData = (membersFromDB: PartialFamilyMember[], familyTreeDa
   updateMember(familyTreeData);
 };
 
-// Family Member Component
 const FamilyMember = ({ member }: { member: FamilyMemberProps }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const [members, setMembers] = useState<FamilyMemberProps[]>([]);
-  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchMembers = async () => {
       const membersFromDB = await getAllFamilyMembers();
       const formattedMembers: PartialFamilyMember[] = membersFromDB.map(member => ({
         family_member_id: member.family_member_id,
-        first_name: member.first_name || "Unknown", // Ensure first_name is present
+        first_name: member.first_name || "Unknown",
         last_name: member.last_name || "",
         profile_photo: getFullImageUrl(member.profile_photo),
       }));
@@ -72,109 +68,40 @@ const FamilyMember = ({ member }: { member: FamilyMemberProps }) => {
     fetchMembers();
   }, []);
 
-  // Combine all children for display
   const allChildren = [
     ...(member.children || []),
     ...(member.previousSpouses?.flatMap(spouse => spouse.children) || [])
   ];
 
   return (
-    <div className="flex flex-col items-center relative">
-      {/* Profile Card */}
-      <div className="bg-white shadow-md p-3 rounded-lg text-center w-32 relative">
-        <div className="avatar">
+    <div className="flex flex-col items-center">
+      <div className="bg-white shadow-md p-2 rounded-lg text-center w-32">
+        <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 mx-auto">
           {member.profile_photo ? (
-            <Image 
-              src={member.profile_photo} 
-              alt={member.first_name} 
-              className="rounded-full mx-auto" 
-              width={48}
-              height={48}
-              style={{ width: '3rem', height: '3rem' }}
+            <Image
+              src={member.profile_photo}
+              alt={member.first_name}
+              width={64}
+              height={64}
+              className="object-cover w-16 h-16"
             />
-          ) : (
-            <div className="w-12 h-12 bg-gray-300 rounded-full mx-auto" style={{ width: '3rem', height: '3rem' }}></div>
-          )}
+          ) : null}
         </div>
-        <Link href={`/profile/${member.id || member.first_name.toLowerCase().replace(/\s+/g, '-')}`}>
-          <span className="text-gray-800 text-sm font-semibold mt-2">{member.first_name} {member.last_name}</span>
+        <Link href={`/profile/${member.id || member.first_name.toLowerCase()}`}>
+          <p className="text-sm font-medium mt-2 text-black">{member.first_name} {member.last_name}</p>
         </Link>
-
-        {/* Toggle Button */}
-        {(allChildren.length > 0) && (
-          <button 
-            className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white text-xs px-2 py-1 rounded"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            {isExpanded ? "−" : "+"}
-          </button>
-        )}
       </div>
 
-      {/* Children Profiles (Mini Circle View when Collapsed) */}
-      {allChildren.length > 0 && !isExpanded && (
-        <div className="flex items-center gap-1 mt-2">
-          {allChildren.slice(0, 5).map((child, index) => (
-            <div key={index} className="relative">
-              <div className="h-[24px] w-[24px] bg-gray-300 border-2 border-white rounded-full overflow-hidden text-center">
-                <span className="icon-[mdi--person-circle-outline]"></span>
-              </div>
-            </div>
-          ))}
-          {allChildren.length > 5 && (
-            <span className="flex items-center justify-center bg-white text-[11px] font-semibold border-2 border-gray-300 rounded-full h-[24px] w-[24px]">
-              +{allChildren.length - 5}
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Full Expanded Children View */}
-      {isExpanded && (
-        <div className="flex flex-col items-center mt-4">
-          <div className="w-0.5 bg-gray-400 h-6"></div>
-          <div className="flex flex-wrap justify-center gap-8">
-            {member.previousSpouses?.map((spouse, spouseIndex) => (
-              <div key={`prev-${spouseIndex}`} className="flex flex-col items-center">
-                {/* Spouse card */}
-                <div className="bg-white shadow-md p-2 rounded-lg text-center w-24 mb-4">
-                  <p className="text-gray-700 text-xs font-medium">{spouse.first_name} {spouse.last_name}</p>
-                </div>
-                
-                {/* Connecting line */}
-                <div className="w-0.5 bg-gray-400 h-4"></div>
-                
-                {/* Children container */}
-                <div className="flex flex-wrap justify-center gap-4 mt-2">
-                  {spouse.children.map((child, childIndex) => (
-                    <FamilyMember key={`prev-${spouseIndex}-${childIndex}`} member={child} />
-                  ))}
-                </div>
+      {allChildren.length > 0 && isExpanded && (
+        <div className="flex flex-col items-center">
+          <div className="w-0.5 h-6 bg-gray-400"></div>
+          <div className="flex justify-center items-start space-x-8 mt-4 relative">
+            {allChildren.map((child, index) => (
+              <div key={index} className="flex flex-col items-center">
+                <div className="absolute top-0 left-1/2 w-0.5 h-6 bg-gray-400 transform -translate-x-1/2"></div>
+                <FamilyMember member={child} />
               </div>
             ))}
-            
-            {member.children && member.children.length > 0 && (
-              <div className="flex flex-col items-center">
-                {/* Current spouse card */}
-                {member.spouse && (
-                  <>
-                    <div className="bg-white shadow-md p-2 rounded-lg text-center w-24 mb-4">
-                      <p className="text-gray-700 text-xs font-medium">{member.spouse.first_name} {member.spouse.last_name}</p>
-                    </div>
-                    
-                    {/* Connecting line */}
-                    <div className="w-0.5 bg-gray-400 h-4"></div>
-                  </>
-                )}
-                
-                {/* Children container */}
-                <div className="flex flex-wrap justify-center gap-4 mt-2">
-                  {member.children.map((child, index) => (
-                    <FamilyMember key={index} member={child} />
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -182,16 +109,41 @@ const FamilyMember = ({ member }: { member: FamilyMemberProps }) => {
   );
 };
 
-// Family Tree Component
 const FamilyTree = () => {
   return (
-    <div className="min-h-screen bg-gray-100 p-6 overflow-x-auto">
+    <div className="min-h-screen bg-gray-100 p-6 overflow-hidden">
       <h1 className="text-4xl font-bold text-center mb-6 text-gray-800">Our Family Tree</h1>
-      <div className="flex justify-center">
-        <div className="flex flex-col md:flex-row md:items-start">
-          <FamilyMember member={familyTreeData as FamilyMemberProps} />
-        </div>
-      </div>
+      <TransformWrapper
+        initialScale={1}
+        minScale={0.5}
+        maxScale={2}
+        centerOnInit={false}
+        centerZoomedOut={false}
+        limitToBounds={false}
+        disablePadding={true}
+        wheel={{ disabled: false }}
+        doubleClick={{ disabled: true }}
+        pinch={{ disabled: false }}
+        panning={{ velocityDisabled: false }}
+      >
+        {({ zoomIn, zoomOut, resetTransform }) => (
+          <>
+            <div className="flex justify-center mb-4 gap-2">
+              <button className="bg-blue-500 text-white px-3 py-1 rounded" onClick={() => zoomIn()}>Zoom In</button>
+              <button className="bg-blue-500 text-white px-3 py-1 rounded" onClick={() => zoomOut()}>Zoom Out</button>
+              <button className="bg-gray-400 text-white px-3 py-1 rounded" onClick={() => resetTransform()}>Reset</button>
+            </div>
+
+            <TransformComponent>
+              <div className="flex justify-center min-w-max">
+                <div className="flex flex-col items-center space-y-6">
+                  <FamilyMember member={familyTreeData as FamilyMemberProps} />
+                </div>
+              </div>
+            </TransformComponent>
+          </>
+        )}
+      </TransformWrapper>
     </div>
   );
 };
