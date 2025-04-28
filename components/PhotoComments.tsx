@@ -65,6 +65,7 @@ const PhotoComments = ({ comments, editingCommentIndex, setEditingCommentIndex, 
                                                     alt="User Avatar"
                                                     src={comment.commenterPhoto}
                                                 /> */}
+                                                {comment.commenterPhoto ? (
                                             <Image
                                                 src={getFullImageUrl(comment.commenterPhoto) || '/fallback-image.jpg'}
                                                 alt="Commenters Profile Photo"
@@ -72,6 +73,11 @@ const PhotoComments = ({ comments, editingCommentIndex, setEditingCommentIndex, 
                                                 height={40}
                                                 className="object-contain rounded-full"
                                             />
+                                        ) : (
+                                                <div className="w-full h-full bg-gray-200 rounded-[60px] flex items-center justify-center">
+                                                    <span className="icon-[mdi--account] text-xl text-gray-400" />
+                                                </div>
+                                            )}
                                             </div>
                                         </div>
                                         <div className="chat-header text-black">

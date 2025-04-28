@@ -298,13 +298,13 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             )}
           </div>
           <div className={`absolute top-[0.6rem] right-[0.7rem] cursor-pointer transition-transform duration-300`}>
-            {profilePhoto && (
+            {/* {profilePhoto && (
               <img
                 src={profilePhoto}
                 alt="User Profile"
                 className="w-10 h-10 rounded-full border border-gray-300"
               />
-            )}
+            )} */}
           </div>
         </div>
         

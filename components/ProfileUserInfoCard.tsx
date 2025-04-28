@@ -111,7 +111,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                   />
                 ) : (
                   <div className="w-full h-full bg-gray-200 rounded-[60px] flex items-center justify-center">
-                    <span className="icon-[mdi--account] text-6xl text-gray-400" />
+                    <span className="icon-[mdi--account] text-7xl text-gray-400" />
                   </div>
                 )}
               </div>
