@@ -2,7 +2,7 @@ import React from 'react'
 
 const CallToAction = () => {
   return (
-    <div className="bg-white rounded-3xl py-4 px-6 text-black shadow-lg">
+    <div className="bg-white rounded-lg py-4 px-6 text-black shadow-lg">
         {/* <h2 className="text-lg font-semibold text-[#717568]">
             CallToAction
         </h2> */}

@@ -122,14 +122,14 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
             <h1 className="text-2xl font-bold text-black">
               Welcome, {userData?.first_name || ''} {userData?.last_name || ''}!
             </h1>
-            <h1 className="text-gray-500">
+            <h1 className="text-gray-500 mb-2">
               {userData?.username}
             </h1>
-            <h2 className="text-xl font-semibold text-black mb-1">About Me</h2>
+            <h2 className="text-xl font-semibold text-black">About Me</h2>
             <p className="text-gray-500 mb-2">
               {userData?.bio || ''}
             </p>
-            <h2 className="text-xl font-semibold text-black mb-1">Family Role</h2>
+            <h2 className="text-xl font-semibold text-black">Family Role</h2>
             <div className="flex flex-wrap gap-2">
               <span className="bg-[#FAE5C0] text-gray-500 px-3 py-1 rounded-full text-sm">Child</span>
               <span className="bg-[#FAE5C0] text-gray-500 px-3 py-1 rounded-full text-sm">Sibling</span>
@@ -137,7 +137,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
             </div>
           </div>
           <div className="md:pl-8">
-            <h2 className="text-xl font-semibold text-black mb-2">Birth</h2>
+            <h2 className="text-xl font-semibold text-black">Birth</h2>
             <div className="text-gray-500 flex items-center">
               {userData?.birthday ? (
                 <>
@@ -146,7 +146,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                 </>
               ) : ''}
             </div>
-            <div className="text-gray-500 mb-4 flex items-center">
+            <div className="text-gray-500 mb-2 flex items-center">
               {userData?.birth_city || userData?.birth_state ? (
                 <>
                   <span className="icon-[mdi--map-marker] h-5 mr-2" />
@@ -154,7 +154,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                 </>
               ) : ''}
             </div>
-            <h2 className="text-xl font-semibold text-black mb-1">Contact Information</h2>
+            <h2 className="text-xl font-semibold text-black">Contact Information</h2>
             <ul className="text-gray-500">
               <li className="flex items-center">
                 <span className="icon-[mdi--email] h-5 mr-2" />

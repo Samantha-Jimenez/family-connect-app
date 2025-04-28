@@ -51,7 +51,7 @@ const HomePage = () => {
       <ToastProvider>
         <UserProvider>
           <CalendarProvider>
-            <div className="min-h-screen bg-white p-4 sm:p-6">
+            <div className="min-h-screen bg-gray-100 p-4 sm:p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_16rem] gap-4 max-w-7xl mx-auto">
                 <div className="col-span-1 sm:col-span-2">
                   <ProfileUserInfoCard userId={user.userId}/>
@@ -64,7 +64,7 @@ const HomePage = () => {
                 </div>
                 
                 <div className="col-span-1 sm:col-span-2">
-                  <div data-theme="light" className="tabs tabs-bordered">
+                  <div data-theme="light" className="tabs tabs-bordered rounded-lg shadow-lg">
                     <a 
                       className={`tab tab-lg ${activeTab === 'uploads' ? 'tab-active' : ''}`}
                       onClick={() => setActiveTab('uploads')}
@@ -97,7 +97,7 @@ const HomePage = () => {
                     </a>
                   </div>
 
-                  <div className="mt-6">
+                  <div className="mt-4">
                     {activeTab === 'uploads' && <UploadedPhotosCard />}
                     {activeTab === 'tagged' && <TaggedPhotosCard userId={user.userId} />}
                     {activeTab === 'favorites' && <FavoritedPhotosCard />}

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
 const navigation = [
@@ -28,8 +28,12 @@ export default function Navbar({ signOut, username, userFirstName, userLastName,
     router.push('/');
   };
 
+  useEffect(() => {
+    console.log(isMobileMenuOpen, 'isMobileMenuOpen');
+  }, [isMobileMenuOpen]);
+  
   return (
-    <nav className="bg-gray-800">
+    <nav className="bg-white border-b border-gray-200">
       <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
         <div className="relative flex h-16 items-center justify-between">
           <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
@@ -55,7 +59,7 @@ export default function Navbar({ signOut, username, userFirstName, userLastName,
                     key={item.name}
                     href={item.href}
                     aria-current={item.current ? 'page' : undefined}
-                    className={`${item.current ? 'text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'} btn rounded-md px-3 py-2 text-sm font-medium`}
+                    className={`${item.current ? 'text-gray-800' : 'text-gray-300 hover:bg-gray-700 hover:text-gray-800'} btn rounded-md px-3 py-2 text-sm font-medium bg-transparent border-0 hover:bg-transparent`}
                   >
                     {item.name}
                   </a>
@@ -64,7 +68,7 @@ export default function Navbar({ signOut, username, userFirstName, userLastName,
             </div>
           </div>
           <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
-            <label htmlFor="my-drawer-4" className="btn bg-gray-800 text-gray-400 p-0 hover:text-white hover:bg-transparent border-0">
+            <label htmlFor="my-drawer-4" className="btn bg-transparent text-gray-400 hover:text-black hover:bg-transparent border-0 shadow-none">
               <span className="icon-[mdi--bell] w-6 h-6"></span>
             </label>
 
@@ -73,15 +77,15 @@ export default function Navbar({ signOut, username, userFirstName, userLastName,
               <div className="dropdown dropdown-end">
                 <label 
                   tabIndex={0} 
-                  className="btn btn-ghost rounded-btn"
+                  className="btn btn-ghost rounded-btn hover:bg-transparent hover:border-0 hover:shadow-none border-0 shadow-none bg-transparent"
                 >
-                  <span className="h-8 w-8 rounded-full bg-gray-400 flex items-center justify-center text-white">
+                  <span className={`h-8 w-8 rounded-full flex items-center justify-center text-white hover:bg-black ${isMobileMenuOpen ? 'bg-gray-200' : 'bg-gray-400'}`}>
                     {username.charAt(0).toUpperCase()}
                   </span>
                 </label>
                 <ul 
                   tabIndex={0} 
-                  className="menu dropdown-content z-[1] mt-3 p-2 shadow bg-base-100 rounded-box w-52"
+                  className="menu dropdown-content z-[1] p-2 shadow bg-gray-300 rounded-box w-52"
                 >
                   <li>
                     <button 

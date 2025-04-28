@@ -5,7 +5,7 @@ import PastEvents from './PastEvents'
 const Panel = () => {
   return (
     <>
-      <div className="bg-white rounded-3xl text-black shadow-lg mb-2">
+      <div className="bg-white rounded-3xl text-black shadow-lg mb-4">
         <UpcomingEvents />
       </div>
       <div className="bg-white rounded-3xl text-black shadow-lg">
