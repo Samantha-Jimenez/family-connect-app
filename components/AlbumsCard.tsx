@@ -80,7 +80,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
     <div className="p-4 bg-white shadow-lg rounded-lg relative">
       {auth && (
         <>
-      <h2 className="text-xl font-bold mb-4 text-black">Create Album</h2>
+      <h2 className="text-xl font-bold mb-2 text-black">Create Album</h2>
       <div className="mb-4">
         <input
           type="text"
@@ -97,11 +97,11 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
           className="input input-bordered w-full"
         />
       </div>
-      <button onClick={handleCreateAlbum} className="btn btn-primary w-full mb-4">
+      <button onClick={handleCreateAlbum} className="btn btn-primary w-full mb-6">
         Create Album
       </button>
 
-      <h2 className="text-xl font-bold mb-4 text-black">Add Photo to Album</h2>
+      {/* <h2 className="text-xl font-bold mb-4 text-black">Add Photo to Album</h2>
       <div className="mb-4">
         <input
           type="text"
@@ -113,7 +113,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
       </div>
       <button onClick={handleAddPhotoToAlbum} className="btn btn-secondary w-full">
         Add Photo
-      </button>
+      </button> */}
       </>
       )}
 
@@ -125,7 +125,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
         </div>
       )}
 
-      <h2 className="text-xl font-bold mt-6 mb-4 text-black">Your Albums</h2>
+      <h2 className="text-xl font-bold mb-2 text-black">Your Albums</h2>
       <div className="space-y-4">
         {albums.map((album) => (
           <div

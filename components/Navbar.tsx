@@ -68,7 +68,7 @@ export default function Navbar({ signOut, username, userFirstName, userLastName,
             </div>
           </div>
           <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
-            <label htmlFor="my-drawer-4" className="btn bg-transparent text-gray-400 hover:text-black hover:bg-transparent border-0 shadow-none">
+            <label htmlFor="my-drawer-4" className="btn bg-transparent text-gray-400 hover:text-black hover:bg-transparent border-0 shadow-none p-0">
               <span className="icon-[mdi--bell] w-6 h-6"></span>
             </label>
 

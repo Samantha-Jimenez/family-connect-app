@@ -214,64 +214,64 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
         <h3 className="text-sm font-medium text-gray-700 dark:text-gray-200">Location Details</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-400">
+            <label className="block text-sm font-medium text-gray-500">
               Country
             </label>
             <input
               type="text"
               value={location.country}
               onChange={(e) => setLocation({ ...location, country: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-200 dark:border-gray-600 p-2"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-400">
+            <label className="block text-sm font-medium text-gray-500">
               State/Province
             </label>
             <input
               type="text"
               value={location.state}
               onChange={(e) => setLocation({ ...location, state: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-200 dark:border-gray-600 p-2"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-400">
+            <label className="block text-sm font-medium text-gray-500">
               City
             </label>
             <input
               type="text"
               value={location.city}
               onChange={(e) => setLocation({ ...location, city: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-200 dark:border-gray-600 p-2"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-400">
+            <label className="block text-sm font-medium text-gray-500">
               Neighborhood
             </label>
             <input
               type="text"
               value={location.neighborhood}
               onChange={(e) => setLocation({ ...location, neighborhood: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 p-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-200 dark:border-gray-600 p-2"
             />
           </div>
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-400">
+        <label className="block text-sm font-medium text-gray-500">
           Description
         </label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 p-2"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-200 dark:border-gray-600 p-2"
           placeholder="Enter photo description"
         />
       </div>
@@ -284,7 +284,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
           type="date"
           value={dateTaken}
           onChange={(e) => setDateTaken(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 p-2"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-200 dark:border-gray-600 p-2"
         />
       </div>
 

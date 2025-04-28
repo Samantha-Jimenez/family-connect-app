@@ -342,7 +342,7 @@ const Settings = () => {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen p-4 sm:p-6">
+      <div className="min-h-screen">
         <form onSubmit={handlePhotoSubmit} className="card bg-white shadow-xl p-6 mx-auto mt-6">
           <div className="flex flex-col items-center gap-4">
             <div className="avatar">

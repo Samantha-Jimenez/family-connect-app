@@ -35,15 +35,15 @@ export default function FavoritedPhotosCard() {
     <div className="card bg-white text-black p-6 shadow-lg">
       <h2 className="text-xl font-bold">⭐ Favorited Photos</h2>
       <p className="mt-2">Your favorite memories, all in one place.</p>
-      <div className="grid grid-cols-2 gap-4 mt-4">
+      <div className="mt-4 grid grid-cols-3 gap-2">
         {favoritedPhotos.map(photo => (
-          <div key={photo.photo_id} className="relative cursor-pointer" onClick={() => handlePhotoClick(photo)}>
+          <div key={photo.photo_id} className="relative aspect-square" onClick={() => handlePhotoClick(photo)}>
             <Image
               src={photo.url || '/fallback-image.jpg'}
               alt="Favorited photo"
-              width={150}
-              height={100}
-              className="object-cover rounded-lg"
+              fill
+              className="object-cover rounded"
+              sizes="(max-width: 768px) 33vw, 20vw"
             />
           </div>
         ))}

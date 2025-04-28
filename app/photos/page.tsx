@@ -493,7 +493,7 @@ const Photos = () => {
           {formatPhotoCount(filteredImages.length, images.length)}
         </div> */}
 
-        <div className="mb-2 flex justify-between text-sm text-gray-400">
+        <div className="mb-2 flex justify-between text-sm text-gray-600">
           <span>{timestampToDate(currentDateRange[0])}</span>
           <span>{timestampToDate(currentDateRange[1])}</span>
         </div>
@@ -638,7 +638,7 @@ const Photos = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 bg-gray-100">
       <div className="mx-auto">
         <button 
           onClick={() => setIsUploadOpen(!isUploadOpen)}
@@ -800,7 +800,7 @@ const Photos = () => {
 
         {renderDateRangeSlider()}
 
-        <div className="mb-4 text-sm text-gray-200">
+        <div className="mb-4 text-sm text-gray-500">
           {formatPhotoCount(filteredImages.length, images.length)}
         </div>
 
@@ -825,7 +825,7 @@ const Photos = () => {
               </div>
             ))}
           </div>
-          <div className="absolute z-30 flex -translate-x-1/2 bottom-5 left-1/2 space-x-3 rtl:space-x-reverse">
+          <div className="absolute z-30 flex -translate-x-1/2 bottom-8 left-1/2 space-x-3 rtl:space-x-reverse">
               {filteredImages.map((_, index) => (
                   <button
                       key={index}
