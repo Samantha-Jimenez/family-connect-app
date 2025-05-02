@@ -3,8 +3,8 @@ import Image from 'next/image';
 import Select from 'react-select';
 import { PhotoData, TaggedPerson, getUserAlbums, addPhotoToAlbum, savePhotoToDB, getAlbumById, deletePhotoById, getAllFamilyMembers, AlbumData, checkIfPhotoIsFavorited, removePhotoFromFavorites, addPhotoToFavorites, addCommentToPhoto, getCommentsForPhoto, getUserNameById, deleteCommentFromPhoto, editCommentInPhoto, getProfilePhotoById } from '@/hooks/dynamoDB';
 import { useAuthenticator } from '@aws-amplify/ui-react';
-import { v4 as uuidv4 } from 'uuid';
 import PhotoComments from './PhotoComments';
+import { useToast } from '@/context/ToastContext';
 
 interface PhotoModalProps {
   photo: PhotoData;
@@ -65,6 +65,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const [editingCommentIndex, setEditingCommentIndex] = useState<number | null>(null);
   const [editedCommentText, setEditedCommentText] = useState('');
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     const fetchAlbums = async () => {
@@ -104,10 +105,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       if (photo.photo_id) {
         const photoComments = await getCommentsForPhoto(photo.photo_id);
         setComments(photoComments.map(comment => ({
-          text: comment.text,
-          author: comment.author,
-          userId: comment.userId,
-          timestamp: comment.timestamp,
+          ...comment,
           commenterPhoto: comment.profilePhoto
         })));
       }
@@ -140,6 +138,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   };
 
   const handleSave = async () => {
+    if (selectedAlbumId) handleAddToAlbum();
     try {
       await savePhotoToDB({
         ...photo,
@@ -153,8 +152,10 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       });
       console.log('Photo data saved successfully!');
       setIsEditing(false);
+      showToast('Changes saved successfully!', 'success');
     } catch (error) {
       console.error('Error saving photo data:', error);
+      showToast('Error saving changes.', 'error');
     }
   };
 
