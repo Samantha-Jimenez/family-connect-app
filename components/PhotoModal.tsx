@@ -260,7 +260,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             onError={handleImageError}
           />
           <div className={`absolute top-[0.6rem] right-[0.7rem] cursor-pointer transition-transform duration-300 ${isAnimating ? 'scale-125' : ''}`} onClick={toggleFavorite}>
-            {isFavorited ? <span className="icon-[mdi--cards-heart] w-5 h-5 text-red-500" /> : <span className="icon-[mdi--cards-heart] w-5 h-5 text-white" />}
+            {isFavorited ? <span className="mdi--heart w-5 h-5" /> : <span className="mdi--heart-plus w-5 h-5" />}
           </div>
           <div className="absolute top-[-1.6rem] right-[-0.9rem] cursor-pointer block md:hidden" onClick={handleCloseModal}>
             <span className="text-gray-600 text-2xl">&times;</span>
