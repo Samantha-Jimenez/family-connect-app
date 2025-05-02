@@ -35,7 +35,7 @@ export default function FavoritedPhotosCard() {
     <div className="card bg-white text-black p-6 shadow-lg">
       <h2 className="text-xl font-bold">Favorited Photos</h2>
       <p className="mt-2">Your favorite memories, all in one place.</p>
-      <div className="mt-4 grid grid-cols-3 gap-2">
+      <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2">
         {favoritedPhotos.map(photo => (
           <div key={photo.photo_id} className="relative aspect-square" onClick={() => handlePhotoClick(photo)}>
             <Image
