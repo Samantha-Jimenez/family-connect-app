@@ -1,46 +1,47 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { getCurrentUser } from 'aws-amplify/auth';
 import Image from 'next/image';
 import PhotoModal from '@/components/PhotoModal';
 import { getUserData, PhotoData } from '@/hooks/dynamoDB';
 
-export default function UploadedPhotosCard() {
+export default function UploadedPhotosCard({ userId }: { userId: string }) {
   const [userPhotos, setUserPhotos] = useState<PhotoData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoData | null>(null);
   const [uploaderName, setUploaderName] = useState<string | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  // const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
 
   useEffect(() => {
     fetchUserPhotos();
-    fetchCurrentUserId();
+    // fetchCurrentUserId();
   }, []);
 
-  const fetchCurrentUserId = async () => {
-    try {
-      const user = await getCurrentUser();
-      setCurrentUserId(user.userId);
-    } catch (error) {
-      console.error('Error fetching current user ID:', error);
-    }
-  };
+  // const fetchCurrentUserId = async () => {
+  //   try {
+  //     const user = await getCurrentUser();
+  //     setCurrentUserId(user.userId);
+  //   } catch (error) {
+  //     console.error('Error fetching current user ID:', error);
+  //   }
+  // };
 
   const fetchUserPhotos = async () => {
     try {
-      const user = await getCurrentUser();
-      if (!user?.userId) {
-        throw new Error("User not authenticated");
-      }
+      // const user = await getCurrentUser();
+      // if (!user?.userId) {
+      //   throw new Error("User not authenticated");
+      // }
 
       const response = await fetch('/api/photos');
       const data = await response.json();
       
       // Simplified filtering - just check the uploaded_by field
       const filteredPhotos = data.photos.filter((photo: PhotoData) => 
-        photo.uploaded_by === user.userId
+        photo.uploaded_by === userId
       );
+      console.log(filteredPhotos, 'filteredPhotos');
+      console.log(userId, 'userId');
 
       setUserPhotos(filteredPhotos);
     } catch (error) {
@@ -97,7 +98,7 @@ export default function UploadedPhotosCard() {
       <p className="mt-2 italic">Photos you've uploaded ({userPhotos.length})</p>
       
       <div className="mt-4 grid grid-cols-3 gap-2">
-        {userPhotos.slice(0, 6).map((photo, index) => (
+        {userPhotos.map((photo, index) => (
           <div key={photo.photo_id} className="relative aspect-square" onClick={() => handleImageClick(photo)}>
             <Image
               src={photo.url || ''}
@@ -115,7 +116,7 @@ export default function UploadedPhotosCard() {
         <PhotoModal
           photo={selectedPhoto}
           uploaderName={uploaderName}
-          currentUserId={currentUserId}
+          currentUserId={userId}
           isEditing={isEditing}
           setIsEditing={setIsEditing}
           closeModal={closeModal}

@@ -267,7 +267,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             <span className="text-gray-600 text-2xl">&times;</span>
           </div>
           {isEditing && currentUserId === photo?.uploaded_by && (
-          <div className="flex absolute bottom-0 right-0 space-x-2 mb-2">
+          <div className="flex absolute bottom-0 right-2 space-x-2 mb-2">
             <button
               className="btn bg-green-500 text-white border-0"
               onClick={handleSave}

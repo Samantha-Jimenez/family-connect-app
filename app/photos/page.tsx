@@ -806,7 +806,7 @@ const Photos = () => {
 
         <div id="default-carousel" className="relative w-full" data-carousel="slide">
           <div className="relative h-56 overflow-hidden rounded-lg md:h-96">
-            {filteredImages.map((photo, index) => (
+            {filteredImages.reverse().slice(0,6).map((photo, index) => (
               <div
                 key={index}
                 className={`absolute w-full h-full transition-opacity duration-700 ease-in-out ${
@@ -826,7 +826,7 @@ const Photos = () => {
             ))}
           </div>
           <div className="absolute z-30 flex -translate-x-1/2 bottom-8 left-1/2 space-x-3 rtl:space-x-reverse">
-              {filteredImages.map((_, index) => (
+              {filteredImages.reverse().slice(0,6).map((_, index) => (
                   <button
                       key={index}
                       type="button"
@@ -863,7 +863,7 @@ const Photos = () => {
       </div>
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[...filteredImages].map((photo, index) => (
+        {[...filteredImages].reverse().map((photo, index) => (
           <div 
             key={index} 
             className="relative h-48 cursor-pointer"

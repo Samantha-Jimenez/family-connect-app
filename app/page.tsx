@@ -98,7 +98,7 @@ const HomePage = () => {
                   </div>
 
                   <div className="mt-4">
-                    {activeTab === 'uploads' && <UploadedPhotosCard />}
+                    {activeTab === 'uploads' && <UploadedPhotosCard userId={user.userId as string} />}
                     {activeTab === 'tagged' && <TaggedPhotosCard userId={user.userId} />}
                     {activeTab === 'favorites' && <FavoritedPhotosCard />}
                     {activeTab === 'albums' && <AlbumsCard userId={user.userId} auth={true}/>}
