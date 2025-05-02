@@ -125,10 +125,14 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
             <h1 className="text-gray-500 mb-2">
               {userData?.username}
             </h1>
-            <h2 className="text-xl font-semibold text-black">About Me</h2>
-            <p className="text-gray-500 mb-2">
-              {userData?.bio || ''}
-            </p>
+            {userData?.bio ? (
+              <>
+                <h2 className="text-xl font-semibold text-black">About Me</h2>
+                <p className="text-gray-500 mb-2">
+                  {userData?.bio || ''}
+                </p>
+              </>
+            ) : ""}
             <h2 className="text-xl font-semibold text-black">Family Role</h2>
             <div className="flex flex-wrap gap-2">
               <span className="bg-[#FAE5C0] text-gray-500 px-3 py-1 rounded-full text-sm">Child</span>
@@ -137,40 +141,50 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
             </div>
           </div>
           <div className="md:pl-8">
-            <h2 className="text-xl font-semibold text-black">Birth</h2>
-            <div className="text-gray-500 flex items-center">
-              {userData?.birthday ? (
-                <>
+            {userData?.birthday ? (
+              <>
+                <h2 className="text-xl font-semibold text-black">Birth</h2>
+                <div className="text-gray-500 flex items-center">
                   <span className="icon-[mdi--date-range] h-5 mr-2" />
                   {formatBirthday(userData.birthday)} - <span className="text-xl ml-1">{getZodiacSign(userData.birthday)}</span>
-                </>
-              ) : ''}
-            </div>
-            <div className="text-gray-500 mb-2 flex items-center">
-              {userData?.birth_city || userData?.birth_state ? (
-                <>
+                </div>
+              </>
+            ) : ''}
+            {userData?.birth_city || userData?.birth_state ? (
+              <>
+                <div className="text-gray-500 mb-2 flex items-center">
                   <span className="icon-[mdi--map-marker] h-5 mr-2" />
                   {userData.birth_city}, {userData.birth_state}
-                </>
-              ) : ''}
-            </div>
-            <h2 className="text-xl font-semibold text-black">Contact Information</h2>
-            <ul className="text-gray-500">
-              <li className="flex items-center">
-                <span className="icon-[mdi--email] h-5 mr-2" />
-                {userData?.email || ''}
-              </li>
-              <li className="flex items-center">
-                <span className="icon-[mdi--phone] h-5 mr-2" />
-                {userData?.phone_number || ''}
-              </li>
-              <li className="flex items-center">
-                <span className="icon-[mdi--map-marker] h-5 mr-2" />
-                {userData?.current_city && userData?.current_state 
-                  ? `${userData.current_city}, ${userData.current_state}`
-                  : ''}
-              </li>
-            </ul>
+                </div>
+              </>
+            ) : ''}
+            {userData?.email || userData?.phone_number || userData?.current_city || userData?.current_state ? (
+              <>
+                <h2 className="text-xl font-semibold text-black">Contact Information</h2>
+                <ul className="text-gray-500">
+                  {userData?.email ? (
+                    <li className="flex items-center">
+                      <span className="icon-[mdi--email] h-5 mr-2" />
+                      {userData?.email || ''}
+                    </li>
+                  ) : ""}
+                  {userData?.phone_number ? (
+                    <li className="flex items-center">
+                      <span className="icon-[mdi--phone] h-5 mr-2" />
+                      {userData?.phone_number || ''}
+                    </li>
+                  ) : ""}
+                  {userData?.current_city || userData?.current_state ? (
+                    <li className="flex items-center">
+                      <span className="icon-[mdi--map-marker] h-5 mr-2" />
+                      {userData?.current_city && userData?.current_state 
+                        ? `${userData.current_city}, ${userData.current_state}`
+                        : ''}
+                    </li>
+                  ) : ""}
+                </ul>
+              </>
+            ) : ""}
           </div>
         </div>
       </div>
