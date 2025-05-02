@@ -418,20 +418,32 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                 {isEditing && currentUserId === photo?.uploaded_by && (
                   <div className="">
                     <label className="block text-sm font-bold mb-1 text-black">Album:</label>
-                    <select
-                      value={selectedAlbumId}
-                      onChange={(e) => setSelectedAlbumId(e.target.value)}
-                      className="select select-bordered w-full mb-2 text-black bg-white border-gray-300"
-                    >
-                      <option value="">Select an Album</option>
-                      {albums.map((album) => (
-                        <option key={album.album_id} value={album.album_id}>
-                          {album.name}
-                          {album.description}
-                          {album.cover_photo_id}
-                        </option>
-                      ))}
-                    </select>
+                    <Select<{ value: string; label: string }>
+                      options={albums.map(album => ({
+                        value: album.album_id,
+                        label: album.name
+                      }))}
+                      value={albums.find(album => album.album_id === photo.album_id) ? {
+                        value: photo.album_id,
+                        label: albums.find(album => album.album_id === photo.album_id)?.name || ''
+                      } : null}
+                      onChange={(selected) => setSelectedAlbumId(selected?.value || '')}
+                      className="mt-1"
+                      classNamePrefix="select"
+                      placeholder="Select an album..."
+                      noOptionsMessage={() => "No albums found"}
+                      isLoading={albums.length === 0}
+                      theme={(theme) => ({
+                        ...theme,
+                        colors: {
+                          ...theme.colors,
+                          primary: '#3b82f6',
+                          primary25: '#bfdbfe',
+                          neutral0: 'var(--bg-color, white)',
+                          neutral80: 'var(--text-color, black)',
+                        },
+                      })}
+                    />
                   </div>
                 )}
               </div>
