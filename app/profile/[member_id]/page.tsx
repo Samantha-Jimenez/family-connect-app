@@ -11,6 +11,7 @@ import { FamilyMember } from '@/hooks/dynamoDB';
 import AlbumsCard from "@/components/AlbumsCard";
 import TaggedPhotosCard from "@/components/TaggedPhotosCard";
 import UploadedPhotosCard from "@/components/UploadedPhotosCard";
+import ProfileOverview from "@/components/ProfileOverview";
 
 interface UserData {
   first_name: string;
@@ -118,14 +119,13 @@ export default function ProfilePage() {
         </div>
 
         <div className="mt-4">
-          {activeTab === 'overview' && <></>}
+          {activeTab === 'overview' && <ProfileOverview userId={member_id as string}/>}
           {activeTab === 'uploads' && <UploadedPhotosCard userId={member_id as string}/>}
           {activeTab === 'albums' && <AlbumsCard userId={member_id as string} auth={false}/>}
         </div>
       </div>
 
       {/* <div className="divider col-span-1 sm:col-span-2"></div> */}
-      <UpcomingEvents />
       {/* Albums */}
       {/* <AlbumsCard userId={member_id as string} auth={false}/> */}
       {/* <div className="divider divider-horizontal"></div> */}
@@ -133,18 +133,6 @@ export default function ProfilePage() {
       {/* <TaggedPhotosCard userId={member_id as string} /> */}
       {/* <div className="divider col-span-1 sm:col-span-2"></div> */}
       {/* Family Tree */}
-      <div className="card bg-white text-black shadow-lg p-6 col-span-1 sm:col-span-2">
-        <h2 className="text-xl font-bold">🌳 Family Tree</h2>
-        <p className="mt-2">Explore your family connections.</p>
-        <button className="btn btn-outline mt-4 bg-[#717568] text-white border-0">View Family Tree</button>
-      </div>
-      
-      {/* Events */}
-        {/* <div className="card bg-white text-black shadow-lg p-6">
-          <h2 className="text-xl font-bold">📅 Upcoming Events</h2>
-          <p className="mt-2">Check family gatherings and birthdays.</p>
-          <button className="btn btn-outline mt-4 bg-[#717568] text-white border-0">View Events</button>
-        </div> */}
       </div>
     </div>
   );

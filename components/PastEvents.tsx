@@ -1,6 +1,8 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useCalendar } from '@/context/CalendarContext'
 import { useRouter } from 'next/navigation'
+import { getRSVPStatus } from '@/hooks/dynamoDB'
+import { getCurrentUser } from 'aws-amplify/auth'
 
 interface Event {
   id?: string;
@@ -22,6 +24,36 @@ interface Event {
 const PastEvents = () => {
   const { events } = useCalendar() as { events: Event[] };
   const router = useRouter();
+
+  // RSVP state
+  const [rsvpStatuses, setRsvpStatuses] = useState<Record<string, 'yes' | 'no' | 'maybe' | null>>({});
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Fetch current user ID on mount
+  useEffect(() => {
+    getCurrentUser()
+      .then(user => setUserId(user.userId))
+      .catch(() => setUserId(null));
+  }, []);
+
+  // Fetch RSVP statuses for the past events
+  useEffect(() => {
+    if (!userId || !events) return;
+
+    const fetchRSVPs = async () => {
+      const eventIds = events.map(e => e.id).filter(Boolean) as string[];
+      const statusMap: Record<string, 'yes' | 'no' | 'maybe' | null> = {};
+      await Promise.all(
+        eventIds.map(async (eventId) => {
+          const status = await getRSVPStatus(eventId, userId);
+          statusMap[eventId] = status;
+        })
+      );
+      setRsvpStatuses(statusMap);
+    };
+
+    fetchRSVPs();
+  }, [userId, events]);
 
   // Function to get the last occurrence of a recurring event
   const getLastOccurrence = (event: Event) => {
@@ -92,11 +124,14 @@ const PastEvents = () => {
     router.push('/calendar');
   };
 
-  const getRSVPSymbol = (status: Event['rsvpStatus']) => {
+  // Use RSVP status from state
+  const getRSVPSymbol = (eventId?: string) => {
+    if (!eventId) return null;
+    const status = rsvpStatuses[eventId];
     if (status === 'yes' || status === 'no' || status === 'maybe') {
       return (
         <span className="ml-2 text-xs font-semibold bg-blue-200 text-blue-800 px-2 py-0.5 rounded">
-          RSVP'd
+          RSVP'd: {status.charAt(0).toUpperCase() + status.slice(1)}
         </span>
       );
     }
@@ -110,8 +145,8 @@ const PastEvents = () => {
       </h2>
       <div className="mt-4 space-y-4">
         {sortedEvents.length > 0 ? (
-          sortedEvents.map((event) => {
-            const hasRSVP = !!event.rsvpStatus;
+          sortedEvents.map((event) => { 
+            const hasRSVP = !!rsvpStatuses[event.id || ''];
             return (
               <div 
                 key={event.id || event.start} 
@@ -130,7 +165,7 @@ const PastEvents = () => {
                 <div className="flex-1">
                   <p className="font-medium text-gray-900 flex items-center">
                     {event.title}
-                    {getRSVPSymbol(event.rsvpStatus)}
+                    {getRSVPSymbol(event.id)}
                   </p>
                   <p className="text-sm text-gray-600">{formatDate(event.lastOccurrence!)}</p>
                   {event.location && (
