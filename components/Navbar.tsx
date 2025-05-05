@@ -38,7 +38,7 @@ export default function Navbar({ signOut, username, userFirstName, userLastName,
         <div className="relative flex h-16 items-center justify-between">
           <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
             {/* Mobile menu button */}
-            <button className="btn btn-square" onClick={toggleMobileMenu}>
+            <button className="btn btn-square bg-transparent border-0 text-gray-700 hover:text-black" onClick={toggleMobileMenu}>
               Menu
             </button>
           </div>
@@ -120,14 +120,14 @@ export default function Navbar({ signOut, username, userFirstName, userLastName,
         </div>
       </div>
 
-      <div className={`sm:hidden ${isMobileMenuOpen ? 'block' : 'hidden'}`}>
+      <div className={`sm:hidden ${isMobileMenuOpen ? 'block' : 'hidden'} absolute w-full bg-white z-[1] rounded-b-lg border border-gray-200 shadow-lg`}>
         <div className="space-y-1 px-2 pt-2 pb-3">
           {updatedNavigation.map((item) => (
             <a
               key={item.name}
               href={item.href}
               aria-current={item.current ? 'page' : undefined}
-              className={`${item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'} block rounded-md px-3 py-2 text-base font-medium`}
+              className={`${item.current ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-700 hover:text-white'} block rounded-md px-3 py-2 text-base font-medium`}
             >
               {item.name}
             </a>
