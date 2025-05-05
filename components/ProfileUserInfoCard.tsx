@@ -95,10 +95,10 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
 
   return (
     <div className="rounded-3xl">
-      <div className="rounded-3xl py-8 transition-all duration-300 mt-20 h-60">
+      <div className="rounded-3xl md:py-8 pt-8 transition-all duration-300 md:mt-20 md:h-60">
         <div className="flex flex-col md:flex-row">
-          <div className="text-center mb-8 md:mb-0">
-            <div className="avatar bottom-24">
+          <div className="text-center">
+            <div className="avatar md:bottom-24 bottom-8">
               <div className="w-[17rem] h-[17rem] mx-auto rounded-[60px] shadow-lg">
                 {profilePhotoUrl ? (
                   <Image 
@@ -134,7 +134,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
               </>
             ) : ""}
             <h2 className="text-xl font-semibold text-black">Family Role</h2>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 mb-2">
               <span className="bg-[#FAE5C0] text-gray-500 px-3 py-1 rounded-full text-sm">Child</span>
               <span className="bg-[#FAE5C0] text-gray-500 px-3 py-1 rounded-full text-sm">Sibling</span>
               <span className="bg-[#FAE5C0] text-gray-500 px-3 py-1 rounded-full text-sm">Cousin</span>
