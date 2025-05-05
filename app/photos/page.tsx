@@ -627,6 +627,12 @@ const Photos = () => {
     </form>
   );
 
+  // Handler to refresh photos and close modal after deletion
+  const handlePhotoDeleted = async () => {
+    await fetchPhotos();
+    setSelectedPhoto(null);
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -897,6 +903,7 @@ const Photos = () => {
           closeModal={closeModal}
           handleImageError={handleImageError}
           renderEditForm={renderEditForm}
+          onPhotoDeleted={handlePhotoDeleted}
         />
       )}
     </div>

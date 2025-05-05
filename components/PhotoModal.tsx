@@ -5,6 +5,7 @@ import { PhotoData, TaggedPerson, getUserAlbums, addPhotoToAlbum, savePhotoToDB,
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import PhotoComments from './PhotoComments';
 import { useToast } from '@/context/ToastContext';
+import ConfirmationModal from './ConfirmationModal';
 
 interface PhotoModalProps {
   photo: PhotoData;
@@ -15,6 +16,7 @@ interface PhotoModalProps {
   closeModal: () => void;
   handleImageError: React.ReactEventHandler<HTMLImageElement>;
   renderEditForm: () => JSX.Element;
+  onPhotoDeleted?: () => void;
 }
 
 const formatDate = (dateString: string): string => {
@@ -42,7 +44,8 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   setIsEditing,
   closeModal,
   handleImageError,
-  renderEditForm
+  renderEditForm,
+  onPhotoDeleted
 }) => {
   const { user } = useAuthenticator();
   const [albums, setAlbums] = useState<AlbumData[]>([]);
@@ -66,6 +69,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const [editedCommentText, setEditedCommentText] = useState('');
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const { showToast } = useToast();
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   useEffect(() => {
     const fetchAlbums = async () => {
@@ -163,7 +167,11 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     try {
       await deletePhotoById(photo.photo_id);
       console.log('Photo deleted successfully!');
-      closeModal(); // Close the modal after deletion
+      if (onPhotoDeleted) {
+        onPhotoDeleted();
+      } else {
+        closeModal();
+      }
     } catch (error) {
       console.error('Error deleting photo:', error);
     }
@@ -276,7 +284,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             </button>
             <button
               className="btn bg-red-500 text-white border-0"
-              onClick={handleDelete}
+              onClick={() => setIsConfirmOpen(true)}
             >
               Delete
             </button>
@@ -550,6 +558,15 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             )}
         </div>
       </div>
+      <ConfirmationModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={async () => {
+          await handleDelete();
+          setIsConfirmOpen(false);
+        }}
+        message="Are you sure you want to delete this photo?"
+      />
     </div>
   );
 };

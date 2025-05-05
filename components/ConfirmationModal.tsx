@@ -7,21 +7,30 @@ interface ConfirmationModalProps {
   message: string;
 }
 
-const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, onConfirm, message }) => {
+const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  message,
+}) => {
   if (!isOpen) return null;
-
   return (
-    <dialog className="modal modal-open">
-      <div className="modal-box bg-white text-black shadow-lg">
-        <h3 className="font-bold text-lg">Confirm Action</h3>
-        <p>{message}</p>
-        <div className="modal-action">
-          <button className="btn btn-outline" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" onClick={onConfirm}>Delete</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+      <div
+        className="bg-white rounded-lg p-6 shadow-lg max-w-sm w-full"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="mb-4">{message}</div>
+        <div className="flex justify-end space-x-2">
+          <button className="btn bg-gray-500 text-white border-0" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="btn bg-red-500 text-white border-0" onClick={onConfirm}>
+            Delete
+          </button>
         </div>
       </div>
-      <div className="modal-backdrop" onClick={onClose}></div>
-    </dialog>
+    </div>
   );
 };
 

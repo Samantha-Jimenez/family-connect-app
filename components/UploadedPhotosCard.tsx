@@ -83,6 +83,12 @@ export default function UploadedPhotosCard({ userId }: { userId: string }) {
     return <div>Edit form goes here</div>;
   };
 
+  // Expose a handler for when a photo is deleted
+  const handlePhotoDeleted = () => {
+    fetchUserPhotos();
+    setSelectedPhoto(null); // Also close the modal after deletion
+  };
+
   if (loading) {
     return (
       <div className="card bg-white text-black shadow-lg p-6">
@@ -122,6 +128,7 @@ export default function UploadedPhotosCard({ userId }: { userId: string }) {
           closeModal={closeModal}
           handleImageError={handleImageError}
           renderEditForm={renderEditForm}
+          onPhotoDeleted={handlePhotoDeleted}
         />
       )}
     </div>
