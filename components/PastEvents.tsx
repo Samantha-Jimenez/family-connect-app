@@ -92,6 +92,17 @@ const PastEvents = () => {
     router.push('/calendar');
   };
 
+  const getRSVPSymbol = (status: Event['rsvpStatus']) => {
+    if (status === 'yes' || status === 'no' || status === 'maybe') {
+      return (
+        <span className="ml-2 text-xs font-semibold bg-blue-200 text-blue-800 px-2 py-0.5 rounded">
+          RSVP'd
+        </span>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="card bg-white text-black p-6 shadow-md">
       <h2 className="text-xl font-bold flex items-center gap-2">
@@ -99,35 +110,43 @@ const PastEvents = () => {
       </h2>
       <div className="mt-4 space-y-4">
         {sortedEvents.length > 0 ? (
-          sortedEvents.map((event) => (
-            <div 
-              key={event.id || event.start} 
-              className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-              onClick={() => handleEventClick(event)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  handleEventClick(event);
-                }
-              }}
-            >
-              <div className="flex-1">
-                <p className="font-medium text-gray-900">{event.title}</p>
-                <p className="text-sm text-gray-600">{formatDate(event.lastOccurrence!)}</p>
-                {event.location && (
-                  <p className="text-sm text-gray-500 flex items-center gap-1">
-                    <span>📍</span> {event.location}
+          sortedEvents.map((event) => {
+            const hasRSVP = !!event.rsvpStatus;
+            return (
+              <div 
+                key={event.id || event.start} 
+                className={`flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer
+                  ${hasRSVP ? 'bg-blue-50' : ''}
+                `}
+                onClick={() => handleEventClick(event)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    handleEventClick(event);
+                  }
+                }}
+              >
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900 flex items-center">
+                    {event.title}
+                    {getRSVPSymbol(event.rsvpStatus)}
                   </p>
+                  <p className="text-sm text-gray-600">{formatDate(event.lastOccurrence!)}</p>
+                  {event.location && (
+                    <p className="text-sm text-gray-500 flex items-center gap-1">
+                      <span>📍</span> {event.location}
+                    </p>
+                  )}
+                </div>
+                {event.rrule && (
+                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                    Recurring
+                  </span>
                 )}
               </div>
-              {event.rrule && (
-                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                  Recurring
-                </span>
-              )}
-            </div>
-          ))
+            );
+          })
         ) : (
           <div className="text-center py-6">
             <p className="text-gray-500">No past events</p>
