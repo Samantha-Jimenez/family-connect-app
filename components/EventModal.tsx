@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { getUserNameById } from '@/hooks/dynamoDB';
+import { getUserNameById, getRSVPStatus, getEventRSVPs } from '@/hooks/dynamoDB';
 import { CalendarEvent } from '@/context/CalendarContext';
 import ConfirmationModal from './ConfirmationModal';
 
@@ -36,7 +36,9 @@ export default function EventModal({
   const [location, setLocation] = useState('');
   const [creatorName, setCreatorName] = useState<string | null>(null);
   const [rsvpStatus, setRsvpStatus] = useState<'yes' | 'no' | 'maybe' | null>(null);
+  const [rsvpStatusFetched, setRsvpStatusFetched] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [rsvpList, setRsvpList] = useState<{ userId: string; status: 'yes' | 'no' | 'maybe'; name: string }[]>([]);
 
   useEffect(() => {
     if (event?.userId) {
@@ -99,10 +101,34 @@ export default function EventModal({
   }, [event, mode, selectedDate, setTitle, setIsAllDay, setLocation, setStartDate, setStartTime, setEndDate, setEndTime]);
 
   useEffect(() => {
-    if (event) {
-      setRsvpStatus(event.extendedProps?.rsvpStatus || null);
+    if (event?.id && user?.userId && isOpen) {
+      getRSVPStatus(event.id, user.userId).then((status) => {
+        setRsvpStatus(status);
+        setRsvpStatusFetched(true);
+      });
     }
-  }, [event]);
+    if (!isOpen) setRsvpStatusFetched(false);
+  }, [event?.id, user?.userId, isOpen]);
+
+  useEffect(() => {
+    async function fetchRSVPList() {
+      if (!event?.id) {
+        setRsvpList([]);
+        return;
+      }
+      const rsvps = await getEventRSVPs(event.id);
+      // Fetch names for each user
+      const rsvpsWithNames = await Promise.all(
+        rsvps.map(async (rsvp) => {
+          const nameObj = await getUserNameById(rsvp.userId);
+          const name = nameObj ? `${nameObj.firstName} ${nameObj.lastName}` : rsvp.userId;
+          return { ...rsvp, name };
+        })
+      );
+      setRsvpList(rsvpsWithNames);
+    }
+    fetchRSVPList();
+  }, [event?.id]);
 
   const formatDateTime = (date: string, time?: string) => {
     try {
@@ -233,10 +259,10 @@ export default function EventModal({
     }
   };
 
-  const handleRsvp = (status: 'yes' | 'no' | 'maybe') => {
+  const handleRsvp = async (status: 'yes' | 'no' | 'maybe') => {
     setRsvpStatus(status);
     if (event?.id) {
-      rsvpEvent(event.id, status);
+      await rsvpEvent(event.id, status);
     }
   };
 
@@ -436,6 +462,21 @@ export default function EventModal({
                   </div>
                   <div>{creatorName}</div>
                 </div>
+              )}
+            </div>
+
+            <div className="mt-4">
+              <div className="font-semibold mb-2">RSVPs:</div>
+              {rsvpList.length === 0 ? (
+                <div className="text-gray-500 text-sm">No RSVPs yet.</div>
+              ) : (
+                <ul className="text-sm">
+                  {rsvpList.map(rsvp => (
+                    <li key={rsvp.userId}>
+                      <span className="font-medium">{rsvp.name}</span>: <span className="capitalize">{rsvp.status}</span>
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
 

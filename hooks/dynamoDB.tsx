@@ -27,7 +27,9 @@ const TABLES = {
   FAMILY: "Family",
   PHOTOS: "Photos",
   ALBUMS: "Albums",
-  RELATIONSHIPS: "Relationships"
+  RELATIONSHIPS: "Relationships",
+  // EVENTS: "Events",
+  EVENT_RSVP: "EventRSVPs"
 } as const;
 
 // Export all interfaces
@@ -985,3 +987,108 @@ export const getProfilePhotoById = async (userId: string): Promise<string | null
     return null;
   }
 };
+
+export const saveRSVPToDynamoDB = async (eventId: string, userId: string, status: 'yes' | 'no' | 'maybe') => {
+    const rsvpParams = {
+        TableName: TABLES.EVENT_RSVP,
+        Item: {
+            rsvp_id: { S: eventId }
+        }
+    };
+
+    try {
+        await dynamoDB.send(new PutItemCommand(rsvpParams));
+        console.log("✅ RSVP saved to DynamoDB successfully!");
+    } catch (error) {
+        console.error("❌ Error saving RSVP to DynamoDB:", error);
+    }
+};
+
+export async function getRSVPStatus(
+  eventId: string,
+  userId: string
+): Promise<'yes' | 'no' | 'maybe' | null> {
+  try {
+    const params = {
+      TableName: TABLES.EVENT_RSVP,
+      Key: {
+        rsvp_id: { S: eventId }
+      }
+    };
+    const data = await dynamoDB.send(new GetItemCommand(params));
+    if (data.Item && data.Item.status && data.Item.status.S) {
+      const status = data.Item.status.S;
+      if (status === 'yes' || status === 'no' || status === 'maybe') {
+        return status;
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error("❌ Error fetching RSVP status:", error);
+    return null;
+  }
+}
+
+export async function getEventRSVPs(eventId: string): Promise<{ userId: string; status: 'yes' | 'no' | 'maybe' }[]> {
+  try {
+    const params = {
+      TableName: TABLES.EVENT_RSVP,
+      IndexName: undefined, // If you have a GSI for eventId, set it here
+      FilterExpression: "rsvp_id = :eventId",
+      ExpressionAttributeValues: {
+        ":eventId": { S: eventId }
+      }
+    };
+    const command = new ScanCommand(params);
+    const data = await dynamoDB.send(command);
+    if (!data.Items) return [];
+    return data.Items
+      .map(item => {
+        const userId = item.user_id?.S;
+        const status = item.status?.S;
+        if (
+          typeof userId === 'string' &&
+          (status === 'yes' || status === 'no' || status === 'maybe')
+        ) {
+          return { userId, status };
+        }
+        return null;
+      })
+      .filter((item): item is { userId: string; status: 'yes' | 'no' | 'maybe' } => item !== null);
+  } catch (error) {
+    console.error("❌ Error fetching event RSVPs:", error);
+    return [];
+  }
+}
+
+// Add this function to fetch all RSVPs for a user
+export async function getUserRSVPs(userId: string): Promise<{ eventId: string; status: 'yes' | 'no' | 'maybe' }[]> {
+  try {
+    const params = {
+      TableName: TABLES.EVENT_RSVP,
+      FilterExpression: "user_id = :userId",
+      ExpressionAttributeValues: {
+        ":userId": { S: userId }
+      }
+    };
+    const command = new ScanCommand(params);
+    const data = await dynamoDB.send(command);
+    if (!data.Items) return [];
+    return data.Items
+      .map(item => {
+        const eventId = item.rsvp_id?.S;
+        const status = item.status?.S;
+        if (
+          typeof eventId === 'string' &&
+          (status === 'yes' || status === 'no' || status === 'maybe')
+        ) {
+          return { eventId, status };
+        }
+        return null;
+      })
+      .filter((item): item is { eventId: string; status: 'yes' | 'no' | 'maybe' } => item !== null);
+  } catch (error) {
+    console.error("❌ Error fetching user RSVPs:", error);
+    return [];
+  }
+}
