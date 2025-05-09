@@ -94,6 +94,12 @@ export default function Navbar({ signOut, username, userFirstName, userLastName,
                     >
                       Your Profile
                     </button>
+                    <button 
+                      onClick={() => router.push('/settings')}
+                      className="w-full text-left rounded px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Settings
+                    </button>
                   </li>
                   {userId === "f16b1510-0001-705f-8680-28689883e706" && (
                     <li>

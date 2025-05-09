@@ -343,7 +343,7 @@ const Settings = () => {
   return (
     <AuthGuard>
       <div className="min-h-screen">
-        <form onSubmit={handlePhotoSubmit} className="card bg-white shadow-xl p-6 mx-auto mt-6">
+        <form onSubmit={handlePhotoSubmit} className="card bg-white shadow-xl p-6 mx-auto mt-6 max-w-7xl">
           <div className="flex flex-col items-center gap-4">
             <div className="avatar">
               <div className="w-24 h-24 rounded-full">
@@ -405,7 +405,7 @@ const Settings = () => {
             </div>
           </div>
         </form>
-        <form onSubmit={handleSubmit} className="card bg-white shadow-xl p-6 mx-auto mt-6">
+        <form onSubmit={handleSubmit} className="card bg-white shadow-xl p-6 mx-auto mt-6 max-w-7xl">
           <div className="grid md:grid-cols-2 md:gap-6">
             <div className="relative z-0 w-full mb-5 group">
               <input type="text" value={userData?.first_name || ''} name="floating_first_name" id="floating_first_name" onChange={handleInputChange} className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " required />

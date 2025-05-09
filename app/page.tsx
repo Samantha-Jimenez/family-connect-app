@@ -7,7 +7,6 @@ import Panel from "@/components/Panel";
 import CallToAction from "@/components/CallToAction";
 import UploadedPhotosCard from "@/components/UploadedPhotosCard";
 import { useEffect, useState } from 'react';
-import Settings from "@/components/Settings";
 import { ToastProvider } from '../context/ToastContext';
 import { UserProvider } from '../context/UserContext';
 import { useAuthenticator } from '@aws-amplify/ui-react';
@@ -24,7 +23,7 @@ try {
   console.error("Error configuring Amplify:", error);
 }
 
-type Tab = 'uploads' | 'tagged' | 'favorites' | 'albums' | 'settings';
+type Tab = 'uploads' | 'tagged' | 'favorites' | 'albums';
 
 const HomePage = () => {
   const { user } = useAuthenticator();
@@ -89,12 +88,6 @@ const HomePage = () => {
                     >
                       Albums
                     </a>
-                    <a 
-                      className={`tab tab-lg ${activeTab === 'settings' ? 'tab-active' : ''}`}
-                      onClick={() => setActiveTab('settings')}
-                    >
-                      Settings
-                    </a>
                   </div>
 
                   <div className="mt-4">
@@ -102,7 +95,6 @@ const HomePage = () => {
                     {activeTab === 'tagged' && <TaggedPhotosCard userId={user.userId} />}
                     {activeTab === 'favorites' && <FavoritedPhotosCard />}
                     {activeTab === 'albums' && <AlbumsCard userId={user.userId} auth={true}/>}
-                    {activeTab === 'settings' && <Settings />}
                   </div>
                 </div>
               </div>
