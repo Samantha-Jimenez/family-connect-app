@@ -28,6 +28,9 @@ const REQUIRED_FIELDS: (keyof UserData)[] = [
   'birthday',
   'birth_city',
   'birth_state',
+  'profile_photo',
+  'current_city',
+  'current_state',
 ];
 
 const FIELD_LABELS: Record<keyof UserData, string> = {
@@ -65,9 +68,9 @@ const CallToAction = () => {
           birthday: data.birthday || '',
           birth_city: data.birth_city || '',
           birth_state: data.birth_state || '',
-          profile_photo: data.profile_photo || undefined,
-          current_city: data.current_city || undefined,
-          current_state: data.current_state || undefined,
+          profile_photo: data.profile_photo || '',
+          current_city: data.current_city || '',
+          current_state: data.current_state || '',
         });
       }
     };
@@ -94,15 +97,50 @@ const CallToAction = () => {
       : last;
 
   return (
-    <div className="relative bg-white rounded-lg py-4 pl-4 pr-7 text-stone-700 shadow-lg">
+    <div className="relative bg-yellow-300/10 rounded-lg py-4 pl-4 pr-[5.75rem] text-stone-700 shadow-lg">
       <button
-        className="absolute top-3 right-4 text-gray-400 hover:text-gray-700 text-xl font-bold focus:outline-none"
+        className="
+          group
+          absolute top-3 right-4
+          flex items-center justify-end
+          text-gray-400 hover:text-gray-700 text-xl font-bold focus:outline-none
+          rounded-full
+          transition-all duration-700
+          bg-transparent
+          hover:bg-gray-400
+          hover:text-red-500
+          px-2
+          overflow-hidden
+          min-w-[2.5rem]
+          "
         aria-label="Close"
         onClick={() => setVisible(false)}
+        style={{ minWidth: '2.5rem' }}
       >
+        <span
+          className="
+            pointer-events-none
+            mr-1
+            opacity-0
+            translate-x-14
+            group-hover:opacity-100
+            group-hover:translate-x-0
+            transition-all duration-700
+            text-base text-gray-500
+            whitespace-nowrap
+            select-none
+            text-sm
+            leading-7
+            -translate-y-0
+            font-normal
+            text-white
+          "
+        >
+          dismiss
+        </span>
         &times;
       </button>
-      <p className="font-semibold">
+      <p className="font-medium italic">
         You're just a few details away from a complete profile—finish filling out your {missingText}!
       </p>
     </div>

@@ -135,9 +135,9 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
             ) : ""}
             <h2 className="text-xl font-semibold text-black">Family Role</h2>
             <div className="flex flex-wrap gap-2 mb-2">
-              <span className="bg-[#FAE5C0] text-gray-500 px-3 py-1 rounded-full text-sm">Child</span>
-              <span className="bg-[#FAE5C0] text-gray-500 px-3 py-1 rounded-full text-sm">Sibling</span>
-              <span className="bg-[#FAE5C0] text-gray-500 px-3 py-1 rounded-full text-sm">Cousin</span>
+              <span className="bg-yellow-800/60 text-white px-3 py-1 rounded-full text-sm">Child</span>
+              <span className="bg-yellow-800/60 text-white px-3 py-1 rounded-full text-sm">Sibling</span>
+              <span className="bg-yellow-800/60 text-white px-3 py-1 rounded-full text-sm">Cousin</span>
             </div>
           </div>
           <div className="md:pl-8">
