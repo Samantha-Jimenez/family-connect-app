@@ -70,6 +70,8 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const { showToast } = useToast();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isDownloadAnimating, setIsDownloadAnimating] = useState(false);
+  const [hasDownloaded, setHasDownloaded] = useState(false);
 
   useEffect(() => {
     const fetchAlbums = async () => {
@@ -256,6 +258,29 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     label: member.name
   }));
 
+  const handleDownload = async (imageUrl: string, filename: string = "photo.jpg") => {
+    try {
+      setIsDownloadAnimating(true); // Start animation
+      const response = await fetch(imageUrl, { mode: 'cors' });
+      if (!response.ok) throw new Error('Network response was not ok');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      setHasDownloaded(true);
+      setTimeout(() => setIsDownloadAnimating(false), 300); // End animation after 300ms
+    } catch (err) {
+      setIsDownloadAnimating(false);
+      alert("Failed to download image.");
+      console.error("Download error:", err);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleCloseModal}>
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-4xl md:w-full w-auto m-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[670px] overflow-y-auto md:overflow-y-hidden" onClick={handleModalClick}>
@@ -268,8 +293,38 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             className="object-contain rounded-lg"
             onError={handleImageError}
           />
-          <div className={`absolute top-[0.6rem] right-[0.7rem] cursor-pointer transition-transform duration-300 ${isAnimating ? 'scale-125' : ''}`} onClick={toggleFavorite}>
-            {isFavorited ? <span className="mdi--heart w-5 h-5" /> : <span className="mdi--heart-plus w-5 h-5" />}
+          <div className="absolute top-[0.6rem] right-[0.7rem] flex items-center bg-gray-400/30 rounded-full px-2 py-0.5 gap-2 shadow-sm">
+            <div className="tooltip" data-tip="Favorite">
+              <div
+                className={`cursor-pointer transition-transform duration-300 h-5 ${isAnimating ? 'scale-125' : ''}`}
+                onClick={toggleFavorite}
+              >
+                {isFavorited ? <span className="icon-[mdi--heart] text-red-500 h-5 w-5" /> : <span className="icon-[mdi--heart-plus] text-white h-5 w-5" />}
+              </div>
+            </div>
+            {photo.url && (
+              <div className="tooltip h-5" data-tip="Download">
+                <button
+                  type="button"
+                  className="h-5"
+                  title="Download photo"
+                  onClick={e => {
+                    e.stopPropagation();
+                    const filename = photo.s3_key
+                      ? photo.s3_key.split('/').pop() || "photo.jpg"
+                      : "photo.jpg";
+                    handleDownload(photo.url, filename);
+                  }}
+                >
+                  <span
+                    className={`icon-[mdi--tray-download] h-5 w-5 transition-transform duration-300
+                      ${isDownloadAnimating ? 'scale-125' : ''}
+                      ${hasDownloaded ? 'text-gray-600' : 'text-white'}
+                    `}
+                  />
+                </button>
+              </div>
+            )}
           </div>
           <div className="absolute top-[-1.6rem] right-[-0.9rem] cursor-pointer block md:hidden" onClick={handleCloseModal}>
             <span className="text-gray-600 text-2xl">&times;</span>
