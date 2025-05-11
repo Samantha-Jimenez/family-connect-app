@@ -83,7 +83,7 @@ const extractFamilyMemberNames = (member: FamilyMemberProps): string[] => {
   if (member.previousSpouses) {
     member.previousSpouses.forEach(spouse => {
       names.push(`${spouse.first_name} ${spouse.last_name}`);
-      spouse.children.forEach(child => {
+      spouse.children?.forEach(child => {
         names = names.concat(extractFamilyMemberNames(child));
       });
     });
