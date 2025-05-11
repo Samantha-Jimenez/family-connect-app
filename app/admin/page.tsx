@@ -6,6 +6,7 @@ import { FamilyMember } from "@/hooks/dynamoDB";
 import { getFullImageUrl } from '@/utils/imageUtils';
 import AdminCreateRelationshipForm from '@/components/AdminCreateRelationshipForm';
 import AdminCreateFamilyMemberForm from '@/components/AdminCreateFamilyMemberForm';
+import MemberRelationships from '@/components/MemberRelationships';
 
 const initialFormData = {
   firstName: '',
@@ -283,6 +284,22 @@ const AdminPage = () => {
             relationshipType={relationshipType}
             setRelationshipType={setRelationshipType}
           />
+        </div>
+      </div>
+
+      <div>
+        <h1 className="text-4xl font-bold text-center mb-6 text-gray-800">Relationships</h1>
+        <div className="space-y-6">
+          {familyMembers.map(member => (
+            <div key={member.family_member_id} className="bg-white p-4 rounded-lg shadow">
+              <h2 className="text-xl font-semibold mb-2">
+                {member.first_name} {member.last_name}
+              </h2>
+              <div className="ml-4">
+                <MemberRelationships memberId={member.family_member_id} familyMembers={familyMembers} />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
