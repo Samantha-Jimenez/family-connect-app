@@ -234,17 +234,20 @@ const AdminPage = () => {
 
   const handleCreateRelationship = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(selectedSourceMemberId, selectedTargetMemberId, relationshipType, "selectedSourceMemberId, selectedTargetMemberId, relationshipType");
-    if (!selectedSourceMemberId || !selectedTargetMemberId) {
-      setMessage('Please select both family members and a relationship type.');
-      return;
-    }
     try {
-      await addFamilyRelationship(selectedSourceMemberId, selectedTargetMemberId, relationshipType);
-      setMessage('Relationship added successfully!');
+      await addFamilyRelationship(
+        selectedSourceMemberId!,
+        selectedTargetMemberId!,
+        relationshipType
+      );
+      // Clear the form after successful creation
+      setSelectedSourceMemberId(null);
+      setSelectedTargetMemberId(null);
+      setRelationshipType('parent');
+      setMessage('Relationship created successfully!');
     } catch (error) {
-      setMessage('Error adding relationship.');
-      console.error("Error adding relationship:", error);
+      setMessage('Error creating relationship.');
+      console.error("Error creating relationship:", error);
     }
   };
 
