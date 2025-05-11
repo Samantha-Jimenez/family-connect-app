@@ -47,6 +47,7 @@ const FIELD_LABELS: Record<keyof UserData, string> = {
   profile_photo: 'profile photo',
   current_city: 'current city',
   current_state: 'current state',
+  cta_visible: 'call to action visible',
 };
 
 const CallToAction = () => {

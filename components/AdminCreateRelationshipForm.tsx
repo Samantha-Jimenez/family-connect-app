@@ -4,9 +4,9 @@ import { FamilyMember, RelationshipType } from "@/hooks/dynamoDB";
 const AdminCreateRelationshipForm = ({ familyMembers, handleCreateRelationship, selectedSourceMemberId, setSelectedSourceMemberId, selectedTargetMemberId, setSelectedTargetMemberId, relationshipType, setRelationshipType }: { familyMembers: FamilyMember[], handleCreateRelationship: (e: React.FormEvent<HTMLFormElement>) => void, selectedSourceMemberId: string, setSelectedSourceMemberId: (value: string) => void, selectedTargetMemberId: string, setSelectedTargetMemberId: (value: string) => void, relationshipType: RelationshipType, setRelationshipType: (value: RelationshipType) => void }) => {
   return (
     <div>
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold text-center mb-4 text-gray-800">Create Relationship</h2>
-        <form onSubmit={handleCreateRelationship} className="bg-white shadow-lg p-8 rounded-lg max-w-lg mx-auto space-y-4">
+      <div className="mt-8 bg-white shadow-lg p-8 rounded-lg max-w-lg mx-auto space-y-4">
+        <h2 className="text-2xl font-bold text-center mb-8 text-gray-800">Create Relationship</h2>
+        <form onSubmit={handleCreateRelationship} className="">
           <div className="relative z-0 w-full mb-5 group">
             <select
               value={selectedSourceMemberId || ''}
