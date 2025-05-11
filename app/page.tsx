@@ -58,9 +58,7 @@ const HomePage = () => {
                 <div className="col-span-1 sm:col-span-2 lg:col-span-1 lg:row-span-5 lg:col-start-3 max-[1024px]:hidden">
                   <Panel />
                 </div>
-                <div className="col-span-1 sm:col-span-2">
-                  <CallToAction />
-                </div>
+                <CallToAction />
                 
                 <div className="col-span-1 sm:col-span-2">
                   <div data-theme="light" className="tabs tabs-bordered rounded-lg shadow-lg">

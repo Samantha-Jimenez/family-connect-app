@@ -1,5 +1,5 @@
 import { useAuth } from '@/context/AuthContext';
-import { getUserData } from '@/hooks/dynamoDB';
+import { getUserData, setUserCTAVisible } from '@/hooks/dynamoDB';
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import React, { useEffect, useState } from 'react'
 
@@ -16,6 +16,7 @@ interface UserData {
   profile_photo?: string;
   current_city?: string;
   current_state?: string;
+  cta_visible?: boolean;
 }
 
 const REQUIRED_FIELDS: (keyof UserData)[] = [
@@ -71,6 +72,7 @@ const CallToAction = () => {
           profile_photo: data.profile_photo || '',
           current_city: data.current_city || '',
           current_state: data.current_state || '',
+          cta_visible: data.cta_visible,
         });
       }
     };
@@ -79,7 +81,7 @@ const CallToAction = () => {
   }, [user]);
 
   // Wait for userData to load
-  if (!userData || !visible) return null;
+  if (!userData || !visible || userData.cta_visible === false) return null;
 
   // Find missing required fields
   const missingFields = REQUIRED_FIELDS.filter(
@@ -96,53 +98,65 @@ const CallToAction = () => {
       ? `${missingLabels.join(', ')} and ${last}`
       : last;
 
+  const handleDismiss = async () => {
+    setVisible(false);
+    try {
+      await setUserCTAVisible(user.userId, false);
+    } catch (e) {
+      // Optionally handle error
+      console.error("Failed to update CTA visibility", e);
+    }
+  };
+
   return (
-    <div className="relative bg-yellow-300/10 rounded-lg py-4 pl-4 pr-[5.75rem] text-stone-700 shadow-lg">
-      <button
-        className="
-          group
-          absolute top-3 right-4
-          flex items-center justify-end
-          text-gray-400 hover:text-gray-700 text-xl font-bold focus:outline-none
-          rounded-full
-          transition-all duration-700
-          bg-transparent
-          hover:bg-gray-400
-          hover:text-red-500
-          px-2
-          overflow-hidden
-          min-w-[2.5rem]
-          "
-        aria-label="Close"
-        onClick={() => setVisible(false)}
-        style={{ minWidth: '2.5rem' }}
-      >
-        <span
+    <div className="col-span-1 sm:col-span-2">
+      <div className="relative bg-yellow-300/10 rounded-lg py-4 pl-4 pr-[5.75rem] text-stone-700 shadow-lg">
+        <button
           className="
-            pointer-events-none
-            mr-1
-            opacity-0
-            translate-x-14
-            group-hover:opacity-100
-            group-hover:translate-x-0
+            group
+            absolute top-3 right-4
+            flex items-center justify-end
+            text-gray-400 hover:text-gray-700 text-xl font-bold
+            rounded-full
             transition-all duration-700
-            text-base text-gray-500
-            whitespace-nowrap
-            select-none
-            text-sm
-            leading-7
-            -translate-y-0
-            font-normal
-            text-white
-          "
+            bg-transparent
+            hover:bg-gray-400
+            hover:text-red-500
+            px-2
+            overflow-hidden
+            min-w-[2.5rem]
+            "
+          aria-label="Close"
+          onClick={handleDismiss}
+          style={{ minWidth: '2.5rem' }}
         >
-          dismiss
-        </span>
-        &times;
-      </button>
-      <p className="font-medium italic">
-        You're just a few details away from a complete profile—finish filling out your {missingText}!
-      </p>
+          <span
+            className="
+              pointer-events-none
+              mr-1
+              opacity-0
+              translate-x-14
+              group-hover:opacity-100
+              group-hover:translate-x-0
+              transition-all duration-700
+              text-base text-gray-500
+              whitespace-nowrap
+              select-none
+              text-sm
+              leading-7
+              -translate-y-0
+              font-normal
+              text-white
+            "
+          >
+            dismiss
+          </span>
+          &times;
+        </button>
+        <p className="font-medium italic">
+          You're just a few details away from a complete profile—finish filling out your {missingText}!
+        </p>
+      </div>
     </div>
   );
 };

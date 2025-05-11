@@ -178,7 +178,8 @@ export const getUserData = async (userId: string) => {
       current_city: data.Item.current_city?.S || '',
       current_state: data.Item.current_state?.S || '',
       city: data.Item.city?.S || '',
-      state: data.Item.state?.S || ''
+      state: data.Item.state?.S || '',
+      cta_visible: data.Item.cta_visible?.BOOL,
     };
   } catch (error) {
     console.error("❌ Error fetching user data:", error);
@@ -1092,3 +1093,24 @@ export async function getUserRSVPs(userId: string): Promise<{ eventId: string; s
     return [];
   }
 }
+
+// Add this function near other user update functions
+export const setUserCTAVisible = async (userId: string, visible: boolean) => {
+  try {
+    const params = {
+      TableName: TABLES.FAMILY,
+      Key: {
+        family_member_id: { S: userId }
+      },
+      UpdateExpression: "SET cta_visible = :visible",
+      ExpressionAttributeValues: {
+        ":visible": { BOOL: visible }
+      }
+    };
+    await dynamoDB.send(new UpdateItemCommand(params));
+    console.log(`✅ Set CTA visible to ${visible} for user ${userId}`);
+  } catch (error) {
+    console.error("❌ Error updating CTA visibility:", error);
+    throw error;
+  }
+};
