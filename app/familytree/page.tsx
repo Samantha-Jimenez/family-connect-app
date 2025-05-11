@@ -67,8 +67,8 @@ const FamilyMember = ({
 
   return (
     <div className="flex flex-col items-center">
-      <div className="flex items-center space-x-4">
-        <div className="bg-white shadow-md p-2 rounded-lg text-center w-36">
+      <div className="flex items-center space-x-2">
+        <div className="bg-white shadow-md p-2 rounded-lg text-center w-36 h-28">
           <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 mx-auto">
             {member.profile_photo && (
               <Image
@@ -91,7 +91,7 @@ const FamilyMember = ({
         {member.spouse && (
           <>
             <div className="w-4 h-0.5 bg-gray-400"></div>
-            <div className="bg-white shadow-md p-2 rounded-lg text-center w-36">
+            <div className="bg-white shadow-md p-2 rounded-lg text-center w-36 h-28">
               <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 mx-auto">
                 {member.spouse.profile_photo && (
                   <Image
@@ -116,14 +116,17 @@ const FamilyMember = ({
           <div className="w-0.5 h-8 bg-gray-400 relative top-[25px]"></div>
           <div className="flex justify-center items-start space-x-8 mt-8 relative">
             {allChildren.map((child, index) => (
-              <div key={index} className="flex flex-col items-center w-[128px]">
+              <div
+                key={index}
+                className={`flex flex-col items-center ${child.spouse ? "w-[304px]" : "w-[128px]"}`}
+              >
                 <FamilyMember
                   member={child}
                   isExpanded={expandedChildIndex === index}
                 />
                 {child.children && child.children.length > 0 && (
                   <button
-                    className="text-xs mt-1 text-blue-600 absolute top-[110px]"
+                    className="text-xs mt-1 text-blue-600 absolute top-[114px]"
                     onClick={() => handleToggleChild(index)}
                   >
                     {expandedChildIndex === index ? "Collapse" : "Expand"}
