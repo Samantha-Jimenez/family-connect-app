@@ -18,7 +18,6 @@ interface PhotoCommentsProps {
 
 const PhotoComments = ({ comments, editingCommentIndex, setEditingCommentIndex, editedCommentText, setEditedCommentText, newComment, setNewComment, handleAddComment, handleEditComment, handleDeleteComment }: PhotoCommentsProps) => {
     const { user } = useAuthenticator();
-    console.log('comments', comments)
 
     const confirmDeleteComment = (index: number) => {
         const confirmDelete = window.confirm("Are you sure you want to delete this comment?");

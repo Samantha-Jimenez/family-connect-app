@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuthenticator } from "@aws-amplify/ui-react";
 import { addFamilyMember, getAllFamilyMembers, updateFamilyMember, addFamilyRelationship, RelationshipType } from "@/hooks/dynamoDB";
 import { FamilyMember } from "@/hooks/dynamoDB";
+import { getFullImageUrl } from '@/utils/imageUtils';
 
 const initialFormData = {
   firstName: '',
@@ -14,12 +15,20 @@ const initialFormData = {
   birthday: '',
   birth_city: '',
   birth_state: '',
-  profilePhoto: '',
+  profile_photo: '',
   current_city: '',
   current_state: '',
 };
 
 type FormDataKey = keyof typeof initialFormData;
+
+const US_STATES = [
+  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
+  'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
+  'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
+  'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
+  'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
+];
 
 const AdminPage = () => {
   const { user } = useAuthenticator();
@@ -32,6 +41,14 @@ const AdminPage = () => {
   const [selectedSourceMemberId, setSelectedSourceMemberId] = useState<string | null>(null);
   const [selectedTargetMemberId, setSelectedTargetMemberId] = useState<string | null>(null);
   const [relationshipType, setRelationshipType] = useState<RelationshipType>('parent');
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [editSelectedImage, setEditSelectedImage] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
+  const [editUploadProgress, setEditUploadProgress] = useState(0);
+  const [editIsUploading, setEditIsUploading] = useState(false);
 
   useEffect(() => {
     if (user && user.userId === "f16b1510-0001-705f-8680-28689883e706") {
@@ -53,39 +70,165 @@ const AdminPage = () => {
     return <div className="text-center text-red-500">Access Denied</div>;
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData(prevState => ({ ...prevState, [name as FormDataKey]: value }));
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedImage(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const uploadImage = async (file: File): Promise<string> => {
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return new Promise<string>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          const progress = (event.loaded / event.total) * 90;
+          setUploadProgress(Math.round(progress));
+        }
+      });
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          try {
+            const response = JSON.parse(xhr.responseText);
+            setUploadProgress(100);
+            setIsUploading(false);
+            resolve(response.key);
+          } catch (error) {
+            setIsUploading(false);
+            reject(new Error('Invalid response format'));
+          }
+        } else {
+          setIsUploading(false);
+          reject(new Error(`Upload failed with status: ${xhr.status}`));
+        }
+      });
+
+      xhr.addEventListener('error', () => {
+        setIsUploading(false);
+        reject(new Error('Upload failed'));
+      });
+
+      xhr.open('POST', '/api/upload');
+      xhr.send(formData);
+    });
   };
 
   const handleAddFamilyMember = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await addFamilyMember(formData);
+      let profilePhotoKey = formData.profile_photo;
+      if (selectedImage) {
+        profilePhotoKey = await uploadImage(selectedImage);
+      }
+      await addFamilyMember({ ...formData, profile_photo: profilePhotoKey });
       setMessage('Family member added successfully!');
       setFormData(initialFormData);
+      setSelectedImage(null);
+      setImagePreview(null);
+      setUploadProgress(0);
       fetchFamilyMembers(); // Refresh the list
     } catch (error) {
       setMessage('Error adding family member.');
       console.error("Error adding family member:", error);
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
-  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleEditInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setEditFormData(prevState => ({ ...prevState, [name as FormDataKey]: value }));
+  };
+
+  const handleEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setEditSelectedImage(file);
+      setEditImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const uploadEditImage = async (file: File): Promise<string> => {
+    setEditIsUploading(true);
+    setEditUploadProgress(0);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return new Promise<string>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          const progress = (event.loaded / event.total) * 90;
+          setEditUploadProgress(Math.round(progress));
+        }
+      });
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          try {
+            const response = JSON.parse(xhr.responseText);
+            setEditUploadProgress(100);
+            setEditIsUploading(false);
+            resolve(response.key);
+          } catch (error) {
+            setEditIsUploading(false);
+            reject(new Error('Invalid response format'));
+          }
+        } else {
+          setEditIsUploading(false);
+          reject(new Error(`Upload failed with status: ${xhr.status}`));
+        }
+      });
+
+      xhr.addEventListener('error', () => {
+        setEditIsUploading(false);
+        reject(new Error('Upload failed'));
+      });
+
+      xhr.open('POST', '/api/upload');
+      xhr.send(formData);
+    });
   };
 
   const handleUpdateMember = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await updateFamilyMember(editingMemberId!, editFormData);
+      let profilePhotoKey = editFormData.profile_photo;
+      if (editSelectedImage) {
+        profilePhotoKey = await uploadEditImage(editSelectedImage);
+      }
+      await updateFamilyMember(editingMemberId!, { ...editFormData, profile_photo: profilePhotoKey });
       setMessage('Family member updated successfully!');
       setEditingMemberId(null);
+      setEditSelectedImage(null);
+      setEditImagePreview(null);
+      setEditUploadProgress(0);
       fetchFamilyMembers(); // Refresh the list
     } catch (error) {
       setMessage('Error updating family member.');
       console.error("Error updating family member:", error);
+      setEditIsUploading(false);
+      setEditUploadProgress(0);
     }
   };
 
@@ -110,35 +253,198 @@ const AdminPage = () => {
       <h1 className="text-4xl font-bold text-center mb-6 text-gray-800">Admin Page</h1>
       <div className="bg-white shadow-lg p-8 rounded-lg max-w-lg mx-auto">
         <form onSubmit={handleAddFamilyMember} className="space-y-4">
-          {[
-            { label: 'First Name', name: 'firstName', type: 'text' },
-            { label: 'Last Name', name: 'lastName', type: 'text' },
-            { label: 'Email', name: 'email', type: 'email' },
-            { label: 'Username', name: 'username', type: 'text' },
-            { label: 'Bio', name: 'bio', type: 'text' },
-            { label: 'Phone Number', name: 'phoneNumber', type: 'text' },
-            { label: 'Birthday', name: 'birthday', type: 'date' },
-            { label: 'Profile Photo URL', name: 'profilePhoto', type: 'text' },
-            { label: 'Birth City', name: 'birth_city', type: 'text' },
-            { label: 'Birth State', name: 'birth_state', type: 'text' },
-            { label: 'Current City', name: 'current_city', type: 'text' },
-            { label: 'Current State', name: 'current_state', type: 'text' },
-          ].map(({ label, name, type }) => (
-            <div key={name} className="form-control">
-              <label className="label">
-                <span className="label-text text-gray-700">{label}</span>
-              </label>
+          <div className="grid md:grid-cols-2 md:gap-6">
+            <div className="relative z-0 w-full mb-5 group">
               <input
-                type={type}
-                name={name}
-                value={formData[name as FormDataKey]}
+                type="text"
+                name="firstName"
+                id="admin_first_name"
+                value={formData.firstName}
                 onChange={handleInputChange}
-                className="input input-bordered w-full"
-                required={name === 'firstName' || name === 'lastName'}
+                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                placeholder=" "
+                required
               />
+              <label htmlFor="admin_first_name" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">First name</label>
             </div>
-          ))}
-          <button type="submit" className="btn btn-primary w-full">Add Family Member</button>
+            <div className="relative z-0 w-full mb-5 group">
+              <input
+                type="text"
+                name="lastName"
+                id="admin_last_name"
+                value={formData.lastName}
+                onChange={handleInputChange}
+                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                placeholder=" "
+                required
+              />
+              <label htmlFor="admin_last_name" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Last name</label>
+            </div>
+          </div>
+          <div className="grid md:grid-cols-2 md:gap-6">
+            <div className="relative z-0 w-full mb-5 group">
+              <input
+                type="text"
+                name="birth_city"
+                id="admin_birth_city"
+                value={formData.birth_city}
+                onChange={handleInputChange}
+                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                placeholder=" "
+              />
+              <label htmlFor="admin_birth_city" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Birth City/Town</label>
+            </div>
+            <div className="relative z-0 w-full mb-5 group">
+              <select
+                name="birth_state"
+                id="admin_birth_state"
+                value={formData.birth_state}
+                onChange={handleInputChange}
+                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+              >
+                <option value="">Select Birth State</option>
+                {US_STATES.map(state => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
+              </select>
+              <label htmlFor="admin_birth_state" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Birth State</label>
+            </div>
+          </div>
+          <div className="relative z-0 w-full mb-5 group">
+            <input
+              type="text"
+              name="username"
+              id="admin_username"
+              value={formData.username}
+              onChange={handleInputChange}
+              className="block py-2.5 px-0 w-full text-sm bg-transparent border-0 border-b-2 border-gray-300 appearance-none text-black focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+              placeholder=" "
+              required
+            />
+            <label htmlFor="admin_username" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Username</label>
+          </div>
+          <div className="relative z-0 w-full mb-5 group">
+            <input
+              type="email"
+              name="email"
+              id="admin_email"
+              value={formData.email}
+              onChange={handleInputChange}
+              className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+              placeholder=" "
+              required
+            />
+            <label htmlFor="admin_email" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Email address</label>
+          </div>
+          <div className="grid md:grid-cols-2 md:gap-6">
+            <div className="relative z-0 w-full mb-5 group">
+              <input
+                type="date"
+                name="birthday"
+                id="admin_birthday"
+                value={formData.birthday}
+                onChange={handleInputChange}
+                className="block py-2.5 px-0 w-full text-sm bg-transparent border-0 border-b-2 border-gray-300 appearance-none text-black focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                placeholder=" "
+              />
+              <label htmlFor="admin_birthday" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Birthday (MM/DD/YYYY)</label>
+            </div>
+            <div className="relative z-0 w-full mb-5 group">
+              <input
+                type="tel"
+                name="phoneNumber"
+                id="admin_phone"
+                value={formData.phoneNumber}
+                onChange={handleInputChange}
+                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                placeholder=" "
+              />
+              <label htmlFor="admin_phone" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Phone number</label>
+            </div>
+          </div>
+          <div className="relative z-0 w-full mb-5 group">
+            <input
+              type="text"
+              name="bio"
+              id="admin_bio"
+              value={formData.bio}
+              onChange={handleInputChange}
+              className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+              placeholder=" "
+            />
+            <label htmlFor="admin_bio" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Bio</label>
+          </div>
+          <div className="grid md:grid-cols-2 md:gap-6">
+            <div className="relative z-0 w-full mb-5 group">
+              <input
+                type="text"
+                name="current_city"
+                id="admin_current_city"
+                value={formData.current_city}
+                onChange={handleInputChange}
+                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                placeholder=" "
+              />
+              <label htmlFor="admin_current_city" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Current City/Town</label>
+            </div>
+            <div className="relative z-0 w-full mb-5 group">
+              <select
+                name="current_state"
+                id="admin_current_state"
+                value={formData.current_state}
+                onChange={handleInputChange}
+                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+              >
+                <option value="">Select Current State</option>
+                {US_STATES.map(state => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
+              </select>
+              <label htmlFor="admin_current_state" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">State</label>
+            </div>
+          </div>
+          <div className="relative z-0 w-full mb-5 group">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Profile Photo</label>
+            <div className="flex flex-col items-center gap-2 w-full">
+              <div className="avatar">
+                <div className="w-24 h-24 rounded-full">
+                  {imagePreview ? (
+                    <img
+                      src={imagePreview}
+                      alt="Profile preview"
+                      className="rounded-full object-cover w-24 h-24"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center">
+                      <span className="icon-[mdi--account] text-4xl text-gray-400" />
+                    </div>
+                  )}
+                </div>
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="file-input file-input-bordered w-full"
+                disabled={isUploading}
+              />
+              {isUploading && (
+                <div className="w-full">
+                  <progress
+                    className="progress progress-success w-full"
+                    value={uploadProgress}
+                    max="100"
+                  ></progress>
+                  <p className="text-center text-sm text-gray-600 mt-1">
+                    {uploadProgress}%
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+          <button type="submit" className="text-white bg-[#914F2F] hover:bg-[#914F2F]/90 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full px-5 py-2.5 text-center">
+            Add Family Member
+          </button>
         </form>
         {message && <p className="mt-4 text-green-500">{message}</p>}
       </div>
@@ -176,7 +482,7 @@ const AdminPage = () => {
                           birthday: member.birthday,
                           birth_city: member.birth_city,
                           birth_state: member.birth_state,
-                          profilePhoto: member.profile_photo,
+                          profile_photo: member.profile_photo,
                           current_city: member.current_city,
                           current_state: member.current_state,
                         });
@@ -197,19 +503,204 @@ const AdminPage = () => {
                     <tr>
                       <td colSpan={5}>
                         <form onSubmit={handleUpdateMember} className="p-4 bg-gray-100 rounded-lg">
-                          {Object.entries(editFormData).map(([key, value]) => (
-                            <div key={key} className="mb-2">
-                              <label className="block text-sm font-medium text-gray-700">{key}</label>
+                          <div className="grid md:grid-cols-2 md:gap-6">
+                            <div className="relative z-0 w-full mb-5 group">
                               <input
                                 type="text"
-                                name={key}
-                                value={value}
+                                name="firstName"
+                                id="edit_first_name"
+                                value={editFormData.firstName}
                                 onChange={handleEditInputChange}
-                                className="input input-bordered w-full"
+                                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                                placeholder=" "
+                                required
                               />
+                              <label htmlFor="edit_first_name" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">First name</label>
                             </div>
-                          ))}
-                          <button type="submit" className="btn btn-primary mt-2">Update</button>
+                            <div className="relative z-0 w-full mb-5 group">
+                              <input
+                                type="text"
+                                name="lastName"
+                                id="edit_last_name"
+                                value={editFormData.lastName}
+                                onChange={handleEditInputChange}
+                                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                                placeholder=" "
+                                required
+                              />
+                              <label htmlFor="edit_last_name" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Last name</label>
+                            </div>
+                          </div>
+                          <div className="grid md:grid-cols-2 md:gap-6">
+                            <div className="relative z-0 w-full mb-5 group">
+                              <input
+                                type="text"
+                                name="birth_city"
+                                id="edit_birth_city"
+                                value={editFormData.birth_city}
+                                onChange={handleEditInputChange}
+                                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                                placeholder=" "
+                              />
+                              <label htmlFor="edit_birth_city" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Birth City/Town</label>
+                            </div>
+                            <div className="relative z-0 w-full mb-5 group">
+                              <select
+                                name="birth_state"
+                                id="edit_birth_state"
+                                value={editFormData.birth_state}
+                                onChange={handleEditInputChange}
+                                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                              >
+                                <option value="">Select Birth State</option>
+                                {US_STATES.map(state => (
+                                  <option key={state} value={state}>{state}</option>
+                                ))}
+                              </select>
+                              <label htmlFor="edit_birth_state" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Birth State</label>
+                            </div>
+                          </div>
+                          <div className="relative z-0 w-full mb-5 group">
+                            <input
+                              type="text"
+                              name="username"
+                              id="edit_username"
+                              value={editFormData.username}
+                              onChange={handleEditInputChange}
+                              className="block py-2.5 px-0 w-full text-sm bg-transparent border-0 border-b-2 border-gray-300 appearance-none text-black focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                              placeholder=" "
+                              required
+                            />
+                            <label htmlFor="edit_username" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Username</label>
+                          </div>
+                          <div className="relative z-0 w-full mb-5 group">
+                            <input
+                              type="email"
+                              name="email"
+                              id="edit_email"
+                              value={editFormData.email}
+                              onChange={handleEditInputChange}
+                              className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                              placeholder=" "
+                              required
+                            />
+                            <label htmlFor="edit_email" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Email address</label>
+                          </div>
+                          <div className="grid md:grid-cols-2 md:gap-6">
+                            <div className="relative z-0 w-full mb-5 group">
+                              <input
+                                type="date"
+                                name="birthday"
+                                id="edit_birthday"
+                                value={editFormData.birthday}
+                                onChange={handleEditInputChange}
+                                className="block py-2.5 px-0 w-full text-sm bg-transparent border-0 border-b-2 border-gray-300 appearance-none text-black focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                                placeholder=" "
+                              />
+                              <label htmlFor="edit_birthday" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Birthday (MM/DD/YYYY)</label>
+                            </div>
+                            <div className="relative z-0 w-full mb-5 group">
+                              <input
+                                type="tel"
+                                name="phoneNumber"
+                                id="edit_phone"
+                                value={editFormData.phoneNumber}
+                                onChange={handleEditInputChange}
+                                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                                placeholder=" "
+                              />
+                              <label htmlFor="edit_phone" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Phone number</label>
+                            </div>
+                          </div>
+                          <div className="relative z-0 w-full mb-5 group">
+                            <input
+                              type="text"
+                              name="bio"
+                              id="edit_bio"
+                              value={editFormData.bio}
+                              onChange={handleEditInputChange}
+                              className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                              placeholder=" "
+                            />
+                            <label htmlFor="edit_bio" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Bio</label>
+                          </div>
+                          <div className="grid md:grid-cols-2 md:gap-6">
+                            <div className="relative z-0 w-full mb-5 group">
+                              <input
+                                type="text"
+                                name="current_city"
+                                id="edit_current_city"
+                                value={editFormData.current_city}
+                                onChange={handleEditInputChange}
+                                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                                placeholder=" "
+                              />
+                              <label htmlFor="edit_current_city" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Current City/Town</label>
+                            </div>
+                            <div className="relative z-0 w-full mb-5 group">
+                              <select
+                                name="current_state"
+                                id="edit_current_state"
+                                value={editFormData.current_state}
+                                onChange={handleEditInputChange}
+                                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                              >
+                                <option value="">Select Current State</option>
+                                {US_STATES.map(state => (
+                                  <option key={state} value={state}>{state}</option>
+                                ))}
+                              </select>
+                              <label htmlFor="edit_current_state" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">State</label>
+                            </div>
+                          </div>
+                          <div className="relative z-0 w-full mb-5 group">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Profile Photo</label>
+                            <div className="flex flex-col items-center gap-2 w-full">
+                              <div className="avatar">
+                                <div className="w-24 h-24 rounded-full">
+                                  {editImagePreview ? (
+                                    <img
+                                      src={editImagePreview}
+                                      alt="Profile preview"
+                                      className="rounded-full object-cover w-24 h-24"
+                                    />
+                                  ) : editFormData.profile_photo ? (
+                                    <img
+                                      src={getFullImageUrl(editFormData.profile_photo)}
+                                      alt="Current profile"
+                                      className="rounded-full object-cover w-24 h-24"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center">
+                                      <span className="icon-[mdi--account] text-4xl text-gray-400" />
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleEditImageChange}
+                                className="file-input file-input-bordered w-full"
+                                disabled={editIsUploading}
+                              />
+                              {editIsUploading && (
+                                <div className="w-full">
+                                  <progress
+                                    className="progress progress-success w-full"
+                                    value={editUploadProgress}
+                                    max="100"
+                                  ></progress>
+                                  <p className="text-center text-sm text-gray-600 mt-1">
+                                    {editUploadProgress}%
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <button type="submit" className="text-white bg-[#914F2F] hover:bg-[#914F2F]/90 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full px-5 py-2.5 text-center mt-2">
+                            Update
+                          </button>
                         </form>
                       </td>
                     </tr>

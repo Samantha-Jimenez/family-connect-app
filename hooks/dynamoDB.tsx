@@ -390,17 +390,18 @@ export const getFamilyMembersWithoutEmail = async (): Promise<FamilyMember[]> =>
   }
 };
 
-export const updateFamilyMember = async (familyMemberId: string, data: { email: string, username: string }) => {
+export const updateFamilyMember = async (familyMemberId: string, data: { email: string, username: string, profile_photo: string }) => {
   try {
     const params = {
       TableName: TABLES.FAMILY,
       Key: {
         family_member_id: { S: familyMemberId }
       },
-      UpdateExpression: "SET email = :email, username = :username",
+      UpdateExpression: "SET email = :email, username = :username, profile_photo = :profile_photo",
       ExpressionAttributeValues: {
         ":email": { S: data.email },
-        ":username": { S: data.username }
+        ":username": { S: data.username },
+        ":profile_photo": { S: data.profile_photo }
       }
     };
 
@@ -505,7 +506,7 @@ export const getUserDataById = async (memberId: string) => {
   }
 };
 
-export const addFamilyMember = async (memberData: { firstName: string, lastName: string, email: string }) => {
+export const addFamilyMember = async (memberData: { firstName: string, lastName: string, email: string, profile_photo: string }) => {
   try {
     const params = {
       TableName: TABLES.FAMILY,
@@ -513,7 +514,8 @@ export const addFamilyMember = async (memberData: { firstName: string, lastName:
         family_member_id: { S: uuidv4() },
         first_name: { S: memberData.firstName },
         last_name: { S: memberData.lastName },
-        email: { S: memberData.email }
+        email: { S: memberData.email },
+        profile_photo: { S: memberData.profile_photo }
       }
     };
 
