@@ -118,7 +118,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
             </div>
           </div>
 
-          <div className="md:pl-4 xl:pl-8 md:col-span-2">
+          <div className="md:pl-4 xl:pl-8 md:col-span-2 mb-2">
             <h1 className="text-2xl font-bold text-black">
               Welcome, {userData?.first_name || ''} {userData?.last_name || ''}!
             </h1>
@@ -140,24 +140,27 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
           </div>
 
           <div className="md:pl-4 xl:pl-8">
-            {userData?.birthday ? (
-              <>
-                <h2 className="text-xl font-semibold text-black">Birth</h2>
-                <div className="text-gray-500 flex items-center">
-                  <span className="icon-[mdi--date-range] h-5 mr-2" />
-                  {formatBirthday(userData.birthday)} - <span className="text-xl ml-1">{getZodiacSign(userData.birthday)}</span>
-                </div>
-              </>
-            ) : ''}
-            {userData?.birth_city || userData?.birth_state ? (
-              <>
-                <div className="text-gray-500 mb-2 flex items-center">
-                  <span className="icon-[mdi--map-marker] h-5 mr-2" />
-                  {userData.birth_city}, {userData.birth_state}
-                </div>
-              </>
-            ) : ''}
+            <div className="mb-2">
+              {userData?.birthday ? (
+                <>
+                  <h2 className="text-xl font-semibold text-black">Birth</h2>
+                  <div className="text-gray-500 flex items-center">
+                    <span className="icon-[mdi--date-range] h-5 mr-2" />
+                    {formatBirthday(userData.birthday)} - <span className="text-xl ml-1">{getZodiacSign(userData.birthday)}</span>
+                  </div>
+                </>
+              ) : ''}
+              {userData?.birth_city || userData?.birth_state ? (
+                <>
+                  <div className="text-gray-500 flex items-center">
+                    <span className="icon-[mdi--map-marker] h-5 mr-2" />
+                    {userData.birth_city}, {userData.birth_state}
+                  </div>
+                </>
+              ) : ''}
+            </div>
 
+            <div className="mb-2 md:mb-0">
             {userData?.email || userData?.phone_number || userData?.current_city || userData?.current_state ? (
               <>
                 <h2 className="text-xl font-semibold text-black">Contact Information</h2>
@@ -184,8 +187,9 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                   ) : ""}
                 </ul>
               </>
-            ) : ""}
-            
+              ) : ""}
+            </div>
+
           </div>
 
           <div className="md:pl-8 md:col-span-3">
