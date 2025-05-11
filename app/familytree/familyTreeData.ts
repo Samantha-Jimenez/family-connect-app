@@ -26,7 +26,7 @@ export const familyTreeData = {
         { 
           first_name: "Victor",
           last_name: "Meade",
-          spouse: "Stefania",
+          spouse: { "first_name": "Stefania", "last_name": "Valeria" },
           children: [
             { first_name: "Alani", last_name: "Meade" }, 
             { first_name: "Ianna", last_name: "Meade" }
@@ -65,7 +65,7 @@ export const familyTreeData = {
         { 
           first_name: "Raleigh",
           last_name: "",
-          spouse: "Ashley",
+          spouse: { "first_name": "Ashley", "last_name": "Meade" },
           children: [
             { first_name: "Bailey", last_name: "" },
             { first_name: "Elijah", last_name: "" }
