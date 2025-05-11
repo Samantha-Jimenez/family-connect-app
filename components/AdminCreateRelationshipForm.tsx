@@ -1,0 +1,78 @@
+import React from 'react'
+import { FamilyMember, RelationshipType } from "@/hooks/dynamoDB";
+
+const AdminCreateRelationshipForm = ({ familyMembers, handleCreateRelationship, selectedSourceMemberId, setSelectedSourceMemberId, selectedTargetMemberId, setSelectedTargetMemberId, relationshipType, setRelationshipType }: { familyMembers: FamilyMember[], handleCreateRelationship: (e: React.FormEvent<HTMLFormElement>) => void, selectedSourceMemberId: string, setSelectedSourceMemberId: (value: string) => void, selectedTargetMemberId: string, setSelectedTargetMemberId: (value: string) => void, relationshipType: RelationshipType, setRelationshipType: (value: RelationshipType) => void }) => {
+  return (
+    <div>
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold text-center mb-4 text-gray-800">Create Relationship</h2>
+        <form onSubmit={handleCreateRelationship} className="bg-white shadow-lg p-8 rounded-lg max-w-lg mx-auto space-y-4">
+          <div className="relative z-0 w-full mb-5 group">
+            <select
+              value={selectedSourceMemberId || ''}
+              onChange={(e) => setSelectedSourceMemberId(e.target.value)}
+              className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+              required
+            >
+              <option value="" disabled>Select a member</option>
+              {familyMembers.map(member => (
+                <option key={member.family_member_id} value={member.family_member_id}>
+                  {member.first_name} {member.last_name}
+                </option>
+              ))}
+            </select>
+            <label className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
+              Select Source Family Member
+            </label>
+          </div>
+
+          <div className="relative z-0 w-full mb-5 group">
+            <select
+              value={relationshipType}
+              onChange={(e) => setRelationshipType(e.target.value as RelationshipType)}
+              className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+              required
+            >
+              <option value="parent">Parent</option>
+              <option value="child">Child</option>
+              <option value="spouse">Spouse</option>
+              {/* Add more options if needed */}
+            </select>
+            <label className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
+              Select Relationship Type
+            </label>
+          </div>
+
+          <div className="relative z-0 w-full mb-5 group">
+            <select
+              value={selectedTargetMemberId || ''}
+              onChange={(e) => setSelectedTargetMemberId(e.target.value)}
+              className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+              required
+            >
+              <option value="" disabled>Select a member</option>
+              {familyMembers.map(member => (
+                <option key={member.family_member_id} value={member.family_member_id}>
+                  {member.first_name} {member.last_name}
+                </option>
+              ))}
+            </select>
+            <label className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
+              Select Target Family Member
+            </label>
+          </div>
+
+          <button
+            type="submit"
+            className="text-white bg-[#914F2F] hover:bg-[#914F2F]/90 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full px-5 py-2.5 text-center"
+          >
+            Create Relationship
+          </button>
+        </form>
+      </div>
+
+    </div>
+  )
+}
+
+export default AdminCreateRelationshipForm
