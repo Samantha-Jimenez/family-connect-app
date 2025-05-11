@@ -88,7 +88,8 @@ export const familyTreeData = {
           children: [
             { first_name: "Taleyah", last_name: "" },
             { first_name: "Tiara", last_name: "" },
-            { first_name: "Treyvon", last_name: "" }
+            { first_name: "Treyvon", last_name: "" },
+            { first_name: "Baby", last_name: "Boy" }
           ]
         }, 
         { first_name: "Maurice", 
@@ -121,6 +122,7 @@ export const familyTreeData = {
         },
         { first_name: "Anthony", 
           last_name: "Ogelsby",
+          spouse: { "first_name": "Jennifer", "last_name": "Ogelsby" },
           children: [
             { first_name: "Christian", last_name: "" },
             { first_name: "Nicholas", last_name: "" },
@@ -138,9 +140,15 @@ export const familyTreeData = {
             },
             { first_name: "Baby", last_name: "Girl" },
             { first_name: "Baby", last_name: "Boy" },
+            { first_name: "Baby", last_name: "Boy" },
           ]
         },
-        { first_name: "John Paul", last_name: "Krutki" }
+        { first_name: "John Paul", last_name: "Krutki",
+          children: [
+            { first_name:"Baby", last_name:"Boy" },
+            { first_name:"Baby", last_name:"Boy" },
+          ]
+        },
       ],
     },
     {
@@ -149,6 +157,7 @@ export const familyTreeData = {
       children: [
         { first_name: "Jessica", 
           last_name: "Pinder",
+          spouse: { "first_name": "Desmond", "last_name": "Graham" },
           children: [
             { first_name: "Baby", last_name: "Girl" },
             { first_name: "Baby", last_name: "Girl" },
@@ -194,6 +203,7 @@ export const familyTreeData = {
           ]
         },
         { first_name: "Mya", last_name: "" },
+        { first_name: "Isaiah", last_name: "" },
         { first_name: "Noah", last_name: "" }
       ],
     },

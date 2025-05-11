@@ -26,3 +26,8 @@ body {
     display: block;
   }
 }
+
+.tooltip > :where(.tooltip-content), .tooltip:where([data-tip]):before {
+  text-align: left;
+  white-space: pre-line;
+}

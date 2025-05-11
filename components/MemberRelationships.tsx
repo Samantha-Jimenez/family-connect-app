@@ -34,35 +34,31 @@ export default function MemberRelationships({ memberId, familyMembers }: MemberR
   }
 
   if (relationships.length === 0) {
-    return <div className="text-gray-500">No relationships found</div>;
+    return <div className="text-gray-500 text-sm">No relationships found</div>;
   }
 
   const currentMember = familyMembers.find(m => m.family_member_id === memberId);
   if (!currentMember) return null;
 
   return (
-    <div className="space-y-2">
-      {relationships.map((rel, index) => {
-        const relatedMemberId = rel.source_id === memberId ? rel.target_id : rel.source_id;
-        const relatedMember = familyMembers.find(m => m.family_member_id === relatedMemberId);
-        
-        if (!relatedMember) return null;
+    <div className="space-y-1">
+      {relationships
+        .filter(rel => rel.source_id === memberId)
+        .map((rel, index) => {
+          const relatedMember = familyMembers.find(m => m.family_member_id === rel.target_id);
+          if (!relatedMember) return null;
 
-        // Determine the relationship direction
-        const isSource = rel.source_id === memberId;
-        const relationshipText = isSource 
-          ? `${currentMember.first_name} is the ${rel.relationship_type} of ${relatedMember.first_name}`
-          : `${relatedMember.first_name} is the ${rel.relationship_type} of ${currentMember.first_name}`;
+          const relationshipText = `${currentMember.first_name} is the ${rel.relationship_type} of ${relatedMember.first_name}`;
 
-        return (
-          <div key={index} className="text-gray-700">
-            • {relatedMember.first_name} {relatedMember.last_name} 
-            <span className="text-gray-500 ml-2">
-              ({relationshipText})
-            </span>
-          </div>
-        );
-      })}
+          return (
+            <div key={index} className="text-gray-700 text-sm">
+              • {relatedMember.first_name} {relatedMember.last_name}
+              <span className="text-gray-500 ml-2">
+                ({relationshipText})
+              </span>
+            </div>
+          );
+        })}
     </div>
   );
 } 

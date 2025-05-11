@@ -151,34 +151,54 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
           </div>
 
           <div className="md:pl-4 xl:pl-8 md:col-span-2 mb-2">
-            <h1 className="text-2xl font-bold text-black">
-              Welcome, {userData?.first_name || ''} {userData?.last_name || ''}!
+            <h1 className="text-3xl font-bold text-black">
+              {userData?.first_name || ''} {userData?.last_name || ''}
             </h1>
           </div>
 
           <div className="md:pl-4 xl:pl-8">
-            <h2 className="text-xl font-semibold text-black">Username</h2>
-            <h1 className="text-gray-500 mb-2">
-              {userData?.username}
-            </h1>
+            {userData?.username ? (
+              <>
+                <h2 className="text-xl font-semibold text-black">Username</h2>
+                <h1 className="text-gray-500 mb-2">
+                  {userData?.username}
+                </h1>
+              </>
+            ) : ""}
 
             <h2 className="text-xl font-semibold text-black">Family Role</h2>
             <div className="flex flex-wrap gap-2 mb-2">
-              {relationships
-                .filter(relationship => relationship.source_id === userId)
-                .map((relationship, index) => (
+              {(() => {
+                // 1. Filter relationships for this user
+                const userRelationships = relationships.filter(
+                  (relationship) => relationship.source_id === userId
+                );
+
+                // 2. Group by relationship_type
+                const grouped: { [type: string]: string[] } = {};
+                userRelationships.forEach((relationship) => {
+                  if (!grouped[relationship.relationship_type]) {
+                    grouped[relationship.relationship_type] = [];
+                  }
+                  grouped[relationship.relationship_type].push(relationship.target_id);
+                });
+
+                // 3. Render each relationship type once, with all names in tooltip (vertical)
+                return Object.entries(grouped).map(([type, targetIds]) => (
                   <div
-                    className="tooltip tooltip-bottom"
-                    data-tip={targetUserNames[relationship.target_id]}
-                    key={index}
+                    className="tooltip tooltip-bottom whitespace-pre-line"
+                    data-tip={targetIds
+                      .map((id) => targetUserNames[id])
+                      .filter(Boolean)
+                      .join("\n")}
+                    key={type}
                   >
-                    <span 
-                      className="bg-yellow-800/60 text-white px-3 py-1 rounded-full text-sm"
-                    >
-                      {relationship.relationship_type.charAt(0).toUpperCase() + relationship.relationship_type.slice(1)}
+                    <span className="bg-yellow-800/60 text-white px-3 py-1 rounded-full text-sm">
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
                     </span>
                   </div>
-                ))}
+                ));
+              })()}
             </div>
             
           </div>

@@ -287,12 +287,12 @@ const AdminPage = () => {
         </div>
       </div>
 
-      <div>
-        <h1 className="text-4xl font-bold text-center mb-6 text-gray-800">Relationships</h1>
-        <div className="space-y-6">
+      <div className="mt-8">
+        <h1 className="text-2xl font-bold text-center mb-6 text-gray-800">Relationships</h1>
+        <div className="space-y-4">
           {familyMembers.map(member => (
-            <div key={member.family_member_id} className="bg-white p-4 rounded-lg shadow">
-              <h2 className="text-xl font-semibold mb-2">
+            <div key={member.family_member_id} className="bg-white p-2 rounded-lg shadow">
+              <h2 className="font-semibold mb-2">
                 {member.first_name} {member.last_name}
               </h2>
               <div className="ml-4">
@@ -423,7 +423,6 @@ const AdminPage = () => {
                               onChange={handleEditInputChange}
                               className="block py-2.5 px-0 w-full text-sm bg-transparent border-0 border-b-2 border-gray-300 appearance-none text-black focus:outline-none focus:ring-0 focus:border-blue-600 peer"
                               placeholder=" "
-                              required
                             />
                             <label htmlFor="edit_username" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Username</label>
                           </div>
@@ -436,7 +435,6 @@ const AdminPage = () => {
                               onChange={handleEditInputChange}
                               className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
                               placeholder=" "
-                              required
                             />
                             <label htmlFor="edit_email" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Email address</label>
                           </div>
