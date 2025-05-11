@@ -95,9 +95,9 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
 
   return (
     <div className="rounded-3xl">
-      <div className="rounded-3xl md:py-8 pt-8 transition-all duration-300 md:mt-20 md:h-60">
-        <div className="flex flex-col md:flex-row">
-          <div className="text-center">
+      <div className="rounded-3xl pt-8 transition-all duration-300 md:mt-20">
+        <div className="grid grid-cols-1 md:grid-cols-[286px_1fr_1fr] md:grid-rows-[min-content_min-content_min-content]">
+          <div className="text-center md:h-[13rem] h-[17rem] md:row-span-2">
             <div className="avatar md:bottom-24 bottom-8">
               <div className="w-[17rem] h-[17rem] mx-auto rounded-[60px] shadow-lg">
                 {profilePhotoUrl ? (
@@ -118,29 +118,28 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
             </div>
           </div>
 
-          <div className="md:pl-8">
+          <div className="md:pl-4 xl:pl-8 md:col-span-2">
             <h1 className="text-2xl font-bold text-black">
               Welcome, {userData?.first_name || ''} {userData?.last_name || ''}!
             </h1>
+          </div>
+
+          <div className="md:pl-4 xl:pl-8">
+            <h2 className="text-xl font-semibold text-black">Username</h2>
             <h1 className="text-gray-500 mb-2">
               {userData?.username}
             </h1>
-            {userData?.bio ? (
-              <>
-                <h2 className="text-xl font-semibold text-black">About Me</h2>
-                <p className="text-gray-500 mb-2">
-                  {userData?.bio || ''}
-                </p>
-              </>
-            ) : ""}
+
             <h2 className="text-xl font-semibold text-black">Family Role</h2>
             <div className="flex flex-wrap gap-2 mb-2">
               <span className="bg-yellow-800/60 text-white px-3 py-1 rounded-full text-sm">Child</span>
               <span className="bg-yellow-800/60 text-white px-3 py-1 rounded-full text-sm">Sibling</span>
               <span className="bg-yellow-800/60 text-white px-3 py-1 rounded-full text-sm">Cousin</span>
             </div>
+            
           </div>
-          <div className="md:pl-8">
+
+          <div className="md:pl-4 xl:pl-8">
             {userData?.birthday ? (
               <>
                 <h2 className="text-xl font-semibold text-black">Birth</h2>
@@ -158,6 +157,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                 </div>
               </>
             ) : ''}
+
             {userData?.email || userData?.phone_number || userData?.current_city || userData?.current_state ? (
               <>
                 <h2 className="text-xl font-semibold text-black">Contact Information</h2>
@@ -183,6 +183,18 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                     </li>
                   ) : ""}
                 </ul>
+              </>
+            ) : ""}
+            
+          </div>
+
+          <div className="md:pl-8 md:col-span-3">
+            {userData?.bio ? (
+              <>
+                <h2 className="text-xl font-semibold text-black md:row-span-2">About Me</h2>
+                <p className="text-gray-500 mb-2 md:row-span-2">
+                  {userData?.bio || ''}
+                </p>
               </>
             ) : ""}
           </div>

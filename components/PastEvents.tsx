@@ -139,7 +139,7 @@ const PastEvents = () => {
   };
 
   return (
-    <div className="card bg-white text-black p-6 shadow-md">
+    <div className="card bg-white text-black p-4 xl:p-6 shadow-md">
       <h2 className="text-xl font-bold flex items-center gap-2">
         Past Events
       </h2>

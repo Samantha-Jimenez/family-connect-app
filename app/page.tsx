@@ -51,7 +51,7 @@ const HomePage = () => {
         <UserProvider>
           <CalendarProvider>
             <div className="min-h-screen bg-gray-100 p-4 sm:p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_16rem] gap-4 max-w-7xl mx-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_14rem] xl:grid-cols-[1fr_1fr_16rem] gap-4 max-w-7xl mx-auto">
                 <div className="col-span-1 sm:col-span-2">
                   <ProfileUserInfoCard userId={user.userId}/>
                 </div>

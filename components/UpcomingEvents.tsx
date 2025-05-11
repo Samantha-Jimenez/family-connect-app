@@ -155,7 +155,7 @@ const UpcomingEvents = () => {
   };
 
   return (
-    <div className="card bg-white text-black p-6 shadow-md">
+    <div className="card bg-white text-black p-4 xl:p-6 shadow-md">
       <h2 className="text-xl font-bold flex items-center gap-2">
         Upcoming Events
       </h2>
@@ -166,7 +166,7 @@ const UpcomingEvents = () => {
             return (
               <div 
                 key={event.id || event.start} 
-                className={`flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer
+                className={`flex items-center justify-between py-3 px-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer
                   ${hasRSVP ? 'bg-blue-50' : ''}
                 `}
                 onClick={() => handleEventClick(event)}
