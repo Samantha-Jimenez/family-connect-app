@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { getUserDataById } from "@/hooks/dynamoDB";
+import { getUserDataById, getFamilyRelationships } from "@/hooks/dynamoDB";
 import { getFullImageUrl } from '@/utils/imageUtils';
 
 interface UserData {
@@ -19,9 +19,17 @@ interface UserData {
   current_state?: string;
 }
 
+interface Relationship {
+  source_id: string;
+  target_id: string;
+  relationship_type: string;
+}
+
 export default function ProfileUserInfoCard({ userId }: { userId: string }) {
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [relationships, setRelationships] = useState<Relationship[]>([]);
+  const [targetUserNames, setTargetUserNames] = useState<{ [userId: string]: string }>({});
 
   const getZodiacSign = (dateString: string) => {
     if (!dateString) return '';
@@ -82,6 +90,30 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
           } else {
             setProfilePhotoUrl(null);
           }
+
+          // Fetch relationships
+          const userRelationships = await getFamilyRelationships(userId);
+          setRelationships(userRelationships);
+
+          // Fetch names for each target_id
+          const names: { [userId: string]: string } = {};
+          await Promise.all(
+            userRelationships.map(async (relationship) => {
+              if (!names[relationship.target_id]) {
+                try {
+                  const targetData = await getUserDataById(relationship.target_id);
+                  if (targetData) {
+                    const firstName = targetData.first_name?.S || '';
+                    const lastName = targetData.last_name?.S || '';
+                    names[relationship.target_id] = `${firstName} ${lastName}`.trim();
+                  }
+                } catch (e) {
+                  // Optionally handle error
+                }
+              }
+            })
+          );
+          setTargetUserNames(names);
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -132,9 +164,21 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
 
             <h2 className="text-xl font-semibold text-black">Family Role</h2>
             <div className="flex flex-wrap gap-2 mb-2">
-              <span className="bg-yellow-800/60 text-white px-3 py-1 rounded-full text-sm">Child</span>
-              <span className="bg-yellow-800/60 text-white px-3 py-1 rounded-full text-sm">Sibling</span>
-              <span className="bg-yellow-800/60 text-white px-3 py-1 rounded-full text-sm">Cousin</span>
+              {relationships
+                .filter(relationship => relationship.source_id === userId)
+                .map((relationship, index) => (
+                  <div
+                    className="tooltip tooltip-bottom"
+                    data-tip={targetUserNames[relationship.target_id]}
+                    key={index}
+                  >
+                    <span 
+                      className="bg-yellow-800/60 text-white px-3 py-1 rounded-full text-sm"
+                    >
+                      {relationship.relationship_type.charAt(0).toUpperCase() + relationship.relationship_type.slice(1)}
+                    </span>
+                  </div>
+                ))}
             </div>
             
           </div>
