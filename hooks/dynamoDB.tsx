@@ -226,6 +226,7 @@ export const savePhotoToDB = async (photoData: PhotoData) => {
       s3_key: { S: `photos/${photoData.s3_key.replace(/^photos\//g, '')}` },
       uploaded_by: { S: photoData.uploaded_by },
       upload_date: { S: photoData.upload_date },
+      album_id: { S: photoData.album_id || "" },
     };
 
     // Log the s3_key being saved
@@ -1113,6 +1114,56 @@ export const setUserCTAVisible = async (userId: string, visible: boolean) => {
     console.log(`✅ Set CTA visible to ${visible} for user ${userId}`);
   } catch (error) {
     console.error("❌ Error updating CTA visibility:", error);
+    throw error;
+  }
+};
+
+export const deleteAlbumById = async (albumId: string) => {
+  try {
+    // Delete all photos in the album
+    const photos = await getPhotosByAlbum(albumId);
+    for (const photo of photos) {
+      await deletePhotoById(photo.photo_id);
+    }
+
+    // Delete the album itself
+    const params = {
+      TableName: TABLES.ALBUMS,
+      Key: {
+        album_id: { S: albumId }
+      }
+    };
+    await dynamoDB.send(new DeleteItemCommand(params));
+    console.log(`Album with ID ${albumId} deleted successfully.`);
+  } catch (error) {
+    console.error("❌ Error deleting album:", error);
+    throw error;
+  }
+};
+
+/**
+ * Removes a photo from an album by setting its album_id to an empty string.
+ * @param photo_id The ID of the photo to update.
+ * @param album_id The ID of the album to remove the photo from (not strictly needed, but for API consistency).
+ */
+export const removePhotoFromAlbum = async (photo_id: string, album_id: string) => {
+  try {
+    // Just set album_id to empty string for the photo
+    const params = {
+      TableName: TABLES.PHOTOS,
+      Key: {
+        photo_id: { S: photo_id }
+      },
+      UpdateExpression: "SET album_id = :empty",
+      ExpressionAttributeValues: {
+        ":empty": { S: "" }
+      }
+    };
+
+    await dynamoDB.send(new UpdateItemCommand(params));
+    console.log(`✅ Photo ${photo_id} removed from album ${album_id}`);
+  } catch (error) {
+    console.error(`❌ Error removing photo ${photo_id} from album ${album_id}:`, error);
     throw error;
   }
 };

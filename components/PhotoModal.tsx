@@ -1,7 +1,7 @@
 import React, { MouseEvent, useState, useEffect } from 'react';
 import Image from 'next/image';
 import Select from 'react-select';
-import { PhotoData, TaggedPerson, getUserAlbums, addPhotoToAlbum, savePhotoToDB, getAlbumById, deletePhotoById, getAllFamilyMembers, AlbumData, checkIfPhotoIsFavorited, removePhotoFromFavorites, addPhotoToFavorites, addCommentToPhoto, getCommentsForPhoto, getUserNameById, deleteCommentFromPhoto, editCommentInPhoto, getProfilePhotoById } from '@/hooks/dynamoDB';
+import { PhotoData, TaggedPerson, getUserAlbums, addPhotoToAlbum, savePhotoToDB, getAlbumById, deletePhotoById, getAllFamilyMembers, AlbumData, checkIfPhotoIsFavorited, removePhotoFromFavorites, addPhotoToFavorites, addCommentToPhoto, getCommentsForPhoto, getUserNameById, deleteCommentFromPhoto, editCommentInPhoto, getProfilePhotoById, removePhotoFromAlbum } from '@/hooks/dynamoDB';
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import PhotoComments from './PhotoComments';
 import { useToast } from '@/context/ToastContext';
@@ -17,6 +17,7 @@ interface PhotoModalProps {
   handleImageError: React.ReactEventHandler<HTMLImageElement>;
   renderEditForm: () => JSX.Element;
   onPhotoDeleted?: () => void;
+  onPhotoUpdated?: (updatedPhoto: PhotoData) => void;
 }
 
 const formatDate = (dateString: string): string => {
@@ -45,7 +46,8 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   closeModal,
   handleImageError,
   renderEditForm,
-  onPhotoDeleted
+  onPhotoDeleted,
+  onPhotoUpdated
 }) => {
   const { user } = useAuthenticator();
   const [albums, setAlbums] = useState<AlbumData[]>([]);
@@ -130,7 +132,13 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     fetchFavoriteStatus();
     fetchComments();
     fetchProfilePhoto();
-  }, [user, photo.album_id, photo.photo_id]);
+  }, [isEditing, photo.album_id, user, photo.photo_id]);
+
+  useEffect(() => {
+    if (isEditing) {
+      setSelectedAlbumId(photo.album_id || '');
+    }
+  }, [isEditing, photo.album_id]);
 
   const handleAddToAlbum = async () => {
     try {
@@ -144,10 +152,20 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   };
 
   const handleSave = async () => {
-    if (selectedAlbumId) handleAddToAlbum();
     try {
-      await savePhotoToDB({
+      // If album changed, update album membership
+      if (selectedAlbumId && selectedAlbumId !== photo.album_id) {
+        if (photo.album_id) {
+          // Remove from old album
+          await removePhotoFromAlbum(photo.photo_id, photo.album_id);
+        }
+        // Add to new album
+        await addPhotoToAlbum(photo.photo_id, selectedAlbumId);
+      }
+      // Save photo data with new album_id
+      const updatedPhoto: PhotoData = {
         ...photo,
+        album_id: selectedAlbumId,
         metadata: {
           ...photo.metadata,
           description: editedDescription,
@@ -155,10 +173,15 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           location: editedLocation,
           people_tagged: editedTaggedPeople,
         },
-      });
+      };
+      await savePhotoToDB(updatedPhoto);
       console.log('Photo data saved successfully!');
       setIsEditing(false);
+      setSelectedAlbumId(selectedAlbumId);
       showToast('Changes saved successfully!', 'success');
+      if (onPhotoUpdated) {
+        onPhotoUpdated(updatedPhoto);
+      }
     } catch (error) {
       console.error('Error saving photo data:', error);
       showToast('Error saving changes.', 'error');
@@ -486,25 +509,31 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                         value: album.album_id,
                         label: album.name
                       }))}
-                      value={albums.find(album => album.album_id === photo.album_id) ? {
-                        value: photo.album_id,
-                        label: albums.find(album => album.album_id === photo.album_id)?.name || ''
-                      } : null}
-                      onChange={(selected) => setSelectedAlbumId(selected?.value || '')}
+                      value={
+                        selectedAlbumId
+                          ? albums
+                              .map(album => ({
+                                value: album.album_id,
+                                label: album.name
+                              }))
+                              .find(option => option.value === selectedAlbumId) || null
+                          : null
+                      }
+                      onChange={selected => setSelectedAlbumId(selected?.value || '')}
                       className="mt-1"
                       classNamePrefix="select"
                       placeholder="Select an album..."
                       noOptionsMessage={() => "No albums found"}
                       isLoading={albums.length === 0}
-                      theme={(theme) => ({
+                      theme={theme => ({
                         ...theme,
                         colors: {
                           ...theme.colors,
                           primary: '#3b82f6',
                           primary25: '#bfdbfe',
                           neutral0: 'var(--bg-color, white)',
-                          neutral80: 'var(--text-color, black)',
-                        },
+                          neutral80: 'var(--text-color, black)'
+                        }
                       })}
                     />
                   </div>
