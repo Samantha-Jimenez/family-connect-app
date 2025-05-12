@@ -70,7 +70,7 @@ const FamilyMember = ({
       <div className="flex items-center space-x-2">
         <div className="bg-white shadow-md p-2 rounded-lg text-center w-36 h-28">
           <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 mx-auto">
-            {member.profile_photo && (
+            {member.profile_photo && member.profile_photo !== "https://family-connect-app.s3.us-east-2.amazonaws.com/" ? (
               <Image
                 src={member.profile_photo}
                 alt={member.first_name}
@@ -78,6 +78,10 @@ const FamilyMember = ({
                 height={64}
                 className="object-cover w-16 h-16"
               />
+            ) : (
+              <div className="w-full h-full bg-gray-200 rounded-[60px] flex items-center justify-center">
+                <span className="icon-[mdi--account] text-4xl text-gray-400" />
+              </div>
             )}
           </div>
           <Link href={`/profile/${member.id || (member.first_name ? member.first_name.toLowerCase() : "unknown")}`}>
