@@ -7,6 +7,7 @@ import { getFullImageUrl } from '@/utils/imageUtils';
 import AdminCreateRelationshipForm from '@/components/AdminCreateRelationshipForm';
 import AdminCreateFamilyMemberForm from '@/components/AdminCreateFamilyMemberForm';
 import MemberRelationships from '@/components/MemberRelationships';
+import { useToast } from '@/context/ToastContext';
 
 const initialFormData = {
   firstName: '',
@@ -35,9 +36,9 @@ const US_STATES = [
 
 const AdminPage = () => {
   const { user } = useAuthenticator();
+  const { showToast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
-  const [message, setMessage] = useState('');
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState(initialFormData);
@@ -140,14 +141,14 @@ const AdminPage = () => {
         profilePhotoKey = await uploadImage(selectedImage);
       }
       await addFamilyMember({ ...formData, profile_photo: profilePhotoKey });
-      setMessage('Family member added successfully!');
+      showToast('Family member added successfully!', 'success');
       setFormData(initialFormData);
       setSelectedImage(null);
       setImagePreview(null);
       setUploadProgress(0);
-      fetchFamilyMembers(); // Refresh the list
+      fetchFamilyMembers();
     } catch (error) {
-      setMessage('Error adding family member.');
+      showToast('Error adding family member.', 'error');
       console.error("Error adding family member:", error);
       setIsUploading(false);
       setUploadProgress(0);
@@ -224,14 +225,14 @@ const AdminPage = () => {
         ...editFormData,
         profile_photo: profilePhotoKey ?? '',
       });
-      setMessage('Family member updated successfully!');
+      showToast('Family member updated successfully!', 'success');
       setEditingMemberId(null);
       setEditSelectedImage(null);
       setEditImagePreview(null);
       setEditUploadProgress(0);
-      fetchFamilyMembers(); // Refresh the list
+      fetchFamilyMembers();
     } catch (error) {
-      setMessage('Error updating family member.');
+      showToast('Error updating family member.', 'error');
       console.error("Error updating family member:", error);
       setEditIsUploading(false);
       setEditUploadProgress(0);
@@ -246,13 +247,12 @@ const AdminPage = () => {
         selectedTargetMemberId,
         relationshipType
       );
-      // Clear the form after successful creation
       setSelectedSourceMemberId('');
       setSelectedTargetMemberId('');
       setRelationshipType('parent');
-      setMessage('Relationship created successfully!');
+      showToast('Relationship created successfully!', 'success');
     } catch (error) {
-      setMessage('Error creating relationship.');
+      showToast('Error creating relationship.', 'error');
       console.error("Error creating relationship:", error);
     }
   };
@@ -271,7 +271,6 @@ const AdminPage = () => {
             isUploading={isUploading}
             uploadProgress={uploadProgress}
           />
-          {message && <p className="mt-4 text-green-500">{message}</p>}
         </div>
         <div className="w-full md:w-1/2">
           <AdminCreateRelationshipForm

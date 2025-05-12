@@ -159,9 +159,9 @@ export const familyTreeData = {
           last_name: "Pinder",
           spouse: { "first_name": "Desmond", "last_name": "Graham" },
           children: [
-            { first_name: "Baby", last_name: "Girl" },
-            { first_name: "Baby", last_name: "Girl" },
-            { first_name: "Baby", last_name: "Girl" }
+            { first_name: "Khloe", last_name: "Graham" },
+            { first_name: "K.", last_name: "Graham" },
+            { first_name: "K.", last_name: "Graham" }
           ]
         },
         { first_name: "Justin", 
