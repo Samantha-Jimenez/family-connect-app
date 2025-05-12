@@ -55,7 +55,7 @@ const HomePage = () => {
                 <div className="col-span-1 sm:col-span-2">
                   <ProfileUserInfoCard userId={user.userId}/>
                 </div>
-                <div className="col-span-1 sm:col-span-2 lg:col-span-1 lg:row-span-5 lg:col-start-3 max-[1024px]:hidden">
+                <div className="col-span-1 sm:col-span-2 lg:col-span-1 lg:row-span-5 lg:col-start-3 max-[1023px]:hidden">
                   <Panel />
                 </div>
                 <CallToAction />

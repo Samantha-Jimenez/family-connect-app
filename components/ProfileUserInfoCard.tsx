@@ -256,11 +256,11 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
 
           </div>
 
-          <div className="md:pl-8 md:col-span-3">
+          <div className="md:pl-4 md:col-span-3">
             {userData?.bio ? (
               <>
                 <h2 className="text-xl font-semibold text-black md:row-span-2">About Me</h2>
-                <p className="text-gray-500 mb-2 md:row-span-2">
+                <p className="text-gray-500 md:row-span-2">
                   {userData?.bio || ''}
                 </p>
               </>
