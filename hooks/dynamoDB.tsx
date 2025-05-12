@@ -996,7 +996,9 @@ export const saveRSVPToDynamoDB = async (eventId: string, userId: string, status
     const rsvpParams = {
         TableName: TABLES.EVENT_RSVP,
         Item: {
-            rsvp_id: { S: eventId }
+            rsvp_id: { S: eventId },
+            user_id: { S: userId },
+            status: { S: status }
         }
     };
 
