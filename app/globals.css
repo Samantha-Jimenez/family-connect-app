@@ -31,3 +31,15 @@ body {
   text-align: left;
   white-space: pre-line;
 }
+
+/* CALENDAR */
+
+.fc-direction-ltr {
+  direction: ltr;
+  text-align: left;
+  height: 100vh !important;
+}
+
+.fc .fc-button-group > .fc-button.fc-button-active, .fc .fc-button-group > .fc-button:active, .fc .fc-button-group > .fc-button:focus, .fc .fc-button-group > .fc-button:hover {
+  z-index: 0 !important;
+}
