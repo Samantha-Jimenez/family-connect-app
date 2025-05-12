@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { createAlbum, addPhotoToAlbum, getUserAlbums, getPhotosByAlbum } from '../hooks/dynamoDB';
+import { createAlbum, addPhotoToAlbum, getUserAlbums, getPhotosByAlbum, deleteAlbumById } from '../hooks/dynamoDB';
 import Image from 'next/image';
 import { PhotoData, AlbumData } from '../hooks/dynamoDB';
 
@@ -14,6 +14,8 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
   const [photos, setPhotos] = useState<PhotoData[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [photoCounts, setPhotoCounts] = useState<{ [key: string]: number }>({});
+  const [deleting, setDeleting] = useState(false);
+
   useEffect(() => {
     const fetchAlbums = async () => {
       if (userId) {
@@ -76,6 +78,31 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
     }
   };
 
+  const handleDeleteAlbum = async () => {
+    if (!selectedAlbum) return;
+    if (!window.confirm('Are you sure you want to delete this album and all its photos?')) return;
+    setDeleting(true);
+    try {
+      await deleteAlbumById(selectedAlbum.album_id);
+      setShowModal(false);
+      // Refresh albums list
+      const userAlbums = await getUserAlbums(userId);
+      setAlbums(userAlbums);
+
+      // Refresh photo counts
+      const counts: { [key: string]: number } = {};
+      for (const album of userAlbums) {
+        const albumPhotos = await getPhotosByAlbum(album.album_id);
+        counts[album.album_id] = albumPhotos.length;
+      }
+      setPhotoCounts(counts);
+    } catch (error) {
+      alert('Failed to delete album.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="p-4 bg-white shadow-lg rounded-lg relative">
       {auth && (
@@ -87,14 +114,14 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
           placeholder="Album Name"
           value={albumName}
           onChange={(e) => setAlbumName(e.target.value)}
-          className="input input-bordered w-full mb-2"
+          className="input input-bordered w-full mb-2 bg-gray-200"
         />
         <input
           type="text"
           placeholder="Album Description"
           value={albumDescription}
           onChange={(e) => setAlbumDescription(e.target.value)}
-          className="input input-bordered w-full"
+          className="input input-bordered w-full bg-gray-200"
         />
       </div>
       <button onClick={handleCreateAlbum} className="btn btn-primary w-full mb-6">
@@ -157,12 +184,24 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
                 </div>
               ))}
             </div>
-            <button
-              onClick={() => setShowModal(false)}
-              className="btn btn-secondary mt-4"
-            >
-              Close
-            </button>
+            <div className="flex justify-between mt-4">
+              <button
+                onClick={() => setShowModal(false)}
+                className="btn btn-secondary"
+                disabled={deleting}
+              >
+                Close
+              </button>
+              {auth && (
+                <button
+                  onClick={handleDeleteAlbum}
+                  className="btn btn-error"
+                  disabled={deleting}
+                >
+                  {deleting ? 'Deleting...' : 'Delete Album'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
