@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 const navigation = [
   { name: 'Dashboard', href: '/', current: true },
   { name: 'Photos', href: '/photos', current: false },
+  { name: 'Upload', href: '/upload', current: false },
   { name: 'Family Tree', href: '/familytree', current: false },
   { name: 'Calendar', href: '/calendar', current: false },
 ];

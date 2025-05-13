@@ -138,7 +138,6 @@ const Photos = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoData | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
   const [dateRange, setDateRange] = useState<DateRange>({ min: 0, max: 0 });
   const [currentDateRange, setCurrentDateRange] = useState<[number, number]>([0, 0]);
   const [filteredImages, setFilteredImages] = useState<PhotoData[]>([]);
@@ -390,17 +389,6 @@ const Photos = () => {
     setCurrentIndex((prevIndex: number) => (prevIndex - 1 + images.length) % images.length);
   };
 
-  const handlePhotoUploaded = async () => {
-    setRefreshing(true);
-    try {
-      await fetchPhotos();
-      // After fetching photos, set the current index to 0 to show the newest photo
-      setCurrentIndex(0);
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
   const handleImageClick = (photo: PhotoData) => {
     setSelectedPhoto(photo);
   };
@@ -645,42 +633,6 @@ const Photos = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 bg-gray-100">
-      <div className="mx-auto">
-        <button 
-          onClick={() => setIsUploadOpen(!isUploadOpen)}
-          className="w-full text-left text-2xl font-bold mb-2 flex items-center"
-        >
-          <span>Upload a Photo</span>
-          <svg 
-            className={`w-6 h-6 ml-2 transition-transform duration-300 ease-in-out ${isUploadOpen ? 'rotate-180' : ''}`}
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-        
-        <div 
-          className={`transform transition-all duration-1000 ease-in-out origin-top ${
-            isUploadOpen 
-              ? 'opacity-100 scale-y-100 max-h-full mb-8' 
-              : 'opacity-0 scale-y-0 max-h-0 mb-0'
-          }`}
-        >
-          <div className="rounded-lg p-4">
-            <PhotoUpload onUploadComplete={handlePhotoUploaded} />
-            {refreshing && (
-              <div className="text-sm text-blue-500 mt-2">
-                Refreshing gallery...
-              </div>
-            )}
-            <div className="mt-1 text-sm text-gray-500 dark:text-gray-300">
-              Upload your photos to share with your family
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Gallery section with transition */}
       <div 
