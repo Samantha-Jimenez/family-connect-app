@@ -240,7 +240,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
           <>
             <div
               key={album.album_id}
-              className="p-4 bg-gray-100 rounded-lg shadow cursor-pointer"
+              className="p-4 bg-gray-100 rounded-lg shadow cursor-pointer w-2/5"
               onClick={() => handleAlbumClick(album)}
               >
               <h3 className="text-lg font-semibold text-black">{album.name}</h3>
@@ -339,7 +339,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
             {showAddPhotos && (
               <div className="mb-4 border rounded p-4 bg-gray-50">
                 <h3 className="font-semibold mb-2 text-black">Select photos to add:</h3>
-                <div className="grid grid-cols-3 gap-3 max-h-64 overflow-y-auto w-max">
+                <div className="flex flex-wrap gap-3 max-h-64 overflow-y-auto w-max">
                   {userPhotos
                     .filter(
                       (photo) =>
