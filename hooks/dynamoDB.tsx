@@ -1169,3 +1169,73 @@ export const removePhotoFromAlbum = async (photo_id: string, album_id: string) =
     throw error;
   }
 };
+
+/**
+ * Fetch all photos uploaded by a specific user.
+ * Returns an array of PhotoData with signed S3 URLs.
+ */
+export const getUserPhotos = async (userId: string): Promise<PhotoData[]> => {
+  try {
+    const params = {
+      TableName: TABLES.PHOTOS,
+      FilterExpression: "uploaded_by = :userId",
+      ExpressionAttributeValues: {
+        ":userId": { S: userId }
+      }
+    };
+
+    const command = new ScanCommand(params);
+    const response = await dynamoDB.send(command);
+
+    if (!response.Items) {
+      return [];
+    }
+
+    const bucketName = process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME;
+
+    // Map and sign URLs
+    const photos = await Promise.all(response.Items.map(async (item) => {
+      const s3Key = item.s3_key?.S || '';
+
+      const getObjectCommand = new GetObjectCommand({
+        Bucket: bucketName,
+        Key: s3Key,
+      });
+
+      try {
+        const url = await getSignedUrl(s3Client, getObjectCommand, { expiresIn: 3600 });
+        return {
+          photo_id: item.photo_id?.S || '',
+          s3_key: s3Key,
+          uploaded_by: item.uploaded_by?.S || '',
+          upload_date: item.upload_date?.S || '',
+          album_id: item.album_id?.S || '',
+          url,
+          metadata: {
+            location: {
+              country: item.location?.M?.country?.S || '',
+              state: item.location?.M?.state?.S || '',
+              city: item.location?.M?.city?.S || '',
+              neighborhood: item.location?.M?.neighborhood?.S || ''
+            },
+            description: item.description?.S || '',
+            date_taken: item.date_taken?.S || '',
+            people_tagged: item.people_tagged?.L ? item.people_tagged.L.map(tagged => ({
+              id: tagged.M?.id.S || '',
+              name: tagged.M?.name.S || ''
+            })) : [],
+          },
+          lastModified: item.lastModified?.S || ''
+        };
+      } catch (error) {
+        console.error('Error generating signed URL for key:', s3Key, error);
+        return null;
+      }
+    }));
+
+    return photos.filter(photo => photo !== null);
+  } catch (error) {
+    console.error("❌ Error fetching user photos:", error);
+    return [];
+  }
+};

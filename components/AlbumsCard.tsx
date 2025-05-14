@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { createAlbum, addPhotoToAlbum, getUserAlbums, getPhotosByAlbum, deleteAlbumById } from '../hooks/dynamoDB';
+import { createAlbum, addPhotoToAlbum, getUserAlbums, getPhotosByAlbum, deleteAlbumById, getUserPhotos } from '../hooks/dynamoDB';
 import Image from 'next/image';
 import { PhotoData, AlbumData } from '../hooks/dynamoDB';
 
@@ -15,6 +15,10 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
   const [showModal, setShowModal] = useState(false);
   const [photoCounts, setPhotoCounts] = useState<{ [key: string]: number }>({});
   const [deleting, setDeleting] = useState(false);
+  const [showAddPhotos, setShowAddPhotos] = useState(false);
+  const [userPhotos, setUserPhotos] = useState<PhotoData[]>([]);
+  const [selectedPhotoIds, setSelectedPhotoIds] = useState<string[]>([]);
+  const [addingPhotos, setAddingPhotos] = useState(false);
 
   useEffect(() => {
     const fetchAlbums = async () => {
@@ -34,6 +38,15 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
 
     fetchAlbums();
   }, [userId]);
+
+  useEffect(() => {
+    if (showAddPhotos && userId) {
+      (async () => {
+        const allPhotos = await getUserPhotos(userId);
+        setUserPhotos(allPhotos);
+      })();
+    }
+  }, [showAddPhotos, userId]);
 
   const handleCreateAlbum = async () => {
     try {
@@ -103,6 +116,33 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
     }
   };
 
+  const handlePhotoCheckbox = (photoId: string) => {
+    setSelectedPhotoIds((prev) =>
+      prev.includes(photoId)
+        ? prev.filter((id) => id !== photoId)
+        : [...prev, photoId]
+    );
+  };
+
+  const handleAddSelectedPhotos = async () => {
+    if (!selectedAlbum) return;
+    setAddingPhotos(true);
+    try {
+      for (const photoId of selectedPhotoIds) {
+        await addPhotoToAlbum(photoId, selectedAlbum.album_id);
+      }
+      // Refresh album photos
+      const albumPhotos = await getPhotosByAlbum(selectedAlbum.album_id);
+      setPhotos(albumPhotos);
+      setShowAddPhotos(false);
+      setSelectedPhotoIds([]);
+    } catch (error) {
+      alert('Failed to add photos.');
+    } finally {
+      setAddingPhotos(false);
+    }
+  };
+
   return (
     <div className="p-4 bg-white shadow-lg rounded-lg relative">
       {auth && (
@@ -169,9 +209,64 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-3/4 max-w-2xl">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-3/4 max-w-2xl relative">
             <h2 className="text-xl font-bold mb-4 text-black">{selectedAlbum?.name}</h2>
+            {auth && (
+              <button
+                className="btn btn-primary mb-4"
+                onClick={() => setShowAddPhotos((v) => !v)}
+                disabled={addingPhotos}
+              >
+                {showAddPhotos ? 'Cancel' : 'Add Photos'}
+              </button>
+            )}
+
+            {showAddPhotos && (
+              <div className="mb-4 border rounded p-4 bg-gray-50">
+                <h3 className="font-semibold mb-2 text-black">Select photos to add:</h3>
+                <div className="grid grid-cols-3 gap-3 max-h-64 overflow-y-auto w-max">
+                  {userPhotos
+                    .filter(
+                      (photo) =>
+                        !photos.some((p) => p.photo_id === photo.photo_id)
+                    )
+                    .map((photo) => (
+                      <label key={photo.photo_id} className="flex flex-col items-center cursor-pointer w-max">
+                        <input
+                          type="checkbox"
+                          className="mb-1"
+                          checked={selectedPhotoIds.includes(photo.photo_id)}
+                          onChange={() => handlePhotoCheckbox(photo.photo_id)}
+                          disabled={addingPhotos}
+                        />
+                        {photo.url ? (
+                          <Image
+                            src={photo.url}
+                            alt={photo.metadata?.description || ''}
+                            className="rounded-lg"
+                            width={100}
+                            height={70}
+                          />
+                        ) : (
+                          <div className="w-[100px] h-[70px] bg-gray-300 rounded-lg flex items-center justify-center text-xs">
+                            No Image
+                          </div>
+                        )}
+                        <span className="text-xs text-black text-center">{photo.metadata?.description || ''}</span>
+                      </label>
+                    ))}
+                </div>
+                <button
+                  className="btn btn-success mt-3"
+                  onClick={handleAddSelectedPhotos}
+                  disabled={addingPhotos || selectedPhotoIds.length === 0}
+                >
+                  {addingPhotos ? 'Adding...' : 'Add Selected Photos'}
+                </button>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               {photos.map((photo) => (
                 <div key={photo.photo_id} className="p-2 bg-gray-200 rounded-lg">
@@ -188,7 +283,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
               <button
                 onClick={() => setShowModal(false)}
                 className="btn btn-secondary"
-                disabled={deleting}
+                disabled={deleting || addingPhotos}
               >
                 Close
               </button>
@@ -196,7 +291,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
                 <button
                   onClick={handleDeleteAlbum}
                   className="btn btn-error"
-                  disabled={deleting}
+                  disabled={deleting || addingPhotos}
                 >
                   {deleting ? 'Deleting...' : 'Delete Album'}
                 </button>
