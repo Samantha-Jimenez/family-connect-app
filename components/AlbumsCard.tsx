@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { createAlbum, addPhotoToAlbum, getUserAlbums, getPhotosByAlbum, deleteAlbumById, getUserPhotos } from '../hooks/dynamoDB';
+import { createAlbum, addPhotoToAlbum, getUserAlbums, getPhotosByAlbum, deleteAlbumById, getUserPhotos, updateAlbum } from '../hooks/dynamoDB';
 import Image from 'next/image';
 import { PhotoData, AlbumData } from '../hooks/dynamoDB';
 
@@ -19,6 +19,13 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
   const [userPhotos, setUserPhotos] = useState<PhotoData[]>([]);
   const [selectedPhotoIds, setSelectedPhotoIds] = useState<string[]>([]);
   const [addingPhotos, setAddingPhotos] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editCoverPhotoId, setEditCoverPhotoId] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  console.log(albums.map((album) => album.cover_photo_id));
 
   useEffect(() => {
     const fetchAlbums = async () => {
@@ -86,6 +93,10 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
       setPhotos(albumPhotos);
       setSelectedAlbum(album);
       setShowModal(true);
+      setEditing(false);
+      setEditName(album.name);
+      setEditDescription(album.description || '');
+      setEditCoverPhotoId(album.cover_photo_id || '');
     } catch (error) {
       console.error('Error fetching photos for album:', error);
     }
@@ -143,6 +154,37 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
     }
   };
 
+  const handleSaveEdit = async () => {
+    if (!selectedAlbum) return;
+    setSavingEdit(true);
+    try {
+      await updateAlbum(selectedAlbum.album_id, {
+        name: editName,
+        description: editDescription,
+        cover_photo_id: editCoverPhotoId,
+      });
+      // Refresh albums list
+      const userAlbums = await getUserAlbums(userId);
+      setAlbums(userAlbums);
+      // Update selectedAlbum with new values
+      setSelectedAlbum((prev) =>
+        prev
+          ? {
+              ...prev,
+              name: editName,
+              description: editDescription,
+              cover_photo_id: editCoverPhotoId,
+            }
+          : null
+      );
+      setEditing(false);
+    } catch (error) {
+      alert('Failed to update album.');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
   return (
     <div className="p-4 bg-white shadow-lg rounded-lg relative">
       {auth && (
@@ -195,23 +237,95 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
       <h2 className="text-xl font-bold mb-2 text-black">Your Albums</h2>
       <div className="space-y-4">
         {albums.map((album) => (
-          <div
-            key={album.album_id}
-            className="p-4 bg-gray-100 rounded-lg shadow cursor-pointer"
-            onClick={() => handleAlbumClick(album)}
-          >
-            <h3 className="text-lg font-semibold text-black">{album.name}</h3>
-            <p className="text-sm text-black">{album.description}</p>
-            <p className="text-xs text-gray-500">Created on: {new Date(album.created_date).toLocaleDateString()}</p>
-            <p className="text-xs text-gray-500">Photos: {photoCounts[album.album_id] || 0}</p>
-          </div>
+          <>
+            <div
+              key={album.album_id}
+              className="p-4 bg-gray-100 rounded-lg shadow cursor-pointer"
+              onClick={() => handleAlbumClick(album)}
+              >
+              <h3 className="text-lg font-semibold text-black">{album.name}</h3>
+              <p className="text-sm text-black">{album.description}</p>
+              <p className="text-xs text-gray-500">Created on: {new Date(album.created_date).toLocaleDateString()}</p>
+              <p className="text-xs text-gray-500">Photos: {photoCounts[album.album_id] || 0}</p>
+            </div>
+          </>
         ))}
       </div>
 
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-3/4 max-w-2xl relative">
-            <h2 className="text-xl font-bold mb-4 text-black">{selectedAlbum?.name}</h2>
+            <h2 className="text-xl font-bold mb-4 text-black">
+              {editing ? (
+                <input
+                  className="input input-bordered w-full bg-gray-200"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  disabled={savingEdit}
+                />
+              ) : (
+                selectedAlbum?.name
+              )}
+            </h2>
+            {auth && !editing && (
+              <button
+                className="btn btn-outline btn-sm absolute right-6 top-6"
+                onClick={() => setEditing(true)}
+              >
+                Edit
+              </button>
+            )}
+            {editing ? (
+              <div className="mb-4">
+                <label className="block text-black font-semibold mb-1">Description</label>
+                <input
+                  className="input input-bordered w-full mb-2 bg-gray-200"
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  disabled={savingEdit}
+                  placeholder="Enter description"
+                />
+                <div className="flex gap-2 mt-4">
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleSaveEdit}
+                    disabled={savingEdit}
+                  >
+                    {savingEdit ? 'Saving...' : 'Save'}
+                  </button>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => setEditing(false)}
+                    disabled={savingEdit}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="text-black mb-2">{selectedAlbum?.description}</p>
+                {selectedAlbum?.cover_photo_id && (
+                  <div className="mb-4">
+                    <span className="text-xs text-gray-500">Cover Photo:</span>
+                    <div>
+                      {photos
+                        .filter((p) => p.photo_id === selectedAlbum.cover_photo_id)
+                        .map((photo) => (
+                          <Image
+                            key={photo.photo_id}
+                            src={photo.url}
+                            alt={photo.metadata?.description || ''}
+                            className="rounded-lg mt-1"
+                            width={150}
+                            height={100}
+                          />
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
             {auth && (
               <button
                 className="btn btn-primary mb-4"

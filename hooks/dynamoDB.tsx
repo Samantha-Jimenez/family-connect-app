@@ -1239,3 +1239,41 @@ export const getUserPhotos = async (userId: string): Promise<PhotoData[]> => {
     return [];
   }
 };
+
+export async function updateAlbum(
+  albumId: string,
+  updates: { name?: string; description?: string; cover_photo_id?: string }
+) {
+  const updateFields = [];
+  const expressionAttributeNames: any = {};
+  const expressionAttributeValues: any = {};
+
+  if (updates.name !== undefined) {
+    updateFields.push('#name = :name');
+    expressionAttributeNames['#name'] = 'name';
+    expressionAttributeValues[':name'] = { S: updates.name };
+  }
+  if (updates.description !== undefined) {
+    updateFields.push('#desc = :desc');
+    expressionAttributeNames['#desc'] = 'description';
+    expressionAttributeValues[':desc'] = { S: updates.description };
+  }
+  if (updates.cover_photo_id !== undefined) {
+    updateFields.push('#cover = :cover');
+    expressionAttributeNames['#cover'] = 'cover_photo_id';
+    expressionAttributeValues[':cover'] = { S: updates.cover_photo_id };
+  }
+
+  if (updateFields.length === 0) return;
+
+  const params = {
+    TableName: TABLES.ALBUMS,
+    Key: { album_id: { S: albumId } },
+    UpdateExpression: 'set ' + updateFields.join(', '),
+    ExpressionAttributeNames: expressionAttributeNames,
+    ExpressionAttributeValues: expressionAttributeValues,
+    ReturnValues: 'UPDATED_NEW',
+  };
+
+  await dynamoDB.send(new UpdateItemCommand(params));
+}
