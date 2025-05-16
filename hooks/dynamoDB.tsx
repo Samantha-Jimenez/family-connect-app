@@ -4,6 +4,7 @@ import { getCurrentUser } from "aws-amplify/auth";
 import { v4 as uuidv4 } from 'uuid';
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { ReturnValue } from "@aws-sdk/client-dynamodb";
 
 // Set up DynamoDB client
 const dynamoDB = new DynamoDBClient({ 
@@ -403,7 +404,8 @@ export const updateFamilyMember = async (familyMemberId: string, data: { email: 
         ":email": { S: data.email },
         ":username": { S: data.username },
         ":profile_photo": { S: data.profile_photo }
-      }
+      },
+      ReturnValues: "UPDATED_NEW" as ReturnValue
     };
 
     await dynamoDB.send(new UpdateItemCommand(params));
@@ -1272,7 +1274,7 @@ export async function updateAlbum(
     UpdateExpression: 'set ' + updateFields.join(', '),
     ExpressionAttributeNames: expressionAttributeNames,
     ExpressionAttributeValues: expressionAttributeValues,
-    ReturnValues: 'UPDATED_NEW',
+    ReturnValues: 'UPDATED_NEW' as ReturnValue,
   };
 
   await dynamoDB.send(new UpdateItemCommand(params));
