@@ -77,3 +77,24 @@ fieldset {
   border-color: green !important;
   box-shadow: 0 0 0 2px rgba(0, 128, 0, 0.2) !important;
 }
+
+.amplify-button--primary:active {
+  background-color: darkgreen !important;
+  box-shadow: 0 0 0 2px green !important;
+}
+
+.amplify-tabs__item:focus {
+  box-shadow: none !important;
+}
+
+.amplify-tabs__item:hover {
+  color: gray !important;
+}
+
+.amplify-button--loading {
+  color: white !important;
+}
+
+[data-amplify-authenticator] [data-amplify-router] {
+  border: none !important;
+}
