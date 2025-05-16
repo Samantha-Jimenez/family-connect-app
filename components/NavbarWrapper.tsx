@@ -34,10 +34,11 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
         <div className="grid lg:grid-cols-2 items-center gap-10 max-w-6xl max-lg:max-w-md w-full justify-center">
           <div>
             <h2 className="lg:text-5xl text-3xl font-bold lg:leading-[57px] text-slate-900">
-              Family Connect
+              Family Connect App
             </h2>
-            <p className="text-sm mt-6 text-slate-500 leading-relaxed">Immerse yourself in a hassle-free login journey with our intuitively designed login form. Effortlessly access your account.</p>
-            <p className="text-sm mt-12 text-slate-500">Don't have an account <a href="javascript:void(0);" className="text-blue-600 font-medium hover:underline ml-1">Register here</a></p>
+            <p className="text-sm mt-6 text-slate-500 leading-relaxed">This is our shared space to celebrate memories, explore our family tree, and stay connected. Sign in to view and share photos, find birthdays, and discover our roots. 
+              <br/> Don’t have an account yet? Create one and join the family online.</p>
+            <p className="text-sm mt-12 text-slate-500">Aren't a family member? <a href="javascript:void(0);" className="text-blue-600 font-medium hover:underline ml-1">View a demo here.</a></p>
           </div>
 
           <div className="m-auto w-full">
