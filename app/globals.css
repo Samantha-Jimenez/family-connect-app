@@ -72,3 +72,8 @@ fieldset {
 .select-member {
   outline-color: var(--amplify-components-fieldcontrol-outline-color);
 }
+
+.amplify-input:focus, .amplify-field-group__outer-end .amplify-field-group__control:focus {
+  border-color: green !important;
+  box-shadow: 0 0 0 2px rgba(0, 128, 0, 0.2) !important;
+}

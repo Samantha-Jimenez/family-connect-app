@@ -7,12 +7,13 @@ import { Authenticator } from '@aws-amplify/ui-react';
 import { useState, useEffect } from 'react';
 import { getFamilyMembersWithoutEmail, FamilyMember, updateFamilyMember } from '@/hooks/dynamoDB';
 import { useUser } from '@/context/UserContext';
+import Select from 'react-select';
 
 export default function NavbarWrapper({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuthenticator();
   const { userData } = useUser();
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
-  const [selectedFamilyMember, setSelectedFamilyMember] = useState<string | null>(null);
+  const [selectedFamilyMember, setSelectedFamilyMember] = useState<{ value: string, label: string } | null>(null);
 
   useEffect(() => {
     async function fetchFamilyMembers() {
@@ -37,7 +38,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
               Family Connect App
             </h2>
             <p className="text-sm mt-6 text-slate-500 leading-relaxed">This is our shared space to celebrate memories, explore our family tree, and stay connected. Sign in to view and share photos, find birthdays, and discover our roots. 
-              <br/> Don’t have an account yet? Create one and join the family online.</p>
+              <br/> Don't have an account yet? Create one and join the family online.</p>
             <p className="text-sm mt-12 text-slate-500">Aren't a family member? <a href="javascript:void(0);" className="text-blue-600 font-medium hover:underline ml-1">View a demo here.</a></p>
           </div>
 
@@ -52,6 +53,12 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                   FormFields() {
                     const { validationErrors, submitForm } = useAuthenticator();
         
+                    // Convert familyMembers to react-select options
+                    const familyMemberOptions = familyMembers.map((member) => ({
+                      value: member.family_member_id,
+                      label: `${member.first_name} ${member.last_name}`,
+                    }));
+
                     return (
                       <form
                         onSubmit={async (event) => {
@@ -66,7 +73,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                           // Add other fields as needed
 
                           // Update the family member in the database
-                          await updateFamilyMember(selectedFamilyMember, { 
+                          await updateFamilyMember(selectedFamilyMember.value, { 
                             email, 
                             username,
                             profile_photo: '' // or some default profile photo URL
@@ -79,26 +86,59 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                         {/* Render only the necessary form fields without the default button */}
                         <Authenticator.SignUp.FormFields />
         
-                        <div className="form-control w-full gap-2 grid">
+                        <div className="form-control w-full gap-1 grid mb-4">
                           <label htmlFor="familyMember" className="label">
-                            <span className="label-text text-gray-800">Select Family Member:</span>
+                            <span className="label-text text-gray-800">Select Family Member</span>
                           </label>
-                          <select 
-                            id="familyMember" 
-                            name="familyMember" 
-                            className="select select-bordered w-full bg-white text-black border-1 border-gray-400 select-member h-[42px]"
-                            value={selectedFamilyMember || ""}
-                            onChange={(e) => setSelectedFamilyMember(e.target.value)}
-                          >
-                            <option value="" className="text-green-500">Select a Family Member</option>
-                            {familyMembers.map((member) => (
-                              <option key={member.family_member_id} value={member.family_member_id}>
-                                {member.first_name} {member.last_name}
-                              </option>
-                            ))}
-                          </select>
+                          <Select
+                            inputId="familyMember"
+                            name="familyMember"
+                            classNamePrefix="react-select"
+                            options={familyMemberOptions}
+                            value={selectedFamilyMember}
+                            onChange={(option) => setSelectedFamilyMember(option)}
+                            placeholder="Select a Family Member"
+                            isClearable
+                            styles={{
+                              control: (base, state) => ({
+                                ...base,
+                                borderColor: state.isFocused || state.menuIsOpen ? 'green' : '#89949f',
+                                boxShadow: state.isFocused || state.menuIsOpen ? '0 0 0 2px rgba(0, 128, 0, 0.2)' : undefined,
+                                height: '42px',
+                                '&:hover': {
+                                  borderColor: state.isFocused || state.menuIsOpen ? 'green' : '#89949f',
+                                },
+                              }),
+                              placeholder: (base) => ({
+                                ...base,
+                                color: '#9BA3AF',
+                              }),
+                              indicatorSeparator: (base) => ({
+                                ...base,
+                                height: '100%',
+                                marginTop: '0px',
+                              }),
+                              dropdownIndicator: (base) => ({
+                                ...base,
+                                width: '50px',
+                                textAlignLast: 'center',
+                                display: 'flow',
+                                padding: '0px',
+                                color: 'black',
+                              }),
+                              option: (base, state) => ({
+                                ...base,
+                                backgroundColor: state.isFocused ? '#F4F2E6' : state.isSelected ? '#B19071' : 'white',
+                                '&:active': {
+                                  backgroundColor: state.isFocused ? '#B19071' : 'white',
+                                },
+                                '&:hover': {
+                                  color: state.isFocused ? 'black' : '',
+                                },
+                              }),
+                            }}
+                          />
                         </div>
-                        <button type="submit" className="btn btn-primary mt-4">Create Account</button>
                       </form>
                     );
                   },
