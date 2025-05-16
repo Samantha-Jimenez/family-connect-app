@@ -31,7 +31,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
   // If no user, show the authentication component
   if (!user) {
     return (
-      <div className="flex justify-center items-center min-h-screen px-8">
+      <div className="flex justify-center items-center p-8 min-h-screen">
         <div className="grid lg:grid-cols-2 items-center gap-10 max-w-6xl max-lg:max-w-md w-full justify-center">
           <div>
             <h2 className="lg:text-5xl text-3xl font-bold lg:leading-[57px] text-slate-900">
@@ -82,13 +82,13 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                           // Proceed with the sign-up
                           await submitForm();
                         }}
+                        className="mb-4"
                       >
                         {/* Render only the necessary form fields without the default button */}
-                        <Authenticator.SignUp.FormFields />
         
-                        <div className="form-control w-full gap-1 grid mb-4">
+                        <div className="form-control w-full gap-1 grid mb-[5px]">
                           <label htmlFor="familyMember" className="label">
-                            <span className="label-text text-gray-800">Select Family Member</span>
+                            <span className="label-text text-[#304050]">Select Family Member</span>
                           </label>
                           <Select
                             inputId="familyMember"
@@ -99,6 +99,9 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                             onChange={(option) => setSelectedFamilyMember(option)}
                             placeholder="Select a Family Member"
                             isClearable
+                            menuPlacement="auto"
+                            menuPosition="fixed"
+                            menuPortalTarget={typeof window !== "undefined" ? document.body : undefined}
                             styles={{
                               control: (base, state) => ({
                                 ...base,
@@ -108,6 +111,11 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                                 '&:hover': {
                                   borderColor: state.isFocused || state.menuIsOpen ? 'green' : '#89949f',
                                 },
+                              }),
+                              menu: (base) => ({
+                                ...base,
+                                zIndex: 9999,
+                                maxHeight: '40vh',
                               }),
                               placeholder: (base) => ({
                                 ...base,
@@ -128,7 +136,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                               }),
                               option: (base, state) => ({
                                 ...base,
-                                backgroundColor: state.isFocused ? '#F4F2E6' : state.isSelected ? '#B19071' : 'white',
+                                backgroundColor: state.isFocused ? 'white' : state.isSelected ? 'green' : '#F4F2E6',
                                 '&:active': {
                                   backgroundColor: state.isFocused ? '#B19071' : 'white',
                                 },
@@ -139,6 +147,8 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                             }}
                           />
                         </div>
+                        <Authenticator.SignUp.FormFields/>
+
                       </form>
                     );
                   },
