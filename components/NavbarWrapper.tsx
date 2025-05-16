@@ -30,7 +30,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
   // If no user, show the authentication component
   if (!user) {
     return (
-      <div className="flex justify-center items-center min-h-screen px-4">
+      <div className="flex justify-center items-center min-h-screen px-8">
         <div className="grid lg:grid-cols-2 items-center gap-10 max-w-6xl max-lg:max-w-md w-full justify-center">
           <div>
             <h2 className="lg:text-5xl text-3xl font-bold lg:leading-[57px] text-slate-900">
@@ -78,18 +78,18 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                         {/* Render only the necessary form fields without the default button */}
                         <Authenticator.SignUp.FormFields />
         
-                        <div className="form-control w-full max-w-xs">
+                        <div className="form-control w-full gap-2 grid">
                           <label htmlFor="familyMember" className="label">
-                            <span className="label-text">Select Family Member:</span>
+                            <span className="label-text text-gray-800">Select Family Member:</span>
                           </label>
                           <select 
                             id="familyMember" 
                             name="familyMember" 
-                            className="select select-bordered w-full max-w-xs bg-white text-black"
+                            className="select select-bordered w-full bg-white text-black border-1 border-gray-400 select-member h-[42px]"
                             value={selectedFamilyMember || ""}
                             onChange={(e) => setSelectedFamilyMember(e.target.value)}
                           >
-                            <option value="">Select a family member</option>
+                            <option value="" className="text-green-500">Select a Family Member</option>
                             {familyMembers.map((member) => (
                               <option key={member.family_member_id} value={member.family_member_id}>
                                 {member.first_name} {member.last_name}

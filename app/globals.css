@@ -43,3 +43,32 @@ body {
 .fc .fc-button-group > .fc-button.fc-button-active, .fc .fc-button-group > .fc-button:active, .fc .fc-button-group > .fc-button:focus, .fc .fc-button-group > .fc-button:hover {
   z-index: 0 !important;
 }
+
+
+/* AUTHENTICATOR */
+
+.amplify-tabs__item--active {
+  border-color: green !important;
+  color: green !important;
+}
+
+.amplify-button--primary {
+  background-color: green !important;
+}
+
+.amplify-button--link {
+  color: green !important;
+}
+
+.amplify-field {
+  margin-bottom: 5px !important;
+  gap: 0.25rem !important;
+}
+
+fieldset {
+  gap: 0.25rem !important;
+}
+
+.select-member {
+  outline-color: var(--amplify-components-fieldcontrol-outline-color);
+}
