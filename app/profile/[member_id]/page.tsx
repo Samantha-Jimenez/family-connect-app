@@ -99,19 +99,19 @@ export default function ProfilePage() {
       <div className="col-span-1 sm:col-span-2">
         <div data-theme="light" className="tabs tabs-bordered rounded-lg shadow-lg">
           <a 
-            className={`tab tab-lg ${activeTab === 'overview' ? 'tab-active' : ''}`}
+            className={`tab tab-lg text-base poppins-light ${activeTab === 'overview' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('overview')}
           >
             Overview
           </a>
           <a 
-            className={`tab tab-lg ${activeTab === 'uploads' ? 'tab-active' : ''}`}
+            className={`tab tab-lg text-base poppins-light ${activeTab === 'uploads' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('uploads')}
           >
             Uploads
           </a>
           <a
-            className={`tab tab-lg ${activeTab === 'albums' ? 'tab-active' : ''}`}
+            className={`tab tab-lg text-base poppins-light ${activeTab === 'albums' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('albums')}
           >
             Albums

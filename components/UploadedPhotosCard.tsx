@@ -40,8 +40,6 @@ export default function UploadedPhotosCard({ userId }: { userId: string }) {
       const filteredPhotos = data.photos.filter((photo: PhotoData) => 
         photo.uploaded_by === userId
       );
-      console.log(filteredPhotos, 'filteredPhotos');
-      console.log(userId, 'userId');
 
       setUserPhotos(filteredPhotos);
     } catch (error) {
@@ -100,7 +98,7 @@ export default function UploadedPhotosCard({ userId }: { userId: string }) {
 
   return (
     <div className="card bg-white text-black shadow-lg p-6">
-      <h2 className="text-xl font-bold">Uploaded Photos</h2>
+      <h2 className="text-xl">Uploaded Photos</h2>
       <p className="mt-2 italic">Photos you've uploaded ({userPhotos.length})</p>
       
       <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2">

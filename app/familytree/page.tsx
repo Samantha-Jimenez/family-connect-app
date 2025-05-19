@@ -167,7 +167,7 @@ const FamilyTree = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6 overflow-hidden">
-      <h1 className="text-4xl font-bold text-center mb-6 text-gray-800">Our Family Tree</h1>
+      <h1 className="text-4xl text-center mb-6 text-gray-800">Our Family Tree</h1>
 
       <TransformWrapper
         initialScale={1}

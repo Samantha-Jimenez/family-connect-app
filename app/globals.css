@@ -165,7 +165,7 @@ h2 {
   font-style: normal;
 }
 
-h3, h4, h5, h6 {
+h3, h4, h5, h6, button, div {
   font-family: "Poppins", sans-serif;
   font-weight: 100;
   font-style: normal;
@@ -179,6 +179,12 @@ p, li, button, a {
 span {
   font-family: "Poppins", sans-serif;
   font-weight: 300;
+  font-style: normal;
+}
+
+input, select, textarea, label {
+  font-family: "Poppins", sans-serif;
+  font-weight: 300 !important;
   font-style: normal;
 }
 
@@ -205,6 +211,10 @@ span {
   z-index: 0 !important;
 }
 
+.fc .fc-toolbar-title {
+  font-weight: 200 !important;
+  font-size: 36px !important;
+}
 
 /* AUTHENTICATOR */
 

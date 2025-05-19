@@ -14,9 +14,9 @@ const Upload = () => {
     <div className="container mx-auto px-4 py-8 bg-gray-100">
       <div className="mx-auto">
           <div className="rounded-lg p-4 border border-gray-300 shadow-lg bg-white">
-            <div className="text-2xl font-bold text-black mb-4 mt-1">
+            <h1 className="text-4xl text-black mb-4 mt-1">
               Upload your photos to share with your family
-            </div>
+            </h1>
             <PhotoUpload onUploadComplete={handlePhotoUploaded} />
             {refreshing && (
               <div className="text-sm text-blue-500 mt-2">
