@@ -151,7 +151,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
           </div>
 
           <div className="md:pl-4 xl:pl-8 md:col-span-2 mb-2">
-            <h1 className="text-3xl font-bold text-black">
+            <h1 className="text-4xl text-black">
               {userData?.first_name || ''} {userData?.last_name || ''}
             </h1>
           </div>
@@ -159,14 +159,14 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
           <div className="md:pl-4 xl:pl-8">
             {userData?.username ? (
               <>
-                <h2 className="text-xl font-semibold text-black">Username</h2>
-                <h1 className="text-gray-500 mb-2">
+                <h2 className="text-xl text-black">Username</h2>
+                <p className="text-gray-500 mb-2">
                   {userData?.username}
-                </h1>
+                </p>
               </>
             ) : ""}
 
-            <h2 className="text-xl font-semibold text-black">Family Role</h2>
+            <h2 className="text-xl text-black">Family Role</h2>
             <div className="flex flex-wrap gap-2 mb-2">
               {(() => {
                 // 1. Filter relationships for this user
@@ -207,7 +207,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
             <div className="mb-2">
               {userData?.birthday ? (
                 <>
-                  <h2 className="text-xl font-semibold text-black">Birth</h2>
+                  <h2 className="text-xl text-black">Birth</h2>
                   <div className="text-gray-500 flex items-center">
                     <span className="icon-[mdi--date-range] h-5 mr-2" />
                     {formatBirthday(userData.birthday)} - <span className="text-xl ml-1">{getZodiacSign(userData.birthday)}</span>
@@ -227,7 +227,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
             <div className="mb-2 md:mb-0">
             {userData?.email || userData?.phone_number || userData?.current_city || userData?.current_state ? (
               <>
-                <h2 className="text-xl font-semibold text-black">Contact Information</h2>
+                <h2 className="text-xl text-black">Contact Information</h2>
                 <ul className="text-gray-500">
                   {userData?.email ? (
                     <li className="flex items-center">
@@ -259,7 +259,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
           <div className="md:pl-4 md:col-span-3">
             {userData?.bio ? (
               <>
-                <h2 className="text-xl font-semibold text-black md:row-span-2">About Me</h2>
+                <h2 className="text-xl text-black md:row-span-2">About Me</h2>
                 <p className="text-gray-500 md:row-span-2">
                   {userData?.bio || ''}
                 </p>

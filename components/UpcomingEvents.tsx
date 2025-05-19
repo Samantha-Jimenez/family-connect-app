@@ -156,10 +156,10 @@ const UpcomingEvents = () => {
 
   return (
     <div className="card bg-white text-black p-4 xl:p-6 shadow-md">
-      <h2 className="text-xl font-bold flex items-center gap-2">
+      <h1 className="text-xl flex items-center gap-2">
         Upcoming Events
-      </h2>
-      <div className="mt-4 space-y-4">
+      </h1>
+      <div className="mt-4 space-y-0.5">
         {sortedEvents.length > 0 ? (
           sortedEvents.map((event) => {
             const hasRSVP = !!rsvpStatuses[event.id || ''];
@@ -179,10 +179,10 @@ const UpcomingEvents = () => {
                 }}
               >
                 <div className="flex-1">
-                  <p className="font-medium text-gray-900 flex items-center">
+                  <h2 className="text-gray-900 flex items-center">
                     {event.title}
                     {getRSVPSymbol(event.id)}
-                  </p>
+                  </h2>
                   <p className="text-sm text-gray-600">{formatDate(event.nextOccurrence!)}</p>
                   {event.location && (
                     <p className="text-sm text-gray-500 flex items-center gap-1">
