@@ -297,3 +297,12 @@ fieldset {
   font-style: normal !important;
   font-size: 16px !important;
 }
+
+[data-amplify-authenticator] [data-amplify-container] {
+  place-self: stretch !important;
+  padding: 0px 25px !important;
+}
+
+[data-amplify-authenticator] {
+  width: 100% !important;
+}
