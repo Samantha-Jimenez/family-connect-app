@@ -655,12 +655,12 @@ const Photos = () => {
         {/* Location filter dropdown */}
         <div className="flex flex-wrap mb-4">
           <div className="w-1/2 p-2"> {/* First column */}
-            <label htmlFor="country-filter" className="block text-sm font-medium text-gray-400">
+            <label htmlFor="country-filter" className="block text-sm font-medium text-gray-400 poppins-medium">
               Filter by Country:
             </label>
             <Select
               components={animatedComponents}
-              className="basic-multi-select text-black"
+              className="basic-multi-select text-black poppins-light"
               options={countries}
               isMulti
               onChange={(options) => {
@@ -674,12 +674,12 @@ const Photos = () => {
             />
           </div>
           <div className="w-1/2 p-2"> {/* Second column */}
-            <label htmlFor="state-filter" className="block text-sm font-medium text-gray-400">
+            <label htmlFor="state-filter" className="block text-sm font-medium text-gray-400 poppins-medium">
               Filter by State:
             </label>
             <Select
               components={animatedComponents}
-              className="basic-multi-select text-black"
+              className="basic-multi-select text-black poppins-light"
               options={states}
               isMulti
               onChange={(options) => {
@@ -693,12 +693,12 @@ const Photos = () => {
             />
           </div>
           <div className="w-1/2 p-2"> {/* Third column */}
-            <label htmlFor="city-filter" className="block text-sm font-medium text-gray-400">
+            <label htmlFor="city-filter" className="block text-sm font-medium text-gray-400 poppins-medium">
               Filter by City:
             </label>
             <Select
               components={animatedComponents}
-              className="basic-multi-select text-black"
+              className="basic-multi-select text-black poppins-light"
               options={cities}
               isMulti
               onChange={(options) => {
@@ -711,12 +711,12 @@ const Photos = () => {
             />
           </div>
           <div className="w-1/2 p-2"> {/* Fourth column */}
-            <label htmlFor="neighborhood-filter" className="block text-sm font-medium text-gray-400">
+            <label htmlFor="neighborhood-filter" className="block text-sm font-medium text-gray-400 poppins-medium">
               Filter by Neighborhood:
             </label>
             <Select
               components={animatedComponents}
-              className="basic-multi-select text-black"
+              className="basic-multi-select text-black poppins-light"
               options={neighborhoods}
               isMulti
               onChange={(options) => {
@@ -731,7 +731,7 @@ const Photos = () => {
 
         {/* Person filter dropdown */}
         <div className="mb-4 px-2">
-          <label htmlFor="person-filter" className="block text-sm font-medium text-gray-400">
+          <label htmlFor="person-filter" className="block text-sm font-medium text-gray-400 poppins-medium">
             Filter by Person:
           </label>
           <Select
@@ -739,7 +739,7 @@ const Photos = () => {
             id="person-filter"
             isMulti
             options={personOptions}
-            className="basic-multi-select text-black"
+            className="basic-multi-select text-black poppins-light"
             classNamePrefix="select"
             onChange={handlePersonChange}
             value={selectedPeople.map(person => ({ value: person.name, label: person.name }))}
@@ -750,7 +750,7 @@ const Photos = () => {
         <div className="mb-4 px-2">
           <button
             onClick={resetFilters}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 poppins-light"
           >
             Clear Filters
           </button>
@@ -758,7 +758,7 @@ const Photos = () => {
 
         {renderDateRangeSlider()}
 
-        <div className="mb-4 text-sm text-gray-500">
+        <div className="mb-4 text-sm text-gray-500 poppins-light">
           {formatPhotoCount(filteredImages.length, images.length)}
         </div>
 
