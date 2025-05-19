@@ -31,18 +31,18 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
   // If no user, show the authentication component
   if (!user) {
     return (
-      <div className="flex justify-center items-center p-8 min-h-screen">
-        <div className="grid lg:grid-cols-2 items-center gap-10 max-w-6xl max-lg:max-w-md w-full justify-center">
-          <div>
-            <h2 className="lg:text-5xl text-3xl font-bold lg:leading-[57px] text-slate-900 poppins-thin">
+      <div className="flex justify-center items-stretch min-h-screen">
+        <div className="grid lg:grid-cols-2 items-center gap-8 max-w-6xl max-lg:max-w-xl w-full content-evenly">
+          <div className="px-6 pt-8 lg:pt-0">
+            <h1 className="text-5xl leading-[57px] text-slate-900">
               Family Connect App
-            </h2>
-            <p className="text-sm mt-6 text-slate-500 leading-relaxed source-sans-3">This is our shared space to celebrate memories, explore our family tree, and stay connected. Sign in to view and share photos, find birthdays, and discover our roots. 
-              <br/> Don't have an account yet? Create one and join the family online.</p>
-            <p className="text-sm mt-12 text-slate-500 source-sans-3">Aren't a family member? <a href="javascript:void(0);" className="text-blue-600 font-medium hover:underline ml-1">View a demo here.</a></p>
+            </h1>
+            <h3 className="font-light mt-8 text-slate-500 leading-relaxed">This is our shared space to celebrate memories, explore our family tree, and stay connected. Sign in to view and share photos, find birthdays, and discover our roots. 
+              <br/> Don't have an account yet? Create one and join the family online.</h3>
+            <h3 className="font-light mt-8 text-slate-500">Aren't a family member? <a href="javascript:void(0);" className="text-blue-600 font-medium hover:underline ml-1">View a demo here.</a></h3>
           </div>
 
-          <div className="m-auto w-full">
+          <div className="m-auto w-full mb-12">
             <Authenticator
               signUpAttributes={[
                 'email',

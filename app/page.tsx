@@ -63,25 +63,25 @@ const HomePage = () => {
                 <div className="col-span-1 sm:col-span-2">
                   <div data-theme="light" className="tabs tabs-bordered rounded-lg shadow-lg">
                     <a 
-                      className={`tab tab-lg ${activeTab === 'uploads' ? 'tab-active' : ''}`}
+                      className={`tab tab-lg text-base poppins-regular ${activeTab === 'uploads' ? 'tab-active' : ''}`}
                       onClick={() => setActiveTab('uploads')}
                     >
                       Uploads
                     </a>
                     <a 
-                      className={`tab tab-lg ${activeTab === 'tagged' ? 'tab-active' : ''}`}
+                      className={`tab tab-lg text-base poppins-regular ${activeTab === 'tagged' ? 'tab-active' : ''}`}
                       onClick={() => setActiveTab('tagged')}
                     >
                       Tagged
                     </a>
                     <a
-                      className={`tab tab-lg ${activeTab === 'favorites' ? 'tab-active' : ''}`}
+                      className={`tab tab-lg text-base poppins-regular ${activeTab === 'favorites' ? 'tab-active' : ''}`}
                       onClick={() => setActiveTab('favorites')}
                     >
                       Favorites
                     </a>
                     <a 
-                      className={`tab tab-lg ${activeTab === 'albums' ? 'tab-active' : ''}`}
+                      className={`tab tab-lg text-base poppins-regular ${activeTab === 'albums' ? 'tab-active' : ''}`}
                       onClick={() => setActiveTab('albums')}
                     >
                       Albums

@@ -154,7 +154,7 @@ const CallToAction = () => {
           </span>
           &times;
         </button>
-        <p className="font-medium italic">
+        <p className="font-medium source-sans-3 italic">
           You're just a few details away from a complete profile—finish filling out your {missingText}!
         </p>
       </div>
