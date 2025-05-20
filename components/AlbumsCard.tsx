@@ -326,27 +326,31 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
                 )}
               </>
             )}
-            {auth && (
-              <button
-                className="btn btn-primary mb-4"
-                onClick={() => setShowAddPhotos((v) => !v)}
-                disabled={addingPhotos}
-              >
-                {showAddPhotos ? 'Cancel' : 'Add Photos'}
-              </button>
-            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              {photos.map((photo) => (
+                <div key={photo.photo_id} className="p-2 bg-gray-200 rounded-lg">
+                  {photo.url ? (
+                    <Image src={photo.url} alt={photo.metadata?.description || ''} className="w-full h-auto rounded-lg" width={500} height={300} />
+                  ) : (
+                    <div className="w-full h-auto rounded-lg bg-gray-300">No Image Available</div>
+                  )}
+                  <p className="text-sm text-black">{photo.metadata?.description || ''}</p>
+                </div>
+              ))}
+            </div>
 
             {showAddPhotos && (
               <div className="mb-4 border rounded p-4 bg-gray-50">
                 <h3 className="font-semibold mb-2 text-black">Select photos to add:</h3>
-                <div className="flex flex-wrap gap-3 max-h-64 overflow-y-auto w-max">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-64 overflow-y-auto">
                   {userPhotos
                     .filter(
                       (photo) =>
                         !photos.some((p) => p.photo_id === photo.photo_id)
                     )
                     .map((photo) => (
-                      <label key={photo.photo_id} className="flex flex-col items-center cursor-pointer w-max">
+                      <label key={photo.photo_id} className="flex flex-col items-center cursor-pointer border-2 border-gray-300 rounded-lg p-2">
                         <input
                           type="checkbox"
                           className="mb-1"
@@ -381,18 +385,6 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
-              {photos.map((photo) => (
-                <div key={photo.photo_id} className="p-2 bg-gray-200 rounded-lg">
-                  {photo.url ? (
-                    <Image src={photo.url} alt={photo.metadata?.description || ''} className="w-full h-auto rounded-lg" width={500} height={300} />
-                  ) : (
-                    <div className="w-full h-auto rounded-lg bg-gray-300">No Image Available</div>
-                  )}
-                  <p className="text-sm text-black">{photo.metadata?.description || ''}</p>
-                </div>
-              ))}
-            </div>
             <div className="flex justify-between mt-4">
               <button
                 onClick={() => setShowModal(false)}
@@ -402,14 +394,23 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
                 Close
               </button>
               {auth && (
-                <button
-                  onClick={handleDeleteAlbum}
-                  className="btn btn-error"
-                  disabled={deleting || addingPhotos}
-                >
-                  {deleting ? 'Deleting...' : 'Delete Album'}
-                </button>
-              )}
+                <>
+                  <button
+                    className="btn btn-primary mb-4"
+                    onClick={() => setShowAddPhotos((v) => !v)}
+                    disabled={addingPhotos}
+                  >
+                    {showAddPhotos ? 'Cancel' : 'Add Photos'}
+                  </button>
+                  <button
+                    onClick={handleDeleteAlbum}
+                    className="btn btn-error"
+                    disabled={deleting || addingPhotos}
+                    >
+                      {deleting ? 'Deleting...' : 'Delete Album'}
+                    </button>
+                  </>
+               )}
             </div>
           </div>
         </div>
