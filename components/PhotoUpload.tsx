@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, ChangeEvent } from 'react';
+import React, { useState, useEffect, ChangeEvent, useRef } from 'react';
 import Image from 'next/image';
 import { savePhotoToDB, getAllFamilyMembers } from '@/hooks/dynamoDB';
 import { getCurrentUser } from 'aws-amplify/auth';
@@ -39,6 +39,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
   const [error, setError] = useState<string | null>(null);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const { showToast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Transform familyMembers into UserOption format for react-select
   const familyMemberOptions: UserOption[] = familyMembers.map((member) => ({
@@ -177,15 +178,13 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-          Photo
-        </label>
+      <div className="flex items-center gap-2">
         <input
+          ref={fileInputRef}
           type="file"
           accept="image/*"
           onChange={handleFileChange}
-          className="mt-1 block w-full text-sm text-gray-500
+          className="py-4 mt-1 block w-full text-sm text-gray-500
             file:mr-4 file:py-2 file:px-4
             file:rounded-full file:border-0
             file:text-sm file:font-semibold
@@ -193,11 +192,24 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
             hover:file:bg-blue-100
             dark:file:bg-gray-700 dark:file:text-gray-200"
         />
+        {previewUrl && (
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedFile(null);
+              setPreviewUrl(null);
+              if (fileInputRef.current) fileInputRef.current.value = "";
+            }}
+            className="ml-2 px-3 py-1 bg-red-100 text-gray-700 rounded hover:bg-red-200 poppins-regular"
+          >
+            Clear
+          </button>
+        )}
       </div>
 
       {previewUrl && (
         <div className="mt-4">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-200">Photo Preview:</h3>
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-200">Photo Preview</h3>
           <div className="relative w-full h-[300px] mt-2">
             <Image
               src={previewUrl}
@@ -211,7 +223,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
       )}
 
       <div className="space-y-4">
-        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-200">Location Details</h3>
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-200">Photo Details</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-500">
