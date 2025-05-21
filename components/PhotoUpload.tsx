@@ -159,6 +159,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
       setDescription('');
       setDateTaken('');
       setSelectedUsers([]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       
       // Add success toast
       showToast('Photo uploaded successfully!', 'success');

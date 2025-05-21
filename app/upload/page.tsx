@@ -18,11 +18,6 @@ const Upload = () => {
               Upload your photos to share with your family
             </h1>
             <PhotoUpload onUploadComplete={handlePhotoUploaded} />
-            {refreshing && (
-              <div className="text-sm text-blue-500 mt-2">
-                Refreshing gallery...
-              </div>
-            )}
           </div>
       </div>
     </div>
