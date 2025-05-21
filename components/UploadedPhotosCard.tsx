@@ -91,7 +91,7 @@ export default function UploadedPhotosCard({ userId }: { userId: string }) {
     return (
       <div className="card bg-white text-black shadow-lg p-6">
         <h2 className="text-xl font-bold">Uploaded Photos</h2>
-        <p className="mt-2">Loading your photos...</p>
+        <p className="mt-2">Loading photos...</p>
       </div>
     );
   }
@@ -99,7 +99,7 @@ export default function UploadedPhotosCard({ userId }: { userId: string }) {
   return (
     <div className="card bg-white text-black shadow-lg p-6">
       <h2 className="text-xl">Uploaded Photos</h2>
-      <p className="mt-2 italic">Photos you've uploaded ({userPhotos.length})</p>
+      <p className="mt-2 italic">Photos uploaded ({userPhotos.length})</p>
       
       <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2">
         {userPhotos.map((photo, index) => (

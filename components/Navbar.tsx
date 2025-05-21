@@ -60,7 +60,7 @@ export default function Navbar({ signOut, username, userFirstName, userLastName,
                     key={item.name}
                     href={item.href}
                     aria-current={item.current ? 'page' : undefined}
-                    className={`${item.current ? 'text-gray-800' : 'text-gray-500 hover:bg-gray-700 hover:text-gray-800'} btn rounded-md px-3 py-2 text-sm font-medium bg-transparent border-0 hover:bg-transparent poppins-semibold`}
+                    className={`${item.current ? 'text-yellow-800/80' : 'text-gray-400 hover:bg-gray-700 hover:text-gray-800'} btn rounded-md px-3 py-2 text-sm font-medium bg-transparent border-0 hover:bg-transparent poppins-semibold shadow-none`}
                   >
                     {item.name}
                   </a>

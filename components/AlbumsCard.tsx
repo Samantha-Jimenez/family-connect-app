@@ -192,8 +192,9 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
     <div className="p-4 bg-white shadow-lg rounded-lg relative">
       {auth && (
         <>
-      <h2 className="text-xl font-bold mb-2 text-black">Create Album</h2>
-      <div className="mb-4">
+      <h2 className="text-xl mb-2 text-black">Create Album</h2>
+      <p className="mt-2 italic">Create a new album to organize your photos.</p>
+      <div className="mt-4 mb-2">
         <input
           type="text"
           placeholder="Album Name"
@@ -237,7 +238,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
         </div>
       )}
 
-      <h2 className="text-xl font-bold mb-2 text-black">Your Albums</h2>
+      <h2 className="text-xl mb-2 text-black">Albums</h2>
       <div className="space-y-4">
         {albums.map((album) => (
           <>

@@ -90,7 +90,7 @@ export default function TaggedPhotosCard({ userId }: { userId: string }) {
 
   return (
     <div className="card bg-white text-black shadow-lg p-6">
-      <h2 className="text-xl font-bold">Tagged Photos</h2>
+      <h2 className="text-xl">Tagged Photos</h2>
       <p className="mt-2 italic">Photos you&apos;re tagged in ({taggedPhotos.length})</p>
       
       <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2">

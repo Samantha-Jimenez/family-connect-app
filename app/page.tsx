@@ -61,7 +61,7 @@ const HomePage = () => {
                 <CallToAction />
                 
                 <div className="col-span-1 sm:col-span-2">
-                  <div data-theme="light" className="tabs tabs-bordered rounded-lg shadow-lg">
+                  <div data-theme="light" className="tabs tabs-bordered bg-white rounded-lg shadow-lg">
                     <a 
                       className={`tab tab-lg text-sm poppins-light ${activeTab === 'uploads' ? 'tab-active' : ''}`}
                       onClick={() => setActiveTab('uploads')}
