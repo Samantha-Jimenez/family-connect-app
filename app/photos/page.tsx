@@ -424,10 +424,7 @@ const Photos = () => {
   const handleRangeChange = (values: number[]) => {
     const rangeValues: [number, number] = [values[0], values[1]];
     setCurrentDateRange(rangeValues);
-    const taggedPerson = selectedPersonId && selectedPeople.length > 0 
-        ? selectedPeople.map(person => ({ id: selectedPersonId, name: person.name })) 
-        : [];
-    filterImagesByDateRangeLocationAndPeople(rangeValues, selectedLocation, taggedPerson);
+    filterImagesByDateRangeLocationAndPeople(rangeValues, selectedLocation, selectedPeople);
   };
 
   const handleLocationChange = async () => {
@@ -469,7 +466,11 @@ const Photos = () => {
   };
 
   const renderDateRangeSlider = () => {
-    if (dateRange.min === dateRange.max) return null;
+    if (!Number.isFinite(dateRange.min) || !Number.isFinite(dateRange.max) || dateRange.min >= dateRange.max) return null;
+    const uniqueTimestamps = new Set(
+      filteredImages.map(img => dateToTimestamp(img.metadata?.date_taken || ''))
+    );
+    if (uniqueTimestamps.size <= 1) return null;
 
     // Check if there is more than one photo
     // if (filteredImages.length <= 1) return null;
@@ -764,7 +765,7 @@ const Photos = () => {
 
         <div id="default-carousel" className="relative w-full" data-carousel="slide">
           <div className="relative h-56 overflow-hidden rounded-lg md:h-96">
-            {filteredImages.reverse().slice(0,6).map((photo, index) => (
+            {[...filteredImages].reverse().slice(0,6).map((photo, index) => (
               <div
                 key={index}
                 className={`absolute w-full h-full transition-opacity duration-700 ease-in-out ${
@@ -784,7 +785,7 @@ const Photos = () => {
             ))}
           </div>
           <div className="absolute z-30 flex -translate-x-1/2 bottom-8 left-1/2 space-x-3 rtl:space-x-reverse">
-              {filteredImages.reverse().slice(0,6).map((_, index) => (
+              {[...filteredImages].reverse().slice(0,6).map((_, index) => (
                   <button
                       key={index}
                       type="button"
