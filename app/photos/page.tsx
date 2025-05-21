@@ -183,31 +183,24 @@ const Photos = () => {
   }, []);
 
   useEffect(() => {
-    const validFilteredImages = filteredImages.filter(img => img.metadata?.date_taken);
-    if (validFilteredImages.length > 0) {
-      const timestamps = validFilteredImages
-        .map(img => dateToTimestamp(img.metadata?.date_taken || ''))
-        .filter(timestamp => !isNaN(timestamp));
-      
-      const min = Math.min(...timestamps);
-      const max = Math.max(...timestamps);
-      
-      setDateRange({ min, max });
-      setCurrentDateRange([min, max]);
-    } else if (images.length > 0) {
-      // Fallback to all images if no filtered images are present
-      const validImages = images.filter(img => img.metadata?.date_taken);
+    const validImages = (filteredImages.length > 0 ? filteredImages : images)
+      .filter(img => img.metadata?.date_taken);
+  
+    if (validImages.length > 0) {
       const timestamps = validImages
         .map(img => dateToTimestamp(img.metadata?.date_taken || ''))
-        .filter(timestamp => !isNaN(timestamp));
-      
+        .filter(ts => !isNaN(ts));
+  
       const min = Math.min(...timestamps);
       const max = Math.max(...timestamps);
-      
+  
       setDateRange({ min, max });
-      setCurrentDateRange([min, max]);
+  
+      if (currentDateRange[0] === 0 && currentDateRange[1] === 0) {
+        setCurrentDateRange([min, max]);
+      }
     }
-  }, [images, filteredImages, selectedPeople, selectedLocation, selectedPersonId]);
+  }, [images]);
 
   useEffect(() => {
     if (selectedPhoto?.uploaded_by) {
@@ -471,32 +464,26 @@ const Photos = () => {
       filteredImages.map(img => dateToTimestamp(img.metadata?.date_taken || ''))
     );
     if (uniqueTimestamps.size <= 1) return null;
-
-    // Check if there is more than one photo
-    // if (filteredImages.length <= 1) return null;
-
+  
     return (
       <div className="mb-8 px-4">
-        {/* Add the photo count display */}
-        {/* <div className="mb-4 text-sm text-gray-200">
-          {formatPhotoCount(filteredImages.length, images.length)}
-        </div> */}
-
         <div className="mb-2 flex justify-between text-sm text-gray-600">
           <span>{timestampToDate(currentDateRange[0])}</span>
           <span>{timestampToDate(currentDateRange[1])}</span>
         </div>
         <Range
           values={currentDateRange}
-          step={86400000} // One day in milliseconds
+          step={86400000} // One day
           min={dateRange.min}
           max={dateRange.max}
           onChange={handleRangeChange}
           renderTrack={({ props, children }) => (
             <div
-              {...props}
-              className="h-2 w-full rounded bg-gray-200"
+              ref={props.ref}
+              onMouseDown={props.onMouseDown}
+              onTouchStart={props.onTouchStart}
               style={{
+                ...props.style,
                 background: getTrackBackground({
                   values: currentDateRange,
                   colors: ["#e5e7eb", "#3b82f6", "#e5e7eb"],
@@ -504,20 +491,17 @@ const Photos = () => {
                   max: dateRange.max
                 })
               }}
+              className="h-2 w-full rounded bg-gray-200"
             >
               {children}
             </div>
           )}
-          renderThumb={({ props, isDragged }) => {
-            const { key, ...restProps } = props;
-            return (
-              <div
-                key={key}
-                {...restProps}
-                className={`h-4 w-4 rounded-full bg-blue-500 focus:outline-none ${isDragged ? 'shadow-lg' : ''}`}
-              />
-            );
-          }}
+          renderThumb={({ props, isDragged }) => (
+            <div
+              {...props}
+              className={`h-4 w-4 rounded-full bg-blue-500 focus:outline-none ${isDragged ? 'shadow-lg' : ''}`}
+            />
+          )}
         />
       </div>
     );
