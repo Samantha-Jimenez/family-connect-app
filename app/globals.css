@@ -216,6 +216,10 @@ input, select, textarea, label {
   font-size: 36px !important;
 }
 
+.fc .fc-view-harness {
+  z-index: 0 !important;
+}
+
 /* AUTHENTICATOR */
 
 .amplify-tabs__item--active {

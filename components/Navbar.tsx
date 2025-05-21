@@ -37,9 +37,9 @@ export default function Navbar({ signOut, username, userFirstName, userLastName,
     <nav className="bg-white border-b border-gray-200">
       <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
         <div className="relative flex h-16 items-center justify-between">
-          <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
+          <div className="absolute inset-y-0 left-0 flex items-center sm:hidden pl-4">
             {/* Mobile menu button */}
-            <button className="btn btn-square bg-transparent border-0 text-gray-700 hover:text-black" onClick={toggleMobileMenu}>
+            <button className="btn btn-square bg-transparent border-0 text-gray-700 hover:text-black shadow-none" onClick={toggleMobileMenu}>
               Menu
             </button>
           </div>
@@ -80,7 +80,7 @@ export default function Navbar({ signOut, username, userFirstName, userLastName,
                   tabIndex={0} 
                   className="btn btn-ghost rounded-btn hover:bg-transparent hover:border-0 hover:shadow-none border-0 shadow-none bg-transparent"
                 >
-                  <span className={`h-8 w-8 rounded-full flex items-center justify-center text-white hover:bg-black ${isMobileMenuOpen ? 'bg-gray-200' : 'bg-gray-400'}`}>
+                  <span className={`h-8 w-8 rounded-full flex items-center justify-center text-white hover:bg-black bg-gray-400`}>
                     {username.charAt(0).toUpperCase()}
                   </span>
                 </label>
@@ -134,7 +134,7 @@ export default function Navbar({ signOut, username, userFirstName, userLastName,
               key={item.name}
               href={item.href}
               aria-current={item.current ? 'page' : undefined}
-              className={`${item.current ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-700 hover:text-white'} block rounded-md px-3 py-2 text-base font-medium`}
+              className={`${item.current ? 'bg-yellow-800/60 text-white' : 'text-gray-500 hover:bg-yellow-800/80 hover:text-white'} block rounded-md px-3 py-2 text-base font-medium`}
             >
               {item.name}
             </a>
