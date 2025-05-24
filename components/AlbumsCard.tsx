@@ -281,7 +281,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
       )}
 
       <h2 className="text-xl mb-2 text-black">Albums</h2>
-      <div className="space-y-4 grid grid-cols-2 gap-4">
+      <div className="grid sm:grid-cols-2 grid-cols-1 gap-4">
         {albums
           .slice() // create a copy to avoid mutating state
           .sort((a, b) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime())
