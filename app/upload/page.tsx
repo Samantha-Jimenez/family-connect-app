@@ -11,7 +11,7 @@ const Upload = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 bg-gray-100">
+    <div className="container mx-auto px-4 py-8 bg-gray-100 overflow-y-scroll">
       <div className="mx-auto">
           <div className="rounded-lg p-4 border border-gray-300 shadow-lg bg-white">
             <h1 className="text-4xl text-black mb-4 mt-1">
