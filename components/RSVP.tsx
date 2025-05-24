@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useCalendar } from '@/context/CalendarContext';
 import { getUserRSVPs } from '@/hooks/dynamoDB';
+import Link from 'next/link';
 
 interface Event {
   id?: string;
@@ -82,17 +83,22 @@ const RSVP = ({ userId }: { userId: string }) => {
     return <div>No upcoming RSVP'd events.</div>;
   }
 
-  console.log('upcomingRSVPEvents', upcomingRSVPEvents);
-
   return (
-    <div>
-      <h2 className="text-lg font-bold mb-2">Your Upcoming RSVP'd Events</h2>
+    <div className="card bg-yellow-800/20 text-black shadow-lg p-4 col-span-1 col-start-1 h-min">
+      <h2 className="text-xl mb-2">Upcoming RSVP'd Events</h2>
       <ul className="space-y-2">
         {upcomingRSVPEvents.map(event => (
-          <li key={event.id || event.start} className="p-3 bg-blue-50 rounded">
+          <li key={event.id || event.start} className="p-2 bg-white rounded justify-between w-full flex">
             <div className="font-medium">{event.title}</div>
             <div className="text-sm text-gray-600">
-              {new Date(event.start).toLocaleString()}
+              {(() => {
+                const date = new Date(event.start);
+                // Check if all-day: either event.allDay is true, or time is 00:00:00.000Z
+                const isAllDay = event.allDay || event.start.endsWith('T00:00:00.000Z');
+                return isAllDay
+                  ? date.toLocaleDateString()
+                  : `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+              })()}
             </div>
             {event.location && (
               <div className="text-xs text-gray-500">📍 {event.location}</div>
@@ -100,6 +106,9 @@ const RSVP = ({ userId }: { userId: string }) => {
           </li>
         ))}
       </ul>
+      <Link href="/calendar">
+        <button className="btn btn-outline mt-4 bg-[#717568] text-white border-0 w-full hover:bg-[#717568]/80">Calendar</button>
+      </Link>
     </div>
   );
 };
