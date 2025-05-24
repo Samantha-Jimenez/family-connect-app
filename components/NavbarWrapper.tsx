@@ -33,11 +33,11 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
     return (
       <div className="flex justify-center items-stretch min-h-screen">
         <div className="grid lg:grid-cols-2 items-center max-w-6xl max-lg:max-w-[30rem] w-full justify-center">
-          <div className="px-6 py-8 lg:pt-0">
-            <h1 className="text-5xl leading-[57px] text-slate-900">
+          <div className="px-6 py-16 lg:pt-0">
+            <h1 className="text-5xl leading-[57px] text-slate-900 font-bold">
               Family Connect App
             </h1>
-            <h3 className="font-light mt-9 text-slate-500 leading-relaxed">This is our shared space to celebrate memories, explore our family tree, and stay connected. Sign in to view and share photos, find birthdays, and discover our roots. 
+            <h3 className="font-light mt-12 text-slate-500 leading-relaxed">This is our shared space to celebrate memories, explore our family tree, and stay connected. Sign in to view and share photos, find birthdays, and discover our roots. 
               <br/> Don't have an account yet? Create one and join the family online.</h3>
             <h3 className="font-light mt-8 text-slate-500">Aren't a family member? <a href="javascript:void(0);" className="text-blue-600 font-medium hover:underline ml-1">View a demo here.</a></h3>
           </div>

@@ -83,6 +83,7 @@ export interface FamilyMember {
   profile_photo: string;
   current_city: string;
   current_state: string;
+  death_date: string;
 }
 
 // Define relationship types
@@ -392,20 +393,48 @@ export const getFamilyMembersWithoutEmail = async (): Promise<FamilyMember[]> =>
   }
 };
 
-export const updateFamilyMember = async (familyMemberId: string, data: { email: string, username: string, profile_photo: string }) => {
+export const updateFamilyMember = async (
+  familyMemberId: string,
+  data: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    username: string;
+    bio: string;
+    phoneNumber: string;
+    birthday: string;
+    birth_city: string;
+    birth_state: string;
+    profile_photo: string;
+    current_city: string;
+    current_state: string;
+    death_date: string;
+  }
+) => {
   try {
     const params = {
       TableName: TABLES.FAMILY,
       Key: {
-        family_member_id: { S: familyMemberId }
+        family_member_id: { S: familyMemberId },
       },
-      UpdateExpression: "SET email = :email, username = :username, profile_photo = :profile_photo",
+      UpdateExpression:
+        "SET first_name = :firstName, last_name = :lastName, email = :email, username = :username, bio = :bio, phone_number = :phoneNumber, birthday = :birthday, birth_city = :birth_city, birth_state = :birth_state, profile_photo = :profile_photo, current_city = :current_city, current_state = :current_state, death_date = :death_date",
       ExpressionAttributeValues: {
+        ":firstName": { S: data.firstName },
+        ":lastName": { S: data.lastName },
         ":email": { S: data.email },
         ":username": { S: data.username },
-        ":profile_photo": { S: data.profile_photo }
+        ":bio": { S: data.bio },
+        ":phoneNumber": { S: data.phoneNumber },
+        ":birthday": { S: data.birthday },
+        ":birth_city": { S: data.birth_city },
+        ":birth_state": { S: data.birth_state },
+        ":profile_photo": { S: data.profile_photo },
+        ":current_city": { S: data.current_city },
+        ":current_state": { S: data.current_state },
+        ":death_date": { S: data.death_date },
       },
-      ReturnValues: "UPDATED_NEW" as ReturnValue
+      ReturnValues: "UPDATED_NEW" as ReturnValue,
     };
 
     await dynamoDB.send(new UpdateItemCommand(params));

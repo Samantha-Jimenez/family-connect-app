@@ -17,6 +17,7 @@ interface UserData {
   profile_photo?: string;
   current_city?: string;
   current_state?: string;
+  death_date?: string;
 }
 
 interface Relationship {
@@ -82,6 +83,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
             profile_photo: data.profile_photo?.S || '',
             current_city: data.current_city?.S || '',
             current_state: data.current_state?.S || '',
+            death_date: data.death_date?.S || '',
           });
 
           if (data.profile_photo?.S) {
@@ -127,10 +129,10 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
 
   return (
     <div className="rounded-3xl">
-      <div className="rounded-3xl pt-8 transition-all duration-300 md:mt-20">
+      <div className="rounded-3xl pt-8 transition-all duration-300 md:mt-12">
         <div className="grid grid-cols-1 md:grid-cols-[286px_1fr_1fr] md:grid-rows-[min-content_min-content_min-content]">
           <div className="text-center md:h-[13rem] h-[17rem] md:row-span-2">
-            <div className="avatar md:bottom-24 bottom-8">
+            <div className="avatar md:bottom-20 bottom-6">
               <div className="w-[17rem] h-[17rem] mx-auto rounded-[60px] shadow-lg">
                 {profilePhotoUrl ? (
                   <Image 
@@ -252,6 +254,17 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                 </ul>
               </>
               ) : ""}
+              <div className="mb-2">
+                {userData?.death_date ? (
+                  <>
+                    <h2 className="text-xl text-black">Death</h2>
+                    <div className="text-gray-500 flex items-center source-sans-3">
+                      <span className="icon-[mdi--date-range] h-5 mr-2" />
+                      {formatBirthday(userData.death_date)}
+                    </div>
+                  </>
+                ) : ''}
+              </div>
             </div>
 
           </div>

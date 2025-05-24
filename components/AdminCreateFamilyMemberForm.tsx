@@ -161,56 +161,70 @@ const AdminCreateFamilyMemberForm = ({ handleAddFamilyMember, formData, handleIn
               <label htmlFor="admin_phone" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Phone number</label>
             </div>
           </div>
-          <div className="relative z-0 w-full mb-5 group">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Profile Photo</label>
-            <div className="flex items-center gap-2 w-full">
-              <div className="avatar">
-                <div className="w-24 h-24 rounded-full">
-                  {imagePreview ? (
-                    <img
-                      src={imagePreview}
-                      alt="Profile preview"
-                      className="rounded-full object-cover w-24 h-24"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center">
-                      <span className="icon-[mdi--account] text-4xl text-gray-400" />
-                    </div>
-                  )}
+          <div className="grid grid-cols-4 gap-6 z-0 w-full mb-5 group">
+            <div className="relative z-0 mb-5 group md:col-start-1 md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Profile Photo</label>
+              <div className="flex items-center gap-2 w-full">
+                <div className="avatar">
+                  <div className="w-24 h-24 rounded-full">
+                    {imagePreview ? (
+                      <img
+                        src={imagePreview}
+                        alt="Profile preview"
+                        className="rounded-full object-cover w-24 h-24"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center">
+                        <span className="icon-[mdi--account] text-4xl text-gray-400" />
+                      </div>
+                    )}
+                  </div>
                 </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="file-input file-input-bordered w-full bg-gray-200"
+                  disabled={isUploading}
+                  ref={fileInputRef}
+                />
+                {imagePreview && (
+                  <button
+                    type="button"
+                    className="mx-2 px-3 py-1 bg-red-400 text-white rounded hover:bg-red-500"
+                    onClick={() => {
+                      if (fileInputRef.current) fileInputRef.current.value = '';
+                      handleClearImage();
+                    }}
+                  >
+                    Clear
+                  </button>
+                )}
+                {isUploading && (
+                  <div className="w-full">
+                    <progress
+                      className="progress progress-success w-full"
+                      value={uploadProgress}
+                      max="100"
+                    ></progress>
+                    <p className="text-center text-sm text-gray-600 mt-1">
+                      {uploadProgress}%
+                    </p>
+                  </div>
+                )}
               </div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="file-input file-input-bordered w-full md:w-[25%] bg-gray-200"
-                disabled={isUploading}
-                ref={fileInputRef}
+            </div>
+            <div className="relative z-0 mb-5 group md:col-span-2 md:col-start-1 md:row-span-1 md:col-span-1 md:col-start-3">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Death Date</label>
+            <input
+                type="date"
+                name="death_date"
+                id="admin_death_date"
+                value={formData.death_date}
+                onChange={handleInputChange}
+                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                placeholder=" "
               />
-              {imagePreview && (
-                <button
-                  type="button"
-                  className="ml-2 px-3 py-1 bg-red-400 text-white rounded hover:bg-red-500"
-                  onClick={() => {
-                    if (fileInputRef.current) fileInputRef.current.value = '';
-                    handleClearImage();
-                  }}
-                >
-                  Clear
-                </button>
-              )}
-              {isUploading && (
-                <div className="w-full">
-                  <progress
-                    className="progress progress-success w-full"
-                    value={uploadProgress}
-                    max="100"
-                  ></progress>
-                  <p className="text-center text-sm text-gray-600 mt-1">
-                    {uploadProgress}%
-                  </p>
-                </div>
-              )}
             </div>
           </div>
           <button type="submit" className="text-white bg-yellow-800/80 hover:bg-yellow-800/90 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full px-5 py-2.5 text-center">

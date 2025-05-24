@@ -17,6 +17,7 @@ export type AdminFormData = {
   profile_photo: string;
   current_city: string;
   current_state: string;
+  death_date: string;
 };
 
 const US_STATES = [
@@ -77,6 +78,7 @@ const AdminMembers = ({ familyMembers, handleAddFamilyMember, formData, handleIn
                             profile_photo: member.profile_photo,
                             current_city: member.current_city,
                             current_state: member.current_state,
+                            death_date: member.death_date,
                           });
                         }
                       }}
@@ -243,51 +245,69 @@ const AdminMembers = ({ familyMembers, handleAddFamilyMember, formData, handleIn
                                 <label htmlFor="edit_current_state" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">State</label>
                               </div>
                             </div>
-                            <div className="relative z-0 w-full mb-5 group">
-                              <label className="block text-sm font-medium text-gray-700 mb-2">Profile Photo</label>
-                              <div className="flex flex-col items-center gap-2 w-full">
-                                <div className="avatar">
-                                  <div className="w-24 h-24 rounded-full">
-                                    {editImagePreview ? (
-                                      <img
-                                        src={editImagePreview}
-                                        alt="Profile preview"
-                                        className="rounded-full object-cover w-24 h-24"
-                                      />
-                                    ) : editFormData.profile_photo ? (
-                                      <img
-                                        src={getFullImageUrl(editFormData.profile_photo)}
-                                        alt="Current profile"
-                                        className="rounded-full object-cover w-24 h-24"
-                                      />
-                                    ) : (
-                                      <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center">
-                                        <span className="icon-[mdi--account] text-4xl text-gray-400" />
-                                      </div>
-                                    )}
+
+                            <div className="grid md:grid-cols-2 md:gap-6">
+                              <div className="relative z-0 w-full mb-5 group">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Profile Photo</label>
+                                <div className="flex flex-col items-center gap-2 w-full">
+                                  <div className="avatar">
+                                    <div className="w-24 h-24 rounded-full">
+                                      {editImagePreview ? (
+                                        <img
+                                          src={editImagePreview}
+                                          alt="Profile preview"
+                                          className="rounded-full object-cover w-24 h-24"
+                                        />
+                                      ) : editFormData.profile_photo ? (
+                                        <img
+                                          src={getFullImageUrl(editFormData.profile_photo)}
+                                          alt="Current profile"
+                                          className="rounded-full object-cover w-24 h-24"
+                                        />
+                                      ) : (
+                                        <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center">
+                                          <span className="icon-[mdi--account] text-4xl text-gray-400" />
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleEditImageChange}
+                                    className="file-input file-input-bordered w-full"
+                                    disabled={editIsUploading}
+                                  />
+                                  {editIsUploading && (
+                                    <div className="w-full">
+                                      <progress
+                                        className="progress progress-success w-full"
+                                        value={editUploadProgress}
+                                        max="100"
+                                      ></progress>
+                                      <p className="text-center text-sm text-gray-600 mt-1">
+                                        {editUploadProgress}%
+                                      </p>
+                                    </div>
+                                  )}
                                 </div>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={handleEditImageChange}
-                                  className="file-input file-input-bordered w-full"
-                                  disabled={editIsUploading}
-                                />
-                                {editIsUploading && (
-                                  <div className="w-full">
-                                    <progress
-                                      className="progress progress-success w-full"
-                                      value={editUploadProgress}
-                                      max="100"
-                                    ></progress>
-                                    <p className="text-center text-sm text-gray-600 mt-1">
-                                      {editUploadProgress}%
-                                    </p>
-                                  </div>
-                                )}
                               </div>
+
+                              <div className="relative z-0 w-full mb-5 group">
+                                <input
+                                  type="date"
+                                  name="death_date"
+                                  id="edit_death_date"
+                                  value={editFormData.death_date}
+                                  onChange={handleEditInputChange}
+                                  className="block py-2.5 px-0 w-full text-sm bg-transparent border-0 border-b-2 border-gray-300 appearance-none text-black focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                                  placeholder=" "
+                                />
+                                <label htmlFor="edit_death_date" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Death Date (MM/DD/YYYY)</label>
+                              </div>
+
                             </div>
+
                             <button type="submit" className="text-white bg-[#914F2F] hover:bg-[#914F2F]/90 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full px-5 py-2.5 text-center mt-2">
                               Update
                             </button>
