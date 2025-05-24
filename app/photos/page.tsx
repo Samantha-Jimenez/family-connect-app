@@ -806,7 +806,7 @@ const Photos = () => {
       </div>
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[...filteredImages].reverse().map((photo, index) => (
+        {[...filteredImages.slice().sort((a, b) => new Date(b.upload_date).getTime() - new Date(a.upload_date).getTime())].map((photo, index) => (
           <div 
             key={index} 
             className="relative h-48 cursor-pointer"

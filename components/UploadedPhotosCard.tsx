@@ -102,18 +102,21 @@ export default function UploadedPhotosCard({ userId }: { userId: string }) {
       <p className="mt-2 italic">Photos uploaded ({userPhotos.length})</p>
       
       <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2">
-        {userPhotos.map((photo, index) => (
-          <div key={photo.photo_id} className="relative aspect-square" onClick={() => handleImageClick(photo)}>
-            <Image
-              src={photo.url || ''}
-              alt={`Photo ${index + 1}`}
-              fill
-              className="object-cover rounded"
-              sizes="(max-width: 768px) 33vw, 20vw"
-              priority={true}
-            />
-          </div>
-        ))}
+        {userPhotos
+          .slice()
+          .sort((a, b) => new Date(b.upload_date).getTime() - new Date(a.upload_date).getTime())
+          .map((photo, index) => (
+            <div key={photo.photo_id} className="relative aspect-square" onClick={() => handleImageClick(photo)}>
+              <Image
+                src={photo.url || ''}
+                alt={`Photo ${index + 1}`}
+                fill
+                className="object-cover rounded"
+                sizes="(max-width: 768px) 33vw, 20vw"
+                priority={true}
+              />
+            </div>
+          ))}
       </div>
 
       {selectedPhoto && (
