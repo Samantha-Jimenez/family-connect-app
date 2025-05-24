@@ -91,7 +91,13 @@ const UpcomingEvents = () => {
     const status = rsvpStatuses[eventId];
     if (status === 'yes' || status === 'no' || status === 'maybe') {
       return (
-        <span className="ml-2 text-xs font-semibold bg-blue-200 text-blue-800 px-2 py-0.5 rounded">
+        <span
+          className={`ml-2 text-xs font-semibold px-2 py-0.5 rounded whitespace-nowrap
+            ${status === 'yes' ? 'bg-green-200 text-green-800' : ''}
+            ${status === 'maybe' ? 'bg-blue-200 text-blue-800' : ''}
+            ${status === 'no' ? 'bg-red-200 text-red-800' : ''}
+          `}
+        >
           RSVP'd: {status.charAt(0).toUpperCase() + status.slice(1)}
         </span>
       );
@@ -159,15 +165,15 @@ const UpcomingEvents = () => {
       <h1 className="text-xl flex items-center gap-2">
         Upcoming Events
       </h1>
-      <div className="mt-4 space-y-0.5">
+      <div className="mt-4 space-y-2">
         {sortedEvents.length > 0 ? (
           sortedEvents.map((event) => {
             const hasRSVP = !!rsvpStatuses[event.id || ''];
             return (
               <div 
                 key={event.id || event.start} 
-                className={`flex items-center justify-between py-3 px-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer
-                  ${hasRSVP ? 'bg-blue-50' : ''}
+                className={`flex items-center justify-between hover:bg-yellow-800/10 p-2 rounded-lg transition-colors cursor-pointer
+                  ${hasRSVP ? 'bg-gray-100' : ''}
                 `}
                 onClick={() => handleEventClick(event)}
                 role="button"
@@ -179,8 +185,8 @@ const UpcomingEvents = () => {
                 }}
               >
                 <div className="flex-1">
-                  <h2 className="text-gray-900 flex items-center">
-                    {event.title}
+                  <h2 className="text-gray-900 flex items-center justify-between grid grid-cols-[1fr_min-content]">
+                    <h2 className="whitespace-normal text-ellipsis overflow-hidden">{event.title}</h2>
                     {getRSVPSymbol(event.id)}
                   </h2>
                   <p className="text-sm text-gray-600">{formatDate(event.nextOccurrence!)}</p>
