@@ -92,7 +92,7 @@ const UpcomingEvents = () => {
     if (status === 'yes' || status === 'no' || status === 'maybe') {
       return (
         <span
-          className={`ml-2 text-xs font-semibold px-2 py-0.5 rounded whitespace-nowrap
+          className={`ml-2 text-xs font-semibold px-2 py-0.5 rounded whitespace-nowrap mb-auto
             ${status === 'yes' ? 'bg-green-200 text-green-800' : ''}
             ${status === 'maybe' ? 'bg-blue-200 text-blue-800' : ''}
             ${status === 'no' ? 'bg-red-200 text-red-800' : ''}
@@ -172,7 +172,7 @@ const UpcomingEvents = () => {
             return (
               <div 
                 key={event.id || event.start} 
-                className={`flex items-center justify-between hover:bg-yellow-800/10 p-2 rounded-lg transition-colors cursor-pointer
+                className={`flex items-center justify-between hover:bg-yellow-800/5 p-2 rounded-lg transition-colors cursor-pointer
                   ${hasRSVP ? 'bg-gray-100' : ''}
                 `}
                 onClick={() => handleEventClick(event)}

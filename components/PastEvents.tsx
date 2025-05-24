@@ -130,7 +130,11 @@ const PastEvents = () => {
     const status = rsvpStatuses[eventId];
     if (status === 'yes' || status === 'no' || status === 'maybe') {
       return (
-        <span className="ml-2 text-xs font-semibold bg-blue-200 text-blue-800 px-2 py-0.5 rounded">
+        <span className={`ml-2 text-xs font-semibold px-2 py-0.5 rounded whitespace-nowrap mb-auto
+          ${status === 'yes' ? 'bg-green-200 text-green-800' : ''}
+          ${status === 'maybe' ? 'bg-blue-200 text-blue-800' : ''}
+          ${status === 'no' ? 'bg-red-200 text-red-800' : ''}
+        `}>
           RSVP'd: {status.charAt(0).toUpperCase() + status.slice(1)}
         </span>
       );
@@ -143,15 +147,15 @@ const PastEvents = () => {
       <h1 className="text-xl flex items-center gap-2">
         Past Events
       </h1>
-      <div className="mt-4 space-y-0.5">
+      <div className="mt-4 space-y-1">
         {sortedEvents.length > 0 ? (
           sortedEvents.map((event) => { 
             const hasRSVP = !!rsvpStatuses[event.id || ''];
             return (
               <div 
                 key={event.id || event.start} 
-                className={`flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer
-                  ${hasRSVP ? 'bg-blue-50' : ''}
+                className={`flex items-center justify-between p-2 rounded-lg hover:bg-yellow-800/5 transition-colors cursor-pointer
+                  ${hasRSVP ? 'bg-gray-100' : ''}
                 `}
                 onClick={() => handleEventClick(event)}
                 role="button"
