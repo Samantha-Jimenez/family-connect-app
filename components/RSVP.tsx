@@ -51,7 +51,10 @@ const RSVP = ({ userId }: { userId: string }) => {
     const fetchRSVPEvents = async () => {
       setLoading(true);
       const userRSVPs = await getUserRSVPs(userId);
-      const rsvpEventIds = userRSVPs.map(rsvp => rsvp.eventId);
+      // Only include events RSVP'd as 'yes' or 'maybe'
+      const rsvpEventIds = userRSVPs
+        .filter(rsvp => rsvp.status === 'yes' || rsvp.status === 'maybe')
+        .map(rsvp => rsvp.eventId);
 
       // Filter events to only those RSVP'd and upcoming
       const filtered = (events || [])
