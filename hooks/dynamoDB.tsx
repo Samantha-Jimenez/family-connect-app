@@ -600,7 +600,8 @@ export const getUserAlbums = async (userId: string): Promise<AlbumData[]> => {
       name: item.name?.S || '',
       description: item.description?.S || '',
       created_date: item.created_date?.S || '',
-      created_by: item.created_by?.S || ''
+      created_by: item.created_by?.S || '',
+      cover_photo_id: item.cover_photo_id?.S || ''
     }));
   } catch (error) {
     console.error("❌ Error fetching user albums:", error);

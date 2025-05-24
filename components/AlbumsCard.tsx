@@ -27,6 +27,8 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
   const [showRemovePhotos, setShowRemovePhotos] = useState(false);
   const [removingPhotos, setRemovingPhotos] = useState(false);
   const [selectedRemovePhotoIds, setSelectedRemovePhotoIds] = useState<string[]>([]);
+  const [coverPhotoUploading, setCoverPhotoUploading] = useState(false);
+  const [coverPhotosByAlbumId, setCoverPhotosByAlbumId] = useState<{ [albumId: string]: PhotoData | null }>({});
 
   console.log(albums.map((album) => album.cover_photo_id));
 
@@ -35,6 +37,18 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
       if (userId) {
         const userAlbums = await getUserAlbums(userId);
         setAlbums(userAlbums);
+
+        // Fetch cover photo for each album
+        const coverPhotos: { [albumId: string]: PhotoData | null } = {};
+        for (const album of userAlbums) {
+          if (album.cover_photo_id) {
+            const albumPhotos = await getPhotosByAlbum(album.album_id);
+            coverPhotos[album.album_id] = albumPhotos.find(p => p.photo_id === album.cover_photo_id) || null;
+          } else {
+            coverPhotos[album.album_id] = null;
+          }
+        }
+        setCoverPhotosByAlbumId(coverPhotos);
 
         // Fetch photo counts for each album
         const counts: { [key: string]: number } = {};
@@ -76,6 +90,8 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
         counts[album.album_id] = albumPhotos.length;
       }
       setPhotoCounts(counts);
+      setAlbumName("");
+      setAlbumDescription("");
     } catch (error) {
       console.error('Error creating album:', error);
     }
@@ -188,6 +204,32 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
     }
   };
 
+  const handleCoverPhotoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    setCoverPhotoUploading(true);
+    const file = e.target.files[0];
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+      if (data && data.photo_id) {
+        setEditCoverPhotoId(data.photo_id); // Use the returned photo_id as the cover
+      } else if (data && data.key) {
+        setEditCoverPhotoId(data.key); // fallback if only key is returned
+      }
+    } catch (error) {
+      alert('Failed to upload cover photo');
+    } finally {
+      setCoverPhotoUploading(false);
+    }
+  };
+
   return (
     <div className="p-4 bg-white shadow-lg rounded-lg relative">
       {auth && (
@@ -239,34 +281,55 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
       )}
 
       <h2 className="text-xl mb-2 text-black">Albums</h2>
-      <div className="space-y-4">
-        {albums.map((album) => (
-          <>
-            <div
-              key={album.album_id}
-              className="p-4 bg-gray-100 rounded-lg shadow cursor-pointer w-2/5"
-              onClick={() => handleAlbumClick(album)}
+      <div className="space-y-4 grid grid-cols-2 gap-4">
+        {albums
+          .slice() // create a copy to avoid mutating state
+          .sort((a, b) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime())
+          .map((album) => {
+            const coverPhoto = coverPhotosByAlbumId[album.album_id];
+            return (
+              <div
+                key={album.album_id}
+                className="p-4 bg-gray-100 rounded-lg shadow cursor-pointer"
+                onClick={() => handleAlbumClick(album)}
               >
-              <h3 className="text-lg font-semibold text-black">{album.name}</h3>
-              <p className="text-sm text-black">{album.description}</p>
-              <p className="text-xs text-gray-500">Created on: {new Date(album.created_date).toLocaleDateString()}</p>
-              <p className="text-xs text-gray-500">Photos: {photoCounts[album.album_id] || 0}</p>
-            </div>
-          </>
-        ))}
+                {coverPhoto ? (
+                  <Image
+                    src={coverPhoto.url}
+                    alt={coverPhoto.metadata?.description || 'Album cover'}
+                    className="rounded-lg mb-2 w-full h-40 object-cover"
+                    width={300}
+                    height={160}
+                  />
+                ) : (
+                  <div className="w-full h-40 bg-gray-300 rounded-lg mb-2 flex items-center justify-center text-gray-500">
+                    No Cover Photo
+                  </div>
+                )}
+                <h3 className="text-lg font-semibold text-black">{album.name}</h3>
+                <p className="text-sm text-black">{album.description}</p>
+                <p className="text-xs text-gray-500">Created on: {new Date(album.created_date).toLocaleDateString()}</p>
+                <p className="text-xs text-gray-500">Photos: {photoCounts[album.album_id] || 0}</p>
+              </div>
+            );
+          })}
       </div>
 
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-3/4 max-w-2xl relative">
-            <h2 className="text-xl font-bold mb-4 text-black">
+            <h2 className="font-bold text-black">
               {editing ? (
-                <input
-                  className="input input-bordered w-full bg-gray-200"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  disabled={savingEdit}
-                />
+                <>
+                  <label className="block text-black font-semibold mb-1">Album Name</label>
+                  <input
+                    className="input input-bordered w-full bg-gray-200"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    disabled={savingEdit}
+                    placeholder="Enter album name"
+                  />
+                </>
               ) : (
                 selectedAlbum?.name
               )}
@@ -289,6 +352,30 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
                   disabled={savingEdit}
                   placeholder="Enter description"
                 />
+                <label className="block text-black font-semibold mb-1">Cover Photo</label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {photos.length === 0 && (
+                    <div className="text-xs text-gray-500">No photos in this album yet.</div>
+                  )}
+                  {photos.map((photo) => (
+                    <div
+                      key={photo.photo_id}
+                      className={`cursor-pointer border-2 rounded-lg p-1 ${editCoverPhotoId === photo.photo_id ? 'border-blue-500' : 'border-transparent'}`}
+                      onClick={() => setEditCoverPhotoId(photo.photo_id)}
+                      style={{ width: 60, height: 60 }}
+                      title={photo.metadata?.description || ''}
+                    >
+                      <img
+                        src={photo.url}
+                        alt={photo.metadata?.description || ''}
+                        className="object-cover w-full h-full rounded"
+                      />
+                      {editCoverPhotoId === photo.photo_id && (
+                        <div className="text-center text-xs text-blue-600 font-semibold mt-1.5 place-self-center">Selected</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
                 <div className="flex gap-2 mt-4">
                   <button
                     className="btn btn-primary"
@@ -308,8 +395,8 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
               </div>
             ) : (
               <>
-                <p className="text-black mb-2">{selectedAlbum?.description}</p>
-                {selectedAlbum?.cover_photo_id && (
+                <p className="text-black mb-4">{selectedAlbum?.description}</p>
+                {/* {selectedAlbum?.cover_photo_id && (
                   <div className="mb-4">
                     <span className="text-xs text-gray-500">Cover Photo:</span>
                     <div>
@@ -327,7 +414,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
                         ))}
                     </div>
                   </div>
-                )}
+                )} */}
               </>
             )}
 
