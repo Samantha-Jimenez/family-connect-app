@@ -348,6 +348,7 @@ export const getAllFamilyMembers = async (): Promise<FamilyMember[]> => {
       profile_photo: item.profile_photo?.S || '',
       current_city: item.current_city?.S || '',
       current_state: item.current_state?.S || '',
+      death_date: item.death_date?.S || '',
     }));
   } catch (error) {
     console.error("❌ Error fetching family members:", error);
@@ -386,6 +387,7 @@ export const getFamilyMembersWithoutEmail = async (): Promise<FamilyMember[]> =>
       profile_photo: item.profile_photo?.S || '',
       current_city: item.current_city?.S || '',
       current_state: item.current_state?.S || '',
+      death_date: item.death_date?.S || '',
     }));
   } catch (error) {
     console.error("❌ Error fetching family members without email:", error);

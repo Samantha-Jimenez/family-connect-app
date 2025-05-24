@@ -20,6 +20,7 @@ const initialFormData = {
   profile_photo: '',
   current_city: '',
   current_state: '',
+  death_date: '',
 };
 
 type FormDataKey = keyof typeof initialFormData;
@@ -217,6 +218,7 @@ const AdminPage = () => {
       await updateFamilyMember(editingMemberId!, {
         ...editFormData,
         profile_photo: profilePhotoKey ?? '',
+        death_date: editFormData.death_date ?? '',
       });
       showToast('Family member updated successfully!', 'success');
       setEditingMemberId(null);

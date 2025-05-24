@@ -361,7 +361,8 @@ const Photos = () => {
         birth_state: member.birth_state || '',
         profile_photo: member.profile_photo || '',
         current_city: member.current_city || '',
-        current_state: member.current_state || ''
+        current_state: member.current_state || '',
+        death_date: member.death_date || '',
       }));
       setFamilyMembers(formattedMembers);
     } catch (error) {

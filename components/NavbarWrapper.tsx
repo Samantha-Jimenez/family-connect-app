@@ -74,9 +74,19 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
 
                           // Update the family member in the database
                           await updateFamilyMember(selectedFamilyMember.value, { 
+                            firstName: '',
+                            lastName: '',
                             email, 
                             username,
-                            profile_photo: '' // or some default profile photo URL
+                            bio: '',
+                            phoneNumber: '',
+                            birthday: '',
+                            birth_city: '',
+                            birth_state: '',
+                            profile_photo: '', // or some default profile photo URL
+                            current_city: '',
+                            current_state: '',
+                            death_date: '',
                           });
 
                           // Proceed with the sign-up

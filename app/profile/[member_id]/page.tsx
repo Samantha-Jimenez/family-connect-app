@@ -59,6 +59,7 @@ export default function ProfilePage() {
               current_state: data.current_state?.S || '',
               birth_city: data.birth_city?.S || '',
               birth_state: data.birth_state?.S || '',
+              death_date: data.death_date?.S || '',
             });
           } else {
             setError('Member not found');
