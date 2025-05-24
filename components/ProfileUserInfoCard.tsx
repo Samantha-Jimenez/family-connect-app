@@ -207,9 +207,13 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
 
           <div className="md:pl-4 xl:pl-8">
             <div className="mb-2">
-              {userData?.birthday ? (
+              {userData?.birthday || userData?.birth_city || userData?.birth_state ? (
                 <>
                   <h2 className="text-xl text-black">Birth</h2>
+                </>
+              ) : ""}
+              {userData?.birthday ? (
+                <>
                   <div className="text-gray-500 flex items-center source-sans-3">
                     <span className="icon-[mdi--date-range] h-5 mr-2" />
                     {formatBirthday(userData.birthday)} - <span className="text-xl ml-1">{getZodiacSign(userData.birthday)}</span>
