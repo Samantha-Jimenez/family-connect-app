@@ -215,7 +215,6 @@ const AdminCreateFamilyMemberForm = ({ handleAddFamilyMember, formData, handleIn
               </div>
             </div>
             <div className="relative z-0 mb-5 group md:col-span-2 md:col-start-1 md:row-span-1 md:col-span-1 md:col-start-3">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Death Date</label>
             <input
                 type="date"
                 name="death_date"
@@ -225,6 +224,7 @@ const AdminCreateFamilyMemberForm = ({ handleAddFamilyMember, formData, handleIn
                 className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
                 placeholder=" "
               />
+            <label htmlFor="admin_death_date" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6 whitespace-nowrap">Death Date</label>
             </div>
           </div>
           <button type="submit" className="text-white bg-yellow-800/80 hover:bg-yellow-800/90 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full px-5 py-2.5 text-center">
