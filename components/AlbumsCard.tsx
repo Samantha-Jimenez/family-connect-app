@@ -361,7 +361,9 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
                     <div
                       key={photo.photo_id}
                       className={`cursor-pointer border-2 rounded-lg p-1 ${editCoverPhotoId === photo.photo_id ? 'border-blue-500' : 'border-transparent'}`}
-                      onClick={() => setEditCoverPhotoId(photo.photo_id)}
+                      onClick={() =>
+                        setEditCoverPhotoId(editCoverPhotoId === photo.photo_id ? '' : photo.photo_id)
+                      }
                       style={{ width: 60, height: 60 }}
                       title={photo.metadata?.description || ''}
                     >
