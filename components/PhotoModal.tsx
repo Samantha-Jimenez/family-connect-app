@@ -349,8 +349,8 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
               </div>
             )}
           </div>
-          <div className="absolute top-[-1.6rem] right-[-0.9rem] cursor-pointer block md:hidden" onClick={handleCloseModal}>
-            <span className="text-gray-600 text-2xl">&times;</span>
+          <div className="absolute top-[-1.6rem] md:right-[-0.9rem] right-[-0.1rem] cursor-pointer block md:hidden" onClick={handleCloseModal}>
+            <span className="fixed text-gray-600 text-2xl">&times;</span>
           </div>
           {isEditing && currentUserId === photo?.uploaded_by && (
           <div className="flex absolute bottom-0 right-2 space-x-2 mb-2">
@@ -399,7 +399,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           <div className="absolute top-[-1.2rem] right-[-0.5rem] cursor-pointer hidden md:block" onClick={handleCloseModal}>
             <span className="text-gray-600 text-2xl">&times;</span>
           </div>
-          <div className="">
+          <div className="h-full">
             {isEditing ? (
               <div>
                 <div className="mb-1">
@@ -547,7 +547,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                   </p>
                 )}
                 {photo.metadata?.location && typeof photo.metadata.location === 'object' && Object.values(photo.metadata.location).some(val => val) && (
-                  <div className="text-sm text-gray-500 dark:text-gray-200 mb-1 ">
+                  <div className="text-sm text-gray-500 dark:text-gray-200 mb-1 font-light">
                     {[
                       photo.metadata.location.country,
                       photo.metadata.location.state,
@@ -619,7 +619,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             )}
           </div>
           {!isEditing && (
-          <div className="flex items-center justify-end mt-4">
+          <div className="flex items-center justify-end">
             <input
                 type="text"
                 value={newComment}

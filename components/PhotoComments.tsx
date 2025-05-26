@@ -27,10 +27,10 @@ const PhotoComments = ({ comments, editingCommentIndex, setEditingCommentIndex, 
     };
 
     return (
-    <div className="grid h-full">
-        <div className="mt-4 border-t pt-2">
-            <h3 className="text-lg font-bold mb-2 text-black">Comments</h3>
-            <div className="mb-2 overflow-y-scroll overflow-x-hidden max-h-[269px] scrollbar scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-gray-400 scrollbar-thumb-rounded-full scrollbar-track-rounded-full">
+    <div className="grid md:h-full">
+        <div className="mt-2 border-t pt-2">
+            <h3 className="text-lg font-bold text-black">Comments</h3>
+            <div className="md:overflow-y-scroll md:overflow-x-hidden md:max-h-[309px] scrollbar scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-gray-400 scrollbar-thumb-rounded-full scrollbar-track-rounded-full">
                 <div className="grid grid-cols-1 gap-2">
                     {comments.map((comment, index) => (
                         <div key={index} className="grid grid-cols-[1fr_auto] items-start gap-2 pr-[10px]">
@@ -79,16 +79,16 @@ const PhotoComments = ({ comments, editingCommentIndex, setEditingCommentIndex, 
                                             )}
                                             </div>
                                         </div>
-                                        <div className="chat-header text-black">
+                                        <div className="chat-header text-gray-600 font-light">
                                             {comment.author}
                                             {/* <time className="text-xs opacity-50 text-black">
                                                 {new Date(comment.timestamp).toLocaleString()}
                                             </time> */}
                                         </div>
-                                        <div className="chat-bubble bg-gray-200 text-gray-800 text-sm px-2 py-0.5 min-h-3 max-w-[80%] break-words">
+                                        <div className="chat-bubble bg-gray-200 text-gray-800 text-sm px-2 py-0.5 min-h-3 max-w-[80%] break-words font-light">
                                             {comment.text}
                                         </div>
-                                        <time className="chat-footer opacity-50 text-gray-600">
+                                        <time className="chat-footer opacity-50 text-gray-600 font-light">
                                             {new Date(comment.timestamp).toLocaleString()}
                                         </time>
                                     </div>
@@ -99,13 +99,13 @@ const PhotoComments = ({ comments, editingCommentIndex, setEditingCommentIndex, 
                                                     setEditingCommentIndex(index);
                                                     setEditedCommentText(comment.text);
                                                 }}
-                                                className="text-blue-500 hover:underline text-xs"
+                                                className="text-blue-500 hover:underline text-xs font-light"
                                             >
                                                 Edit
                                             </button>
                                             <button
                                                 onClick={() => confirmDeleteComment(index)}
-                                                className="text-red-500 hover:underline text-xs"
+                                                className="text-red-500 hover:underline text-xs font-light"
                                             >
                                                 Delete
                                             </button>
