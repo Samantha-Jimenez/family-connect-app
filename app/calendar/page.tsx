@@ -218,7 +218,7 @@ export default function Calendar() {
           console.log('Event mouse entered:', info.event.title, info.event.extendedProps);
           // Show tooltip or additional info on hover
         }}
-        timeZone="UTC"
+        timeZone="local"
       />
       <EventModal
         isOpen={isModalOpen}

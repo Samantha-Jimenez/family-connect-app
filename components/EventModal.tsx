@@ -143,7 +143,8 @@ export default function EventModal({
         day: 'numeric',
         hour: isAllDay ? undefined : 'numeric',
         minute: isAllDay ? undefined : 'numeric',
-        hour12: true
+        hour12: true,
+        timeZone: 'America/New_York'
       }).format(dateTime);
     } catch {
       return 'Invalid date';
@@ -186,19 +187,11 @@ export default function EventModal({
           startDateTime = new Date(`${startDate}T00:00:00`);
           if (endDate) {
             endDateTime = new Date(`${endDate}T23:59:59`);
-            endDateTime.setMinutes(endDateTime.getMinutes() - endDateTime.getTimezoneOffset());
           }
         } else {
-          const [startHours, startMinutes] = startTime.split(':').map(Number);
-          const [endHours, endMinutes] = endTime ? endTime.split(':').map(Number) : [0, 0];
-          const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
-          startDateTime = new Date(startYear, startMonth - 1, startDay);
-          startDateTime.setHours(startHours, startMinutes, 0);
-
+          startDateTime = new Date(`${startDate}T${startTime}:00`);
           if (endDate && endTime) {
-            const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
-            endDateTime = new Date(endYear, endMonth - 1, endDay);
-            endDateTime.setHours(endHours, endMinutes, 0);
+            endDateTime = new Date(`${endDate}T${endTime}:00`);
           }
         }
         
