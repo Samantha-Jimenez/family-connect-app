@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useCalendar } from '@/context/CalendarContext'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { getRSVPStatus } from '@/hooks/dynamoDB'
 import { getCurrentUser } from 'aws-amplify/auth'
 
@@ -24,10 +24,15 @@ interface Event {
 const UpcomingEvents = () => {
   const { events } = useCalendar();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const eventIdFromQuery = searchParams.get('eventId');
 
   // Add RSVP state
   const [rsvpStatuses, setRsvpStatuses] = useState<Record<string, 'yes' | 'no' | 'maybe' | null>>({});
   const [userId, setUserId] = useState<string | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [modalMode, setModalMode] = useState<'edit' | 'view'>('view');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Fetch current user ID on mount
   useEffect(() => {
@@ -153,12 +158,23 @@ const UpcomingEvents = () => {
   };
 
   const handleEventClick = (event: Event) => {
-    // Navigate to calendar page with the event date in view
-    // const eventDate = new Date(event.start);
-    // const dateString = eventDate.toISOString().split('T')[0]; // Format: YYYY-MM-DD
-    // router.push(`/calendar?date=${dateString}`);
-    router.push(`/calendar`);
+    if (event.id) {
+      router.push(`/calendar?eventId=${event.id}`);
+    } else {
+      router.push(`/calendar`);
+    }
   };
+
+  useEffect(() => {
+    if (eventIdFromQuery && events.length > 0) {
+      const foundEvent = events.find(e => e.id === eventIdFromQuery);
+      if (foundEvent) {
+        setSelectedEvent(foundEvent);
+        setModalMode('edit');
+        setIsModalOpen(true);
+      }
+    }
+  }, [eventIdFromQuery, events]);
 
   return (
     <div className="card bg-white text-black p-4 xl:p-6 shadow-md">
