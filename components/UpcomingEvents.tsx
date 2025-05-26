@@ -65,9 +65,19 @@ const UpcomingEvents = () => {
     const eventStart = new Date(event.start);
     
     if (!event.rrule) {
-      // For non-recurring events, only show them if they're in the future
+      // For non-recurring events, show if they are today or in the future (UTC date comparison)
+      const eventDateUTC = new Date(Date.UTC(
+        eventStart.getUTCFullYear(),
+        eventStart.getUTCMonth(),
+        eventStart.getUTCDate()
+      ));
       const now = new Date();
-      return eventStart >= now ? eventStart : null;
+      const todayUTC = new Date(Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate()
+      ));
+      return eventDateUTC >= todayUTC ? eventStart : null;
     }
 
     // Handle weekly events
@@ -119,42 +129,30 @@ const UpcomingEvents = () => {
     .sort((a, b) => a.nextOccurrence!.getTime() - b.nextOccurrence!.getTime())
     .slice(0, 5);
 
-  const formatDate = (date: Date) => {
-    // Create dates in local timezone
+  const formatDate = (date: Date, isAllDay?: boolean) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
-    // Adjust the event date to local timezone
-    const localDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+
+    // Use the date directly for local time
+    const localDate = new Date(date);
     const dateString = localDate.toDateString();
-    
-    // Check if the event is today or tomorrow
+
     if (dateString === today.toDateString()) {
-      return `Today, ${localDate.toLocaleTimeString('en-US', { 
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      })}`;
+      return isAllDay
+        ? 'Today, All Day'
+        : `Today, ${localDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
     } else if (dateString === tomorrow.toDateString()) {
-      return `Tomorrow, ${localDate.toLocaleTimeString('en-US', { 
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      })}`;
+      return isAllDay
+        ? 'Tomorrow, All Day'
+        : `Tomorrow, ${localDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
     }
-    
-    // For other dates, show the full date and time
-    return localDate.toLocaleDateString('en-US', { 
-      weekday: 'short',
-      month: 'short', 
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
+
+    return isAllDay
+      ? localDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ', All Day'
+      : localDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
   };
 
   const handleEventClick = (event: Event) => {
@@ -205,7 +203,9 @@ const UpcomingEvents = () => {
                     <h2 className="whitespace-normal text-ellipsis overflow-hidden">{event.title}</h2>
                     {getRSVPSymbol(event.id)}
                   </h2>
-                  <p className="text-sm text-gray-600">{formatDate(event.nextOccurrence!)}</p>
+                  <p className={"text-sm text-gray-600"}>
+                    {formatDate(event.nextOccurrence!, event.allDay)}
+                  </p>
                   {event.location && (
                     <p className="text-sm text-gray-500 flex items-center gap-1">
                       <span>📍</span> {event.location}
