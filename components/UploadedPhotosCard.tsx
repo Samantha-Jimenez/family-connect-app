@@ -98,8 +98,8 @@ export default function UploadedPhotosCard({ userId }: { userId: string }) {
 
   return (
     <div className="card bg-white text-black shadow-lg p-6">
-      <h2 className="text-xl">Uploaded Photos</h2>
-      <p className="mt-2 italic">Photos uploaded ({userPhotos.length})</p>
+      <h2 className="text-xl">Uploaded Photos <span className="text-sm text-gray-500">({userPhotos.length})</span></h2>
+      {/* <p className="mt-2 italic">Photos uploaded ({userPhotos.length})</p> */}
       
       <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2">
         {userPhotos

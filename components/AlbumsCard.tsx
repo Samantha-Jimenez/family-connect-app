@@ -280,7 +280,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
         </div>
       )}
 
-      <h2 className="text-xl mb-2 text-black">Albums</h2>
+      <h2 className="text-xl mb-2 text-black">Albums <span className="text-sm text-gray-500">({albums.length})</span></h2>
       <div className="grid sm:grid-cols-2 grid-cols-1 gap-4">
         {albums
           .slice() // create a copy to avoid mutating state
