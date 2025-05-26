@@ -48,6 +48,7 @@ const Settings = () => {
   const [isUploading, setIsUploading] = useState(false);
   const { refreshUserData } = useUser();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [removeProfilePhoto, setRemoveProfilePhoto] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -184,10 +185,38 @@ const Settings = () => {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+    if (userData?.profile_photo) {
+      setRemoveProfilePhoto(true);
+      setUserData(prev => prev ? { ...prev, profile_photo: undefined } : null);
+    }
   };
 
   const handlePhotoSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (removeProfilePhoto && !selectedImage) {
+      // Only remove photo, no upload
+      await saveUserToDB(
+        userData?.first_name || '',
+        userData?.last_name || '',
+        userData?.email || '',
+        userData?.username || '',
+        userData?.bio || '',
+        userData?.phone_number || '',
+        userData?.birthday || '',
+        userData?.birth_city || '',
+        userData?.birth_state || '',
+        '', // Remove profile photo
+        userData?.current_city || '',
+        userData?.current_state || ''
+      );
+      setRemoveProfilePhoto(false);
+      setUserData(prev => prev ? { ...prev, profile_photo: undefined } : null);
+      showToast('Profile photo removed successfully!', 'success');
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+      return;
+    }
     
     if (selectedImage) {
       try {
@@ -292,6 +321,9 @@ const Settings = () => {
     
     try {
       let profilePhotoUrl = userData?.profile_photo;
+      if (removeProfilePhoto) {
+        profilePhotoUrl = '';
+      }
       
       const formData = new FormData(e.currentTarget);
       const first_name = formData.get('floating_first_name') as string || userData?.first_name || '';
@@ -341,6 +373,8 @@ const Settings = () => {
       // Refresh the user data in context
       await refreshUserData();
 
+      setRemoveProfilePhoto(false);
+
       showToast('Profile updated successfully!', 'success' as const);
       
     } catch (error) {
@@ -353,7 +387,7 @@ const Settings = () => {
     <AuthGuard>
       <div className="min-h-screen px-4">
         <form onSubmit={handlePhotoSubmit} className="card bg-white shadow-xl p-6 mx-auto mt-6 max-w-7xl">
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex flex-row items-center gap-4 self-center">
             <div className="avatar">
               <div className="w-24 h-24 rounded-full">
                 {imagePreview ? (
@@ -379,27 +413,29 @@ const Settings = () => {
                 )}
               </div>
             </div>
-            <div className="flex flex-col items-center gap-2 w-full max-w-xs">
+            <div className="flex flex-row items-center gap-2">
               <input
                 ref={fileInputRef}
                 data-theme="light"
                 type="file"
                 accept="image/*"
                 onChange={handleImageChange}
-                className="file-input file-input-bordered w-full"
+                className="file-input file-input-bordered w-[308px]"
                 disabled={isUploading}
               />
               
-              {(selectedImage || imagePreview) && (
-                <button
-                  type="button"
-                  className="btn btn-ghost text-xs mt-2"
-                  onClick={handleClearImage}
-                  disabled={isUploading}
-                >
-                  Clear
-                </button>
-              )}
+              <div className="w-[67px]">
+                {(selectedImage || imagePreview || (userData?.profile_photo && !removeProfilePhoto)) && (
+                  <button
+                    type="button"
+                    className="btn text-xs bg-red-500 hover:bg-red-600 border-none"
+                    onClick={handleClearImage}
+                    disabled={isUploading}
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
               
               {isUploading && (
                 <div className="w-full">
@@ -413,16 +449,18 @@ const Settings = () => {
                   </p>
                 </div>
               )}
-              
-              {selectedImage && (
-                <button 
+
+              <div className="w-[130px]">
+                {selectedImage && (
+                  <button 
                   type="submit"
-                  className="btn bg-[#914F2F] hover:bg-[#914F2F]/90 text-white w-full"
+                  className="btn bg-[#914F2F] hover:bg-[#914F2F]/90 text-white border-none"
                   disabled={isUploading}
-                >
-                  {isUploading ? 'Uploading...' : 'Upload Photo'}
-                </button>
-              )}
+                  >
+                    {isUploading ? 'Uploading...' : 'Upload Photo'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </form>
