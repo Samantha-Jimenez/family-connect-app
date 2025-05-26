@@ -220,6 +220,16 @@ input, select, textarea, label {
   z-index: 0 !important;
 }
 
+.fc-h-event {
+  background-color: #226f54 !important;
+  border: 1px solid #63CFA9 !important;
+  padding: 0px 3px;
+}
+
+.fc-daygrid-event-dot {
+  border: calc(8px / 2) solid #226f54 !important;
+}
+
 /* AUTHENTICATOR */
 
 .amplify-tabs__item--active {
