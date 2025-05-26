@@ -59,30 +59,40 @@ const PastEvents = () => {
   const getLastOccurrence = (event: Event) => {
     const eventStart = new Date(event.start);
     const now = new Date();
-    
+    // Only show events before today (not including today)
+    const eventDateUTC = new Date(Date.UTC(
+      eventStart.getUTCFullYear(),
+      eventStart.getUTCMonth(),
+      eventStart.getUTCDate()
+    ));
+    const todayUTC = new Date(Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate()
+    ));
     if (!event.rrule) {
-      // For non-recurring events, only show them if they're in the past
-      return eventStart < now ? eventStart : null;
+      return eventDateUTC < todayUTC ? eventStart : null;
     }
-
     // Handle weekly events
     if (event.rrule.freq === 'weekly') {
       const dayOfWeek = eventStart.getDay();
       const lastDate = new Date(now);
-      
       // Find the previous occurrence of the weekday
       while (lastDate.getDay() !== dayOfWeek) {
         lastDate.setDate(lastDate.getDate() - 1);
       }
-      
       // Set the same time as the original event
       lastDate.setHours(eventStart.getHours());
       lastDate.setMinutes(eventStart.getMinutes());
-      
-      return lastDate < now ? lastDate : null;
+      // Only show if before today
+      const lastDateUTC = new Date(Date.UTC(
+        lastDate.getUTCFullYear(),
+        lastDate.getUTCMonth(),
+        lastDate.getUTCDate()
+      ));
+      return lastDateUTC < todayUTC ? lastDate : null;
     }
-
-    return eventStart < now ? eventStart : null;
+    return eventDateUTC < todayUTC ? eventStart : null;
   };
 
   const sortedEvents: (Event & { lastOccurrence: Date | null })[] = (events || [])
@@ -94,30 +104,24 @@ const PastEvents = () => {
     .sort((a, b) => b.lastOccurrence!.getTime() - a.lastOccurrence!.getTime()) // Reverse sort for past events
     .slice(0, 5);
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date, isAllDay?: boolean) => {
     const now = new Date();
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
     
-    const localDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+    // Use the date directly for local time
+    const localDate = new Date(date);
     const dateString = localDate.toDateString();
     
     if (dateString === yesterday.toDateString()) {
-      return `Yesterday, ${localDate.toLocaleTimeString('en-US', { 
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      })}`;
+      return isAllDay
+        ? 'Yesterday, All Day'
+        : `Yesterday, ${localDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
     }
     
-    return localDate.toLocaleDateString('en-US', { 
-      weekday: 'short',
-      month: 'short', 
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
+    return isAllDay
+      ? localDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ', All Day'
+      : localDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
   };
 
   const handleEventClick = (event: Event) => {
@@ -175,7 +179,9 @@ const PastEvents = () => {
                     {event.title}
                     {getRSVPSymbol(event.id)}
                   </h2>
-                  <p className="text-sm text-gray-600">{formatDate(event.lastOccurrence!)}</p>
+                  <p className="text-sm text-gray-600">
+                    {formatDate(event.lastOccurrence!, event.allDay)}
+                  </p>
                   {event.location && (
                     <p className="text-sm text-gray-500 flex items-center gap-1">
                       <span>📍</span> {event.location}
