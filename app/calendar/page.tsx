@@ -14,6 +14,7 @@ import { useCalendar } from '@/context/CalendarContext';
 import { useAuth } from '@/context/AuthContext';
 import { EventApi } from '@fullcalendar/core';
 import { DEFAULT_EVENTS } from './calendarData'; // Import your default events
+import { useSearchParams } from 'next/navigation';
 
 interface CalendarEvent {
   id?: string;
@@ -53,6 +54,8 @@ export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+  const searchParams = useSearchParams();
+  const eventIdFromQuery = searchParams.get('eventId');
 
   useEffect(() => {
     // Initialize events with DEFAULT_EVENTS if events are empty
@@ -70,6 +73,17 @@ export default function Calendar() {
       }
     }
   }, [events, setEvents]);
+
+  useEffect(() => {
+    if (eventIdFromQuery && events.length > 0) {
+      const foundEvent = events.find(e => e.id === eventIdFromQuery);
+      if (foundEvent) {
+        setSelectedEvent(foundEvent);
+        setModalMode('edit');
+        setIsModalOpen(true);
+      }
+    }
+  }, [eventIdFromQuery, events]);
 
   const handleDateClick = (info: { date: Date }) => {
     setSelectedEvent(null);
