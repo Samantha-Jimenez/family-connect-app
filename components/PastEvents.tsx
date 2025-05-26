@@ -121,7 +121,11 @@ const PastEvents = () => {
   };
 
   const handleEventClick = (event: Event) => {
-    router.push('/calendar');
+    if (event.id) {
+      router.push(`/calendar?eventId=${event.id}`);
+    } else {
+      router.push('/calendar');
+    }
   };
 
   // Use RSVP status from state
