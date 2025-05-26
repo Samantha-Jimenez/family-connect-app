@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { saveUserToDB, getUserData } from '@/hooks/dynamoDB';
 import { useAuth } from '@/context/AuthContext';
 import AuthGuard from '@/components/AuthGuard';
@@ -47,6 +47,7 @@ const Settings = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const { refreshUserData } = useUser();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -174,6 +175,14 @@ const Settings = () => {
       const file = e.target.files[0];
       setSelectedImage(file);
       setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleClearImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -372,6 +381,7 @@ const Settings = () => {
             </div>
             <div className="flex flex-col items-center gap-2 w-full max-w-xs">
               <input
+                ref={fileInputRef}
                 data-theme="light"
                 type="file"
                 accept="image/*"
@@ -379,6 +389,17 @@ const Settings = () => {
                 className="file-input file-input-bordered w-full"
                 disabled={isUploading}
               />
+              
+              {(selectedImage || imagePreview) && (
+                <button
+                  type="button"
+                  className="btn btn-ghost text-xs mt-2"
+                  onClick={handleClearImage}
+                  disabled={isUploading}
+                >
+                  Clear
+                </button>
+              )}
               
               {isUploading && (
                 <div className="w-full">
