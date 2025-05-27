@@ -72,6 +72,19 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
     }
   }, [showAddPhotos, userId]);
 
+  useEffect(() => {
+    if ((showAddPhotos || showRemovePhotos) && editing) {
+      setEditing(false);
+    }
+  }, [showAddPhotos, showRemovePhotos]);
+
+  useEffect(() => {
+    if (!showModal) {
+      setShowRemovePhotos(false);
+      setShowAddPhotos(false);
+    }
+  }, [showModal]);
+
   const handleCreateAlbum = async () => {
     try {
       const newAlbumId = await createAlbum(albumName, albumDescription);
@@ -123,7 +136,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
 
   const handleDeleteAlbum = async () => {
     if (!selectedAlbum) return;
-    if (!window.confirm('Are you sure you want to delete this album and all its photos?')) return;
+    if (!window.confirm('This album will be deleted but it\'s photos will remain under the "Uploaded" tab in your Dashboard. To delete a photo, go to the photo and click "Edit" then "Delete". Are you sure you want to delete this album?')) return;
     setDeleting(true);
     try {
       await deleteAlbumById(selectedAlbum.album_id);
@@ -316,14 +329,14 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-3/4 max-w-2xl relative">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 overflow-y-scroll">
+          <div className="bg-white p-6 rounded-lg shadow-lg md:w-3/4 h-full md:h-auto md:max-w-2xl relative overflow-y-scroll">
             <h2 className="font-bold text-black">
               {editing ? (
                 <>
-                  <label className="block text-black font-semibold mb-1">Album Name</label>
+                  <label className="block text-black font-semibold">Album Name</label>
                   <input
-                    className="input input-bordered w-full bg-gray-200"
+                    className="input input-bordered w-full bg-gray-200 mb-2"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                     disabled={savingEdit}
@@ -336,15 +349,19 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
             </h2>
             {auth && !editing && (
               <button
-                className="btn btn-outline btn-sm absolute right-6 top-6"
-                onClick={() => setEditing(true)}
+                className="btn btn-outline btn-sm absolute right-6 top-6 h-[30px] px-[10px]"
+                onClick={() => {
+                  setEditing(true);
+                  setShowAddPhotos(false);
+                  setShowRemovePhotos(false);
+                }}
               >
                 Edit
               </button>
             )}
             {editing ? (
               <div className="mb-4">
-                <label className="block text-black font-semibold mb-1">Description</label>
+                <label className="block text-black font-semibold">Description</label>
                 <input
                   className="input input-bordered w-full mb-2 bg-gray-200"
                   value={editDescription}
@@ -380,14 +397,14 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
                 </div>
                 <div className="flex gap-2 mt-4">
                   <button
-                    className="btn btn-primary"
+                    className="btn btn-primary h-[30px] px-[10px]"
                     onClick={handleSaveEdit}
                     disabled={savingEdit}
                   >
                     {savingEdit ? 'Saving...' : 'Save'}
                   </button>
                   <button
-                    className="btn btn-secondary"
+                    className="btn btn-secondary h-[30px] px-[10px]"
                     onClick={() => setEditing(false)}
                     disabled={savingEdit}
                   >
@@ -420,13 +437,13 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
               </>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               {photos.map((photo) => (
                 <div key={photo.photo_id} className="p-2 bg-gray-200 rounded-lg relative">
                   {showRemovePhotos && (
                     <input
                       type="checkbox"
-                      className="absolute top-2 left-2 z-10"
+                      className="absolute bottom-[0.6rem] right-[0.6rem] z-10 shadow-[0px_0px_1px_5px_#E4E7EB]"
                       checked={selectedRemovePhotoIds.includes(photo.photo_id)}
                       onChange={() => {
                         setSelectedRemovePhotoIds((prev) =>
@@ -449,16 +466,16 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
             </div>
 
             {showAddPhotos && (
-              <div className="my-4 border rounded p-4 bg-gray-50">
+              <div className="my-4 border rounded p-2 bg-gray-50">
                 <h3 className="font-semibold mb-2 text-black">Select photos to add:</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-64 overflow-y-auto">
+                <div className="flex flex-wrap gap-2 md:max-h-64 md:overflow-y-auto justify-evenly">
                   {userPhotos
                     .filter(
                       (photo) =>
                         !photos.some((p) => p.photo_id === photo.photo_id)
                     )
                     .map((photo) => (
-                      <label key={photo.photo_id} className="flex flex-col items-center cursor-pointer border-2 border-gray-300 rounded-lg p-2">
+                      <label key={photo.photo_id} className="flex flex-col cursor-pointer border-2 border-gray-300 rounded-lg p-1 items-start min-w-max">
                         <input
                           type="checkbox"
                           className="mb-1"
@@ -479,23 +496,23 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
                             No Image
                           </div>
                         )}
-                        <span className="text-xs text-black text-center">{photo.metadata?.description || ''}</span>
+                        {/* <span className="text-xs text-black text-center">{photo.metadata?.description || ''}</span> */}
                       </label>
                     ))}
                 </div>
                 <button
-                  className="btn btn-success mt-3"
+                  className="btn btn-success mt-2 h-[30px] px-[10px]"
                   onClick={handleAddSelectedPhotos}
                   disabled={addingPhotos || selectedPhotoIds.length === 0}
                 >
-                  {addingPhotos ? 'Adding...' : 'Add Selected Photos'}
+                  {addingPhotos ? 'Adding...' : 'Add Selected'}
                 </button>
               </div>
             )}
 
             <div className="flex gap-2 mt-4">
               <button
-                className="btn btn-primary"
+                className="btn btn-primary h-[30px] px-[10px]"
                 onClick={() => {
                   setShowAddPhotos((v) => !v);
                   setShowRemovePhotos(false);
@@ -506,7 +523,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
                 {showAddPhotos ? 'Cancel' : 'Add Photos'}
               </button>
               <button
-                className="btn btn-warning"
+                className="btn btn-warning h-[30px] px-[10px]"
                 onClick={() => {
                   setShowRemovePhotos((v) => !v);
                   setShowAddPhotos(false);
@@ -519,7 +536,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
 
               {showRemovePhotos && (
                 <button
-                  className="btn btn-error"
+                  className="btn btn-error h-[30px] px-[10px]"
                   onClick={async () => {
                     if (!selectedAlbum) return;
                     setRemovingPhotos(true);
@@ -541,7 +558,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
                   }}
                   disabled={removingPhotos || selectedRemovePhotoIds.length === 0}
                 >
-                  {removingPhotos ? 'Removing...' : 'Remove Selected Photos'}
+                  {removingPhotos ? 'Removing...' : 'Remove Selected'}
                 </button>
               )}
             </div>
@@ -549,7 +566,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
             <div className="flex justify-between mt-4">
               <button
                 onClick={() => setShowModal(false)}
-                className="btn btn-secondary"
+                className="btn btn-secondary h-[30px] px-[10px]"
                 disabled={deleting || addingPhotos}
               >
                 Close
@@ -558,7 +575,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
                 <>
                   <button
                     onClick={handleDeleteAlbum}
-                    className="btn btn-error"
+                    className="btn btn-error h-[30px] px-[10px]"
                     disabled={deleting || addingPhotos}
                     >
                       {deleting ? 'Deleting...' : 'Delete Album'}
