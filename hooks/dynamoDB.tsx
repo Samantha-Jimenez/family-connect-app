@@ -1156,10 +1156,11 @@ export const setUserCTAVisible = async (userId: string, visible: boolean) => {
 
 export const deleteAlbumById = async (albumId: string) => {
   try {
-    // Delete all photos in the album
+    // Disassociate photos from the album (set album_id to "")
     const photos = await getPhotosByAlbum(albumId);
     for (const photo of photos) {
-      await deletePhotoById(photo.photo_id);
+      // Set album_id to empty string instead of deleting the photo
+      await removePhotoFromAlbum(photo.photo_id, albumId);
     }
 
     // Delete the album itself
