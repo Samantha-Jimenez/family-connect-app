@@ -24,9 +24,9 @@ const formatDate = (dateString: string): string => {
   try {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
-      weekday: 'long',
+      weekday: 'short',
       year: 'numeric',
-      month: 'long',
+      month: 'short',
       day: 'numeric'
     });
   } catch (error) {
@@ -467,8 +467,8 @@ const Photos = () => {
     if (uniqueTimestamps.size <= 1) return null;
   
     return (
-      <div className="mb-8 px-4">
-        <div className="mb-2 flex justify-between text-sm text-gray-600">
+      <div className="mb-8">
+        <div className="mb-2 flex justify-between text-sm text-gray-600 whitespace-nowrap">
           <span>{timestampToDate(currentDateRange[0])}</span>
           <span>{timestampToDate(currentDateRange[1])}</span>
         </div>
@@ -492,7 +492,7 @@ const Photos = () => {
                   max: dateRange.max
                 })
               }}
-              className="h-2 w-full rounded bg-gray-200"
+              className="h-2 w-full rounded bg-gray-200 px-4"
             >
               {children}
             </div>
@@ -619,6 +619,7 @@ const Photos = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 bg-gray-100">
+      <h1 className="text-4xl mb-6 text-gray-800">Family Photos</h1>
 
       {/* Gallery section with transition */}
       <div 
