@@ -261,7 +261,7 @@ const AdminPage = () => {
     <div className="min-h-screen p-6 bg-gray-50">
       <h1 className="text-4xl font-bold text-center mb-6 text-gray-800">Admin Page</h1>
       <div className="col-span-1 sm:col-span-2">
-        <div data-theme="light" className="tabs tabs-bordered bg-white rounded-lg shadow-lg justify-self-center">
+        <div data-theme="light" className="tabs tabs-bordered bg-white rounded-lg shadow-lg justify-self-center w-max m-auto">
           <a 
             className={`tab tab-lg text-sm poppins-light ${activeTab === 'members' ? 'tab-active bg-yellow-800/80 rounded-lg text-white hover:text-white' : ''}`}
             onClick={() => setActiveTab('members')}

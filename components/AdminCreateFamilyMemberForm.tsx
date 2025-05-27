@@ -161,7 +161,7 @@ const AdminCreateFamilyMemberForm = ({ handleAddFamilyMember, formData, handleIn
               <label htmlFor="admin_phone" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Phone number</label>
             </div>
           </div>
-          <div className="grid grid-cols-4 gap-6 z-0 w-full mb-5 group">
+          <div className="grid md:grid-cols-4 grid-cols-1 gap-6 z-0 w-full mb-5 group">
             <div className="relative z-0 mb-5 group md:col-start-1 md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">Profile Photo</label>
               <div className="flex items-center gap-2 w-full">
@@ -222,7 +222,6 @@ const AdminCreateFamilyMemberForm = ({ handleAddFamilyMember, formData, handleIn
                 value={formData.death_date}
                 onChange={handleInputChange}
                 className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
-                placeholder=" "
               />
             <label htmlFor="admin_death_date" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6 whitespace-nowrap">Death Date</label>
             </div>
