@@ -137,15 +137,32 @@ const AdminCreateFamilyMemberForm = ({ handleAddFamilyMember, formData, handleIn
               <label htmlFor="admin_bio" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Bio</label>
             </div>
             <div className="relative z-0 w-full mb-5 group md:row-span-1 md:col-span-1 md:col-start-3">
-              <input
-                type="date"
-                name="birthday"
-                id="admin_birthday"
-                value={formData.birthday}
-                onChange={handleInputChange}
-                className="block py-2.5 px-0 w-full text-sm bg-transparent border-0 border-b-2 border-gray-300 appearance-none text-black focus:outline-none focus:ring-0 focus:border-blue-600 peer"
-                placeholder=" "
-              />
+              <div className="flex items-center">
+                <input
+                  type="date"
+                  name="birthday"
+                  id="admin_birthday"
+                  value={formData.birthday}
+                  onChange={handleInputChange}
+                  className="block py-2.5 px-0 w-full text-sm bg-transparent border-0 border-b-2 border-gray-300 appearance-none text-black focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                  placeholder=" "
+                />
+                {formData.birthday && (
+                  <button
+                    type="button"
+                    className="ml-2 px-2 py-1 bg-gray-200 rounded text-xs"
+                    onClick={() => handleInputChange({
+                      target: {
+                        name: "birthday",
+                        value: ""
+                      }
+                    } as any)}
+                    aria-label="Clear birthday"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
               <label htmlFor="admin_birthday" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6 whitespace-nowrap">Birthday (MM/DD/YYYY)</label>
             </div>
             <div className="relative z-0 w-full mb-5 group md:row-span-1 md:col-span-1 md:col-start-4">
@@ -214,16 +231,33 @@ const AdminCreateFamilyMemberForm = ({ handleAddFamilyMember, formData, handleIn
                 )}
               </div>
             </div>
-            <div className="relative z-0 mb-5 group md:col-span-2 md:col-start-1 md:row-span-1 md:col-span-1 md:col-start-3">
-            <input
-                type="date"
-                name="death_date"
-                id="admin_death_date"
-                value={formData.death_date}
-                onChange={handleInputChange}
-                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
-              />
-            <label htmlFor="admin_death_date" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6 whitespace-nowrap">Death Date</label>
+            <div className="relative z-0 w-full mb-5 group md:row-span-1 md:col-span-1 md:col-start-3">
+              <div className="flex items-center">
+                <input
+                  type="date"
+                  name="death_date"
+                  id="admin_death_date"
+                  value={formData.death_date}
+                  onChange={handleInputChange}
+                  className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                />
+                {formData.death_date && (
+                  <button
+                    type="button"
+                    className="ml-2 px-2 py-1 bg-gray-200 rounded text-xs"
+                    onClick={() => handleInputChange({
+                      target: {
+                        name: "death_date",
+                        value: ""
+                      }
+                    } as any)}
+                    aria-label="Clear death date"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <label htmlFor="admin_death_date" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6 whitespace-nowrap">Death Date</label>
             </div>
           </div>
           <button type="submit" className="text-white bg-yellow-800/80 hover:bg-yellow-800/90 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full px-5 py-2.5 text-center">

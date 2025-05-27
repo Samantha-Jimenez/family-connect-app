@@ -385,7 +385,7 @@ const Settings = () => {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen px-4">
+      <div className="min-h-screen px-4 pb-6">
         <form onSubmit={handlePhotoSubmit} className="card bg-white shadow-xl p-6 mx-auto mt-6 max-w-7xl">
           <div className="flex md:flex-row flex-col items-center gap-4 self-center">
             <div className="avatar">
@@ -523,6 +523,7 @@ const Settings = () => {
           </div>
           <div className="grid md:grid-cols-2 md:gap-6">
             <div className="relative z-0 w-full mb-5 group">
+              <div className="flex items-center">
               <input 
                 type="date" 
                 value={userData?.birthday || ''} 
@@ -531,6 +532,23 @@ const Settings = () => {
                 onChange={handleInputChange} 
                 className="block py-2.5 px-0 w-full text-sm bg-transparent border-0 border-b-2 border-gray-300 appearance-none text-black dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" 
               />
+              {userData?.birthday && (
+                  <button
+                    type="button"
+                    className="ml-2 px-2 py-1 bg-gray-200 rounded text-xs"
+                    onClick={() => handleInputChange({
+                      target: {
+                        name: "floating_birthday",
+                        value: ""
+                      }
+                    } as any)}
+                    aria-label="Clear birthday (MM/DD/YYYY)"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              {/* </div> */}
               <label 
                 htmlFor="floating_birthday" 
                 className="peer-focus:font-medium absolute text-sm text-gray-400 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
