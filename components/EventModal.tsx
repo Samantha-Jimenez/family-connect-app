@@ -253,6 +253,14 @@ export default function EventModal({
   };
 
   const handleRsvp = async (status: 'yes' | 'no' | 'maybe') => {
+    // Toggle RSVP: deselect if already selected
+    if (rsvpStatus === status) {
+      setRsvpStatus(null);
+      if (event?.id) {
+        await rsvpEvent(event.id, null as any); // Pass null to remove RSVP
+      }
+      return;
+    }
     setRsvpStatus(status);
     if (event?.id) {
       await rsvpEvent(event.id, status);
@@ -459,7 +467,7 @@ export default function EventModal({
             </div>
 
             <div className="mt-4">
-              <div className="font-semibold mb-2">RSVPs:</div>
+              <div className="font-semibold text-gray-500">RSVPs:</div>
               {rsvpList.length === 0 ? (
                 <div className="text-gray-500 text-sm">No RSVPs yet.</div>
               ) : (
@@ -473,20 +481,20 @@ export default function EventModal({
               )}
             </div>
 
-            <div className="modal-action">
+            <div className="mt-2 flex justify-end gap-2">
               {(event?.userId === user.userId || user.userId === "f16b1510-0001-705f-8680-28689883e706") && (
                 <>
                   <button
                     type="button"
                     onClick={() => setIsConfirmOpen(true)}
-                    className="btn btn-error"
+                    className="btn btn-error h-[30px] px-[10px]"
                   >
                     Delete
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsEditing(true)}
-                    className="btn btn-primary"
+                    className="btn btn-primary h-[30px] px-[10px]"
                   >
                     Edit
                   </button>
@@ -495,19 +503,35 @@ export default function EventModal({
               <button
                 type="button"
                 onClick={handleClose}
-                className="btn"
+                className="btn h-[30px] px-[10px]"
               >
                 Close
               </button>
             </div>
 
-            <div className="modal-action">
-              <div className="text-sm font-semibold text-gray-500">
-                Your RSVP Status: {rsvpStatus ? rsvpStatus.charAt(0).toUpperCase() + rsvpStatus.slice(1) : 'Not Responded'}
+            <div className="mt-4 flex justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="text-sm font-semibold text-gray-500">
+                  RSVP: 
+                </div>
+                <h3 className="font-extralight text-gray-500 text-sm">
+                  {rsvpStatus ? rsvpStatus.charAt(0).toUpperCase() + rsvpStatus.slice(1) : '--'}
+                </h3>
               </div>
-              <button onClick={() => handleRsvp('yes')} className="btn btn-success">RSVP Yes</button>
-              <button onClick={() => handleRsvp('no')} className="btn btn-error">RSVP No</button>
-              <button onClick={() => handleRsvp('maybe')} className="btn btn-warning">RSVP Maybe</button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleRsvp('yes')}
+                  className={`btn btn-success h-[30px] px-[10px]${rsvpStatus === 'yes' ? ' border-2 border-black' : ''}`}
+                >Yes</button>
+                <button
+                  onClick={() => handleRsvp('no')}
+                  className={`btn btn-error h-[30px] px-[10px]${rsvpStatus === 'no' ? ' border-2 border-black' : ''}`}
+                >No</button>
+                <button
+                  onClick={() => handleRsvp('maybe')}
+                  className={`btn btn-warning h-[30px] px-[10px]${rsvpStatus === 'maybe' ? ' border-2 border-black' : ''}`}
+                >Maybe</button>
+              </div>
             </div>
           </>
         )}
