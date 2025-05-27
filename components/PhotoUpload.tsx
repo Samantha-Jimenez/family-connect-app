@@ -235,6 +235,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
               value={location.country}
               onChange={(e) => setLocation({ ...location, country: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-200 dark:border-gray-600 p-2"
+              placeholder="Country"
             />
           </div>
 
@@ -247,6 +248,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
               value={location.state}
               onChange={(e) => setLocation({ ...location, state: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-200 dark:border-gray-600 p-2"
+              placeholder="State/Province"
             />
           </div>
 
@@ -259,6 +261,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
               value={location.city}
               onChange={(e) => setLocation({ ...location, city: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-200 dark:border-gray-600 p-2"
+              placeholder="City"
             />
           </div>
 
@@ -271,6 +274,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
               value={location.neighborhood}
               onChange={(e) => setLocation({ ...location, neighborhood: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-200 dark:border-gray-600 p-2"
+              placeholder="Neighborhood"
             />
           </div>
         </div>
@@ -284,7 +288,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-200 dark:border-gray-600 p-2"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-200 dark:border-gray-600 p-2 placeholder:poppins-extralight placeholder:font-weight-200"
           placeholder="Enter photo description"
         />
       </div>
@@ -310,9 +314,9 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
           options={familyMemberOptions}
           value={selectedUsers}
           onChange={(selected) => setSelectedUsers(selected as UserOption[])}
-          className="mt-1 text-black"
+          className="mt-1 text-black poppins-light"
           classNamePrefix="select"
-          placeholder="Select family members in this photo..."
+          placeholder="Tag family members in photo..."
           noOptionsMessage={() => "No family members found"}
           isLoading={familyMembers.length === 0}
           theme={(theme) => ({
@@ -323,15 +327,23 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
               primary25: '#bfdbfe',
               neutral0: 'var(--bg-color, white)',
               neutral80: 'var(--text-color, black)',
-            },
+            }
           })}
+          styles={{
+            placeholder: (base) => ({
+              ...base,
+              fontFamily: "'Poppins', sans-serif",
+              fontWeight: 300,
+              color: '#9BA3AF',
+            }),
+          }}
         />
       </div>
 
       <button
         type="submit"
         disabled={!selectedFile || isUploading}
-        className={`w-full px-4 py-2 text-white rounded-md ${
+        className={`w-full px-4 py-2 text-white rounded-md poppins-light ${
           isUploading || !selectedFile
             ? 'bg-blue-300 cursor-not-allowed'
             : 'bg-blue-500 hover:bg-blue-600'
