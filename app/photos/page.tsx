@@ -642,7 +642,7 @@ const Photos = () => {
         {/* Location filter dropdown */}
         <div className="flex flex-wrap mb-4">
           <div className="w-1/2 p-2"> {/* First column */}
-            <label htmlFor="country-filter" className="block text-sm font-medium text-gray-400 poppins-medium">
+            <label htmlFor="country-filter" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
               Filter by Country:
             </label>
             <Select
@@ -657,11 +657,11 @@ const Photos = () => {
                 setSelectedNeighborhood([]);
                 handleLocationChange(); // Fetch photos on change
               }}
-              placeholder="Select Country"
+              placeholder="Country"
             />
           </div>
           <div className="w-1/2 p-2"> {/* Second column */}
-            <label htmlFor="state-filter" className="block text-sm font-medium text-gray-400 poppins-medium">
+            <label htmlFor="state-filter" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
               Filter by State:
             </label>
             <Select
@@ -675,12 +675,12 @@ const Photos = () => {
                 setSelectedNeighborhood([]);
                 handleLocationChange(); // Fetch photos on change
               }}
-              placeholder="Select State"
+              placeholder="State"
               isDisabled={selectedCountry.length === 0}
             />
           </div>
           <div className="w-1/2 p-2"> {/* Third column */}
-            <label htmlFor="city-filter" className="block text-sm font-medium text-gray-400 poppins-medium">
+            <label htmlFor="city-filter" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
               Filter by City:
             </label>
             <Select
@@ -693,12 +693,12 @@ const Photos = () => {
                 setSelectedNeighborhood([]);
                 handleLocationChange(); // Fetch photos on change
               }}  
-              placeholder="Select City"
+              placeholder="City"
               isDisabled={selectedState.length === 0}
             />
           </div>
           <div className="w-1/2 p-2"> {/* Fourth column */}
-            <label htmlFor="neighborhood-filter" className="block text-sm font-medium text-gray-400 poppins-medium">
+            <label htmlFor="neighborhood-filter" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
               Filter by Neighborhood:
             </label>
             <Select
@@ -710,7 +710,7 @@ const Photos = () => {
                 setSelectedNeighborhood(options as LocationOption[]);
                 handleLocationChange(); // Fetch photos on change
               }}
-              placeholder="Select Neighborhood"
+              placeholder="Neighborhood"
               isDisabled={selectedCity.length === 0}
             />
           </div>
@@ -718,7 +718,7 @@ const Photos = () => {
 
         {/* Person filter dropdown */}
         <div className="mb-4 px-2">
-          <label htmlFor="person-filter" className="block text-sm font-medium text-gray-400 poppins-medium">
+          <label htmlFor="person-filter" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
             Filter by Person:
           </label>
           <Select
