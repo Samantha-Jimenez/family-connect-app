@@ -72,24 +72,40 @@ export default function EventModal({
             setStartDate(start.toISOString().split('T')[0]);
             setStartTime(start.toLocaleTimeString('en-US', { hour12: false }).slice(0, 5));
           }
-          
           if (event.end) {
-            const end = new Date(event.end);
+            let end = new Date(event.end);
+            if (event.allDay) {
+              end.setDate(end.getDate() - 1);
+            }
             if (!isNaN(end.getTime())) {
               setEndDate(end.toISOString().split('T')[0]);
-              setEndTime(end.toLocaleTimeString('en-US', { hour12: false }).slice(0, 5));
+              if (!event.allDay) {
+                setEndTime(end.toLocaleTimeString('en-US', { hour12: false }).slice(0, 5));
+              }
+            }
+          } else {
+            const selected = new Date(selectedDate);
+            if (!isNaN(selected.getTime())) {
+              setTitle('');
+              setIsAllDay(false);
+              setLocation('');
+              setStartDate(selected.toISOString().split('T')[0]);
+              setStartTime('00:00');
+              setEndDate(selected.toISOString().split('T')[0]);
+              setEndTime('00:00');
             }
           }
-        } else {
+        } else if (mode === 'add') {
+          // Always set startDate to selectedDate in add mode
           const selected = new Date(selectedDate);
           if (!isNaN(selected.getTime())) {
             setTitle('');
             setIsAllDay(false);
             setLocation('');
             setStartDate(selected.toISOString().split('T')[0]);
-            setStartTime('09:00');
+            setStartTime('00:00');
             setEndDate(selected.toISOString().split('T')[0]);
-            setEndTime('10:00');
+            setEndTime('00:00');
           }
         }
       } catch (error) {
@@ -186,7 +202,10 @@ export default function EventModal({
         if (isAllDay) {
           startDateTime = new Date(`${startDate}T00:00:00`);
           if (endDate) {
-            endDateTime = new Date(`${endDate}T23:59:59`);
+            // Add one day to the end date for all-day events (exclusive end)
+            const end = new Date(endDate);
+            end.setDate(end.getDate() + 2);
+            endDateTime = new Date(`${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}T00:00:00`);
           }
         } else {
           startDateTime = new Date(`${startDate}T${startTime}:00`);
@@ -220,8 +239,19 @@ export default function EventModal({
     }
   };
 
+  const clearFields = () => {
+    setTitle('');
+    setLocation('');
+    // Do not clear startDate so it can be set from selectedDate
+    setStartTime('');
+    setEndDate('');
+    setEndTime('');
+    setIsAllDay(false);
+  };
+
   const handleClose = () => {
     setIsEditing(false);
+    clearFields();
     onClose();
   };
 
@@ -239,10 +269,15 @@ export default function EventModal({
         }
         
         if (event.end) {
-          const end = new Date(event.end);
+          let end = new Date(event.end);
+          if (event.allDay) {
+            end.setDate(end.getDate() - 1);
+          }
           if (!isNaN(end.getTime())) {
             setEndDate(end.toISOString().split('T')[0]);
-            setEndTime(end.toLocaleTimeString('en-US', { hour12: false }).slice(0, 5));
+            if (!event.allDay) {
+              setEndTime(end.toLocaleTimeString('en-US', { hour12: false }).slice(0, 5));
+            }
           }
         }
       }
