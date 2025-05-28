@@ -274,6 +274,70 @@ export default function EventModal({
     }
   };
 
+  const getEventDateDisplay = () => {
+    if (!startDate) return '';
+    const parseLocalDate = (dateStr: string) => {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    };
+    const start = parseLocalDate(startDate);
+    const end = endDate ? parseLocalDate(endDate) : null;
+
+    const format = (date: Date) =>
+      date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        timeZone: 'America/New_York',
+      });
+
+    if (end && end.toDateString() !== start.toDateString()) {
+      return `${format(start)} - ${format(end)}`;
+    }
+    return format(start);
+  };
+
+  const getEventTimeDisplay = () => {
+    const parseLocalDate = (dateStr: string) => {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    };
+    if (isAllDay) {
+      if (!startDate) return '';
+      const start = parseLocalDate(startDate);
+      const end = endDate ? parseLocalDate(endDate) : null;
+      if (end && end > start) {
+        // Calculate number of days (inclusive)
+        const diffDays = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        return `${diffDays} Day Event`;
+      }
+      return 'All Day Event';
+    } else {
+      // Timed event
+      if (startTime && endTime) {
+        // Format as "09:00 AM - 11:00 AM"
+        const formatTime = (time: string) => {
+          const [hour, minute] = time.split(':').map(Number);
+          const date = new Date();
+          date.setHours(hour, minute, 0, 0);
+          return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        };
+        return `${formatTime(startTime)} - ${formatTime(endTime)}`;
+      }
+      if (startTime) {
+        const formatTime = (time: string) => {
+          const [hour, minute] = time.split(':').map(Number);
+          const date = new Date();
+          date.setHours(hour, minute, 0, 0);
+          return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        };
+        return formatTime(startTime);
+      }
+      return '';
+    }
+  };
+
   return (
     <dialog className={`modal ${isOpen ? 'modal-open' : ''}`}>
       <div className="modal-box bg-gray-100">
@@ -420,30 +484,19 @@ export default function EventModal({
             <div className="space-y-4">
               <div>
                 <div className="text-sm font-semibold text-gray-500">
-                  {isAllDay ? 'Date' : 'Start'}
+                  Date
                 </div>
                 <div>
-                  {formatDateTime(startDate, isAllDay ? undefined : startTime)}
+                  {getEventDateDisplay()}
                 </div>
               </div>
 
-              {(endDate || endTime) && (
-                <div>
-                  <div className="text-sm font-semibold text-gray-500">
-                    End
-                  </div>
-                  <div>
-                    {formatDateTime(endDate, isAllDay ? undefined : endTime)}
-                  </div>
-                </div>
-              )}
-
               <div>
                 <div className="text-sm font-semibold text-gray-500">
-                  Duration
+                  {isAllDay ? 'Duration' : 'Time'}
                 </div>
                 <div>
-                  {isAllDay ? 'All Day Event' : calculateDuration(startDate, startTime, endDate, endTime)}
+                  {getEventTimeDisplay()}
                 </div>
               </div>
 
