@@ -516,7 +516,7 @@ export default function EventModal({
           <>
             <h3 className="font-bold text-lg mb-4">{title}</h3>
             
-            <div className="space-y-4">
+            <div className="space-y-2">
               <div>
                 <div className="text-sm font-semibold text-gray-500">
                   Date
@@ -554,7 +554,7 @@ export default function EventModal({
               )}
             </div>
 
-            <div className="mt-4">
+            <div className="mt-2">
               <div className="font-semibold text-gray-500">RSVPs:</div>
               {rsvpList.length === 0 ? (
                 <div className="text-gray-500 text-sm">No RSVPs yet.</div>
@@ -597,7 +597,7 @@ export default function EventModal({
               </button>
             </div>
 
-            <div className="mt-4 flex justify-between gap-2">
+            <div className="mt-3 flex justify-between gap-2 border-t border-gray-300 pt-3">
               <div className="flex items-center gap-2">
                 <div className="text-sm font-semibold text-gray-500">
                   RSVP: 
