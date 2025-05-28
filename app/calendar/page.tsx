@@ -26,6 +26,7 @@ interface CalendarEvent {
   borderColor?: string;
   textColor?: string;
   classNames?: string[];
+  description?: string;
   extendedProps?: {
     category?: 'birthday' | 'holiday' | 'family-event' | 'appointment';
     rrule?: {
@@ -36,6 +37,7 @@ interface CalendarEvent {
     };
     userId?: string;
     location?: string;
+    description?: string;
   }
   userId?: string;
   location?: string;
@@ -104,7 +106,8 @@ export default function Calendar() {
         extendedProps: event.extendedProps,
         rrule: event.extendedProps?.rrule,
         userId: event.extendedProps?.userId,
-        location: event.extendedProps?.location
+        location: event.extendedProps?.location,
+        description: event.extendedProps?.description
       };
       setSelectedEvent(eventData);
       setModalMode('edit');
@@ -115,7 +118,7 @@ export default function Calendar() {
     }
   };
 
-  const handleAddEvent = (title: string, start: string, userId: string, end?: string, allDay?: boolean, location?: string) => {
+  const handleAddEvent = (title: string, start: string, userId: string, end?: string, allDay?: boolean, location?: string, description?: string) => {
     const newEvent = {
       id: crypto.randomUUID(),
       title,
@@ -123,7 +126,8 @@ export default function Calendar() {
       end,
       allDay,
       location,
-      userId
+      userId,
+      description
     };
 
     // Check if the event already exists based on title and start time
@@ -135,13 +139,13 @@ export default function Calendar() {
     }
   };
 
-  const handleEditEvent = (title: string, start: string, userId: string, end?: string, allDay?: boolean, location?: string) => {
+  const handleEditEvent = (title: string, start: string, userId: string, end?: string, allDay?: boolean, location?: string, description?: string) => {
     if (!selectedEvent?.id) return;
     
     setEvents(currentEvents =>
       currentEvents.map(event =>
         event.id === selectedEvent.id
-          ? { ...event, title, start, end, allDay, location, userId }
+          ? { ...event, title, start, end, allDay, location, userId, description }
           : event
       )
     );

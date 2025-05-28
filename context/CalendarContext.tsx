@@ -18,6 +18,7 @@ export interface CalendarEvent {
   classNames?: string[];
   location?: string;
   createdBy?: string;
+  description?: string;
   extendedProps?: {
     category?: 'birthday' | 'holiday' | 'family-event' | 'appointment';
     rrule?: {
@@ -36,7 +37,7 @@ export interface CalendarEvent {
 interface CalendarContextType {
   events: CalendarEvent[];
   setEvents: React.Dispatch<React.SetStateAction<CalendarEvent[]>>;
-  addEvent: (title: string, start: string, end?: string, allDay?: boolean, location?: string, createdBy?: string) => void;
+  addEvent: (title: string, start: string, end?: string, allDay?: boolean, location?: string, createdBy?: string, description?: string) => void;
   rsvpEvent: (eventId: string, status: 'yes' | 'no' | 'maybe') => void;
   fetchUserRSVPs: () => Promise<CalendarEvent[]>;
 }
@@ -49,7 +50,7 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Define addEvent inside the provider
-  const addEvent = (title: string, start: string, end?: string, allDay?: boolean, location?: string, createdBy?: string) => {
+  const addEvent = (title: string, start: string, end?: string, allDay?: boolean, location?: string, createdBy?: string, description?: string) => {
     setEvents((prevEvents: CalendarEvent[]) => [
       ...prevEvents,
       {
@@ -60,6 +61,7 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
         allDay,
         location,
         createdBy,
+        description,
       },
     ]);
   };

@@ -7,7 +7,7 @@ import ConfirmationModal from './ConfirmationModal';
 interface EventModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (title: string, start: string, userId: string, end?: string, allDay?: boolean, location?: string) => void;
+  onSubmit: (title: string, start: string, userId: string, end?: string, allDay?: boolean, location?: string, description?: string) => void;
   onDelete?: () => void;
   selectedDate: string;
   event?: CalendarEvent | null;
@@ -39,6 +39,7 @@ export default function EventModal({
   const [rsvpStatusFetched, setRsvpStatusFetched] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [rsvpList, setRsvpList] = useState<{ userId: string; status: 'yes' | 'no' | 'maybe'; name: string }[]>([]);
+  const [description, setDescription] = useState('');
 
   useEffect(() => {
     if (event?.userId) {
@@ -67,6 +68,7 @@ export default function EventModal({
           setTitle(event.title);
           setIsAllDay(!!event.allDay);
           setLocation(event.location || '');
+          setDescription(event.description || '');
           const start = new Date(event.start);
           if (!isNaN(start.getTime())) {
             setStartDate(start.toISOString().split('T')[0]);
@@ -89,6 +91,7 @@ export default function EventModal({
               setTitle('');
               setIsAllDay(false);
               setLocation('');
+              setDescription('');
               setStartDate(selected.toISOString().split('T')[0]);
               setStartTime('00:00');
               setEndDate(selected.toISOString().split('T')[0]);
@@ -102,6 +105,7 @@ export default function EventModal({
             setTitle('');
             setIsAllDay(false);
             setLocation('');
+            setDescription('');
             setStartDate(selected.toISOString().split('T')[0]);
             setStartTime('00:00');
             setEndDate(selected.toISOString().split('T')[0]);
@@ -114,7 +118,7 @@ export default function EventModal({
     };
 
     resetToEventValues();
-  }, [event, mode, selectedDate, setTitle, setIsAllDay, setLocation, setStartDate, setStartTime, setEndDate, setEndTime]);
+  }, [event, mode, selectedDate, setTitle, setIsAllDay, setLocation, setStartDate, setStartTime, setEndDate, setEndTime, setDescription]);
 
   useEffect(() => {
     if (event?.id && user?.userId && isOpen) {
@@ -220,14 +224,15 @@ export default function EventModal({
         if (endDateTime && isNaN(endDateTime.getTime())) {
           throw new Error('Invalid end date/time');
         }
-        
+
         onSubmit(
           title.trim(), 
           startDateTime.toISOString(), 
           user.userId,
           endDateTime?.toISOString(),
           isAllDay,
-          location.trim() || undefined
+          location.trim() || undefined,
+          description.trim() || undefined
         );
 
         // Close the modal after successful submission
@@ -247,6 +252,7 @@ export default function EventModal({
     setEndDate('');
     setEndTime('');
     setIsAllDay(false);
+    setDescription('');
   };
 
   const handleClose = () => {
@@ -262,6 +268,7 @@ export default function EventModal({
         setTitle(event.title);
         setIsAllDay(!!event.allDay);
         setLocation(event.location || '');
+        setDescription(event.description || '');
         const start = new Date(event.start);
         if (!isNaN(start.getTime())) {
           setStartDate(start.toISOString().split('T')[0]);
@@ -411,6 +418,19 @@ export default function EventModal({
                 </div>
 
                 <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Description</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="input input-bordered w-full bg-white"
+                    placeholder="Enter description (optional)"
+                  />
+                </div>
+
+                <div className="form-control">
                   <label className="label cursor-pointer">
                     <span className="label-text">All Day Event</span>
                     <input
@@ -541,6 +561,15 @@ export default function EventModal({
                     Location
                   </div>
                   <div>{location}</div>
+                </div>
+              )}
+
+              {description && (
+                <div>
+                  <div className="text-sm font-semibold text-gray-500">
+                    Description
+                  </div>
+                  <div>{description}</div>
                 </div>
               )}
 
