@@ -182,6 +182,7 @@ export const getUserData = async (userId: string) => {
       city: data.Item.city?.S || '',
       state: data.Item.state?.S || '',
       cta_visible: data.Item.cta_visible?.BOOL,
+      death_date: data.Item.death_date?.S || '',
     };
   } catch (error) {
     console.error("❌ Error fetching user data:", error);

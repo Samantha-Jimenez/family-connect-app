@@ -12,6 +12,7 @@ import AlbumsCard from "@/components/AlbumsCard";
 import TaggedPhotosCard from "@/components/TaggedPhotosCard";
 import UploadedPhotosCard from "@/components/UploadedPhotosCard";
 import ProfileOverview from "@/components/ProfileOverview";
+import PassedMemberOverview from "@/components/PassedMemberOverview";
 
 interface UserData {
   first_name: string;
@@ -97,34 +98,38 @@ export default function ProfilePage() {
         <ProfileUserInfoCard userId={member_id as string}/>
       </div>
 
-      <div className="col-span-1 sm:col-span-2">
-        <div data-theme="light" className="tabs tabs-bordered rounded-lg shadow-lg">
-          <a 
-            className={`tab tab-lg text-base poppins-light ${activeTab === 'overview' ? 'tab-active' : ''}`}
-            onClick={() => setActiveTab('overview')}
-          >
-            Overview
-          </a>
-          <a 
-            className={`tab tab-lg text-base poppins-light ${activeTab === 'uploads' ? 'tab-active' : ''}`}
-            onClick={() => setActiveTab('uploads')}
-          >
-            Uploads
-          </a>
-          <a
-            className={`tab tab-lg text-base poppins-light ${activeTab === 'albums' ? 'tab-active' : ''}`}
-            onClick={() => setActiveTab('albums')}
-          >
-            Albums
-          </a>
-        </div>
+      {memberData?.death_date ? (
+        <PassedMemberOverview memberData={memberData} />
+      ) : ( 
+        <div className="col-span-1 sm:col-span-2">
+          <div data-theme="light" className="tabs tabs-bordered rounded-lg shadow-lg">
+            <a 
+              className={`tab tab-lg text-base poppins-light ${activeTab === 'overview' ? 'tab-active' : ''}`}
+              onClick={() => setActiveTab('overview')}
+            >
+              Overview
+            </a>
+            <a 
+              className={`tab tab-lg text-base poppins-light ${activeTab === 'uploads' ? 'tab-active' : ''}`}
+              onClick={() => setActiveTab('uploads')}
+            >
+              Uploads
+            </a>
+            <a
+              className={`tab tab-lg text-base poppins-light ${activeTab === 'albums' ? 'tab-active' : ''}`}
+              onClick={() => setActiveTab('albums')}
+            >
+              Albums
+            </a>
+          </div>
 
-        <div className="mt-4">
-          {activeTab === 'overview' && <ProfileOverview userId={member_id as string}/>}
-          {activeTab === 'uploads' && <UploadedPhotosCard userId={member_id as string}/>}
-          {activeTab === 'albums' && <AlbumsCard userId={member_id as string} auth={false}/>}
+          <div className="mt-4">
+            {activeTab === 'overview' && <ProfileOverview userId={member_id as string}/>}
+            {activeTab === 'uploads' && <UploadedPhotosCard userId={member_id as string}/>}
+            {activeTab === 'albums' && <AlbumsCard userId={member_id as string} auth={false}/>}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* <div className="divider col-span-1 sm:col-span-2"></div> */}
       {/* Albums */}
