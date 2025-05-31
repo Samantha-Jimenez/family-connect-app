@@ -172,6 +172,21 @@ const Photos = () => {
 
   const animatedComponents = makeAnimated();
 
+  const reversedImages = useMemo(() => [...filteredImages].reverse(), [filteredImages]);
+
+  // Shuffle utility
+  function shuffleArray<T>(array: T[]): T[] {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  // Memoized shuffled images for carousel
+  const shuffledImages = useMemo(() => shuffleArray(filteredImages), [filteredImages]);
+
   useEffect(() => {
     fetchPhotos();
     fetchFamilyMembers(); // Fetch family members on component mount
@@ -281,6 +296,12 @@ const Photos = () => {
     }
   }, [selectedCity, selectedState, selectedCountry, locationHierarchy]);
 
+  useEffect(() => {
+    if (currentIndex >= shuffledImages.length) {
+      setCurrentIndex(0);
+    }
+  }, [shuffledImages, currentIndex]);
+
   const fetchPhotos = async () => {
     try {
       setLoading(true);
@@ -376,11 +397,13 @@ const Photos = () => {
   };
 
   const handleNext = () => {
-    setCurrentIndex((prevIndex: number) => (prevIndex + 1) % images.length);
+    const visibleCount = Math.min(6, shuffledImages.length);
+    setCurrentIndex((prevIndex: number) => (prevIndex + 1) % visibleCount);
   };
 
   const handlePrev = () => {
-    setCurrentIndex((prevIndex: number) => (prevIndex - 1 + images.length) % images.length);
+    const visibleCount = Math.min(6, shuffledImages.length);
+    setCurrentIndex((prevIndex: number) => (prevIndex - 1 + visibleCount) % visibleCount);
   };
 
   const handleImageClick = (photo: PhotoData) => {
@@ -528,7 +551,7 @@ const Photos = () => {
     console.log('Form submitted:', formData);
     setIsEditing(false);
   };
-
+  // Restore the renderEditForm function
   const renderEditForm = () => (
     <form className="space-y-4">
       <div>
@@ -751,9 +774,9 @@ const Photos = () => {
 
         <div id="default-carousel" className="relative w-full" data-carousel="slide">
           <div className="relative h-56 overflow-hidden rounded-lg md:h-96">
-            {[...filteredImages].reverse().slice(0,6).map((photo, index) => (
+            {shuffledImages.slice(0, 6).map((photo, index) => (
               <div
-                key={index}
+                key={photo.photo_id || index}
                 className={`absolute w-full h-full transition-opacity duration-700 ease-in-out ${
                   index === currentIndex ? 'opacity-100' : 'opacity-0'
                 }`}
@@ -771,37 +794,45 @@ const Photos = () => {
             ))}
           </div>
           <div className="absolute z-30 flex -translate-x-1/2 bottom-8 left-1/2 space-x-3 rtl:space-x-reverse">
-              {[...filteredImages].reverse().slice(0,6).map((_, index) => (
-                  <button
-                      key={index}
-                      type="button"
-                      className={`w-3 h-3 rounded-full ${
-                          currentIndex === index 
-                              ? 'bg-white dark:bg-gray-800' 
-                              : 'bg-white/50 dark:bg-gray-800/50'
-                      }`}
-                      aria-current={currentIndex === index}
-                      aria-label={`Slide ${index + 1}`}
-                      onClick={() => setCurrentIndex(index)}
-                  />
-              ))}
+            {shuffledImages.slice(0, 6).map((_, index) => (
+              <button
+                key={index}
+                type="button"
+                className={`w-3 h-3 rounded-full ${
+                  currentIndex === index
+                    ? 'bg-white dark:bg-gray-800'
+                    : 'bg-white/50 dark:bg-gray-800/50'
+                }`}
+                aria-current={currentIndex === index}
+                aria-label={`Slide ${index + 1}`}
+                onClick={() => setCurrentIndex(index)}
+              />
+            ))}
           </div>
           <div className="flex justify-center items-center pt-4">
-            <button type="button" className="absolute top-0 start-0 z-30 flex items-center justify-center h-full px-4 cursor-pointer group focus:outline-none" onClick={handlePrev}>
-                <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-800/30 group-hover:bg-gray-800/60 group-focus:ring-4 group-focus:ring-white dark:group-focus:ring-gray-800/70 group-focus:outline-none">
-                    <svg className="w-4 h-4 text-white dark:text-gray-800 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                        <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 1 1 5l4 4"/>
-                    </svg>
-                    <span className="sr-only">Previous</span>
-                </span>
+            <button
+              type="button"
+              className="absolute top-0 start-0 z-30 flex items-center justify-center h-full px-4 cursor-pointer group focus:outline-none"
+              onClick={handlePrev}
+            >
+              <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-800/30 group-hover:bg-gray-800/60 group-focus:ring-4 group-focus:ring-white dark:group-focus:ring-gray-800/70 group-focus:outline-none">
+                <svg className="w-4 h-4 text-white dark:text-gray-800 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                  <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 1 1 5l4 4"/>
+                </svg>
+                <span className="sr-only">Previous</span>
+              </span>
             </button>
-            <button type="button" className="absolute top-0 end-0 z-30 flex items-center justify-center h-full px-4 cursor-pointer group focus:outline-none" onClick={handleNext}>
-                <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-800/30 group-hover:bg-gray-800/60 group-focus:ring-4 group-focus:ring-white dark:group-focus:ring-gray-800/70 group-focus:outline-none">
-                    <svg className="w-4 h-4 text-white dark:text-gray-800 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                        <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 9 4-4-4-4"/>
-                    </svg>
-                    <span className="sr-only">Next</span>
-                </span>
+            <button
+              type="button"
+              className="absolute top-0 end-0 z-30 flex items-center justify-center h-full px-4 cursor-pointer group focus:outline-none"
+              onClick={handleNext}
+            >
+              <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-800/30 group-hover:bg-gray-800/60 group-focus:ring-4 group-focus:ring-white dark:group-focus:ring-gray-800/70 group-focus:outline-none">
+                <svg className="w-4 h-4 text-white dark:text-gray-800 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                  <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 9 4-4-4-4"/>
+                </svg>
+                <span className="sr-only">Next</span>
+              </span>
             </button>
           </div>
         </div>
