@@ -223,7 +223,20 @@ input, select, textarea, label {
 .fc-h-event {
   background-color: #226f54 !important;
   border: 1px solid #63CFA9 !important;
-  padding: 0px 3px;
+  padding: 0px 3px !important;
+}
+
+.fc-v-event {
+  background-color: #226f54 !important;
+  border: 1px solid #63CFA9 !important;
+} 
+
+.fc .fc-multimonth-multicol .fc-daygrid-more-link {
+  border: 1px solid #63CFA9 !important;
+}
+
+.fc .fc-list-event-dot {
+  border: calc(10px / 2) solid #226f54 !important;
 }
 
 .fc-daygrid-event-dot {
