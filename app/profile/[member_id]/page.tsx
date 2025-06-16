@@ -14,21 +14,6 @@ import UploadedPhotosCard from "@/components/UploadedPhotosCard";
 import ProfileOverview from "@/components/ProfileOverview";
 import PassedMemberOverview from "@/components/PassedMemberOverview";
 
-interface UserData {
-  first_name: string;
-  last_name: string;
-  email: string;
-  username: string;
-  bio: string;
-  phone_number: string;
-  birthday: string;
-  birth_city: string;
-  birth_state: string;
-  profile_photo: string;
-  current_city: string;
-  current_state: string;
-}
-
 export default function ProfilePage() {
   const pathname = usePathname();
   const member_id = pathname.split('/').pop();
@@ -91,7 +76,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen p-6 bg-white">
-      <div className="max-w-6xl mx-auto grid gap-6 grid-cols-1 md:grid-cols-2"> 
+      <div className="max-w-6xl mx-auto grid gap-4 grid-cols-1 md:grid-cols-2"> 
       {/* <h1 className="text-4xl font-bold text-center mb-6 text-[#717568]">User Profile</h1> */}
       {/* User Info */}
       <div className="col-span-1 sm:col-span-2">
@@ -99,7 +84,7 @@ export default function ProfilePage() {
       </div>
 
       {memberData?.death_date ? (
-        <PassedMemberOverview memberData={memberData} />
+        <PassedMemberOverview memberData={memberData as FamilyMember} />
       ) : ( 
         <div className="col-span-1 sm:col-span-2">
           <div data-theme="light" className="tabs tabs-bordered rounded-lg shadow-lg">

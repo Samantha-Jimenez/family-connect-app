@@ -1,20 +1,12 @@
 import React, { useState } from 'react';
+import TaggedPhotosCard from './TaggedPhotosCard';
+import { FamilyMember } from '@/hooks/dynamoDB';
 
 interface Comment {
   id: string;
   author: string;
   content: string;
   date: string;
-}
-
-interface PassedMemberOverviewProps {
-  memberData: {
-    firstName: string;
-    lastName: string;
-    birthDate?: string;
-    deathDate?: string;
-    photo?: string;
-  };
 }
 
 const formatDate = (dateString: string) => {
@@ -26,7 +18,7 @@ const formatDate = (dateString: string) => {
   });
 };
 
-const PassedMemberOverview = ({ memberData }: PassedMemberOverviewProps) => {
+const PassedMemberOverview = ({ memberData }: { memberData: FamilyMember }) => {
   const [newComment, setNewComment] = useState('');
   const [comments, setComments] = useState<Comment[]>([
     {
@@ -40,6 +32,18 @@ const PassedMemberOverview = ({ memberData }: PassedMemberOverviewProps) => {
       author: 'Jane Smith',
       content: 'Your legacy lives on through all of us. Thank you for being such an important part of our family.',
       date: '2024-03-14'
+    },
+    {
+      id: '3',
+      author: 'Michael Johnson',
+      content: 'Your smile and laughter will forever be in our hearts. You made every family gathering special.',
+      date: '2024-03-13'
+    },
+    {
+      id: '4',
+      author: 'Sarah Williams',
+      content: 'The stories you shared and the wisdom you imparted will continue to guide us through life.',
+      date: '2024-03-12'
     }
   ]);
 
@@ -59,7 +63,8 @@ const PassedMemberOverview = ({ memberData }: PassedMemberOverviewProps) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <>
+    <div className="px-4 py-8">
       {/* Memorial Header */}
       {/* <div className="text-center mb-12">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">
@@ -73,7 +78,7 @@ const PassedMemberOverview = ({ memberData }: PassedMemberOverviewProps) => {
       </div> */}
 
       {/* Comment Form */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+      <div className="bg-white rounded-lg shadow-md p-4 mb-8">
         <h2 className="text-2xl font-semibold text-gray-900 mb-4">Share Your Memory</h2>
         <form onSubmit={handleSubmitComment} className="space-y-4">
           <div>
@@ -81,7 +86,7 @@ const PassedMemberOverview = ({ memberData }: PassedMemberOverviewProps) => {
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Share your favorite memory or message..."
-              className="w-full h-32 px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none bg-gray-200 placeholder:text-gray-400"
+              className="w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none bg-gray-200 placeholder:text-gray-400"
             />
           </div>
           <div className="flex justify-end">
@@ -96,23 +101,27 @@ const PassedMemberOverview = ({ memberData }: PassedMemberOverviewProps) => {
       </div>
 
       {/* Comments Section */}
-      <div className="space-y-6">
+      <div>
         <h2 className="text-2xl font-semibold text-gray-900 mb-6">Memories Shared</h2>
-        {comments.map((comment) => (
-          <div key={comment.id} className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">{comment.author}</h3>
-                <p className="text-sm text-gray-500">
-                  {formatDate(comment.date)}
-                </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {comments.map((comment) => (
+            <div key={comment.id} className="bg-white rounded-lg shadow-md p-4 h-full">
+              <div className="flex flex-col h-full">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">{comment.author}</h3>
+                  <p className="text-sm text-gray-500">
+                    {formatDate(comment.date)}
+                  </p>
+                </div>
+                <p className="text-gray-700 leading-relaxed flex-grow">{comment.content}</p>
               </div>
             </div>
-            <p className="text-gray-700 leading-relaxed">{comment.content}</p>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
+    <TaggedPhotosCard userId={memberData.family_member_id} />
+    </>
   );
 };
 
