@@ -21,11 +21,7 @@ module.exports = {
   },
   plugins: [
     daisyui, 
-    addDynamicIconSelectors(), 
-    require('tailwind-scrollbar')({
-      nocompatible: true,
-      // preferredStrategy: 'pseudoelements',
-    }),
+    addDynamicIconSelectors(),
   ],
   daisyui: {},
 }
