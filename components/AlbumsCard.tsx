@@ -329,7 +329,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 overflow-y-scroll">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 overflow-y-scroll w-screen">
           <div className="bg-white p-6 rounded-lg shadow-lg md:w-3/4 h-full md:h-auto md:max-w-2xl relative overflow-y-scroll">
             <h2 className="font-bold text-black">
               {editing ? (
@@ -349,14 +349,11 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
             </h2>
             {auth && !editing && (
               <button
-                className="btn btn-outline btn-sm absolute right-6 top-6 h-[30px] px-[10px]"
-                onClick={() => {
-                  setEditing(true);
-                  setShowAddPhotos(false);
-                  setShowRemovePhotos(false);
-                }}
+                onClick={() => setShowModal(false)}
+                className="absolute right-1 top-1 h-[30px] w-[30px] px-0 text-2xl font-light"
+                disabled={deleting || addingPhotos}
               >
-                Edit
+                ×
               </button>
             )}
             {editing ? (
@@ -565,11 +562,14 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
 
             <div className="flex justify-between mt-4">
               <button
-                onClick={() => setShowModal(false)}
-                className="btn btn-secondary h-[30px] px-[10px]"
-                disabled={deleting || addingPhotos}
+                className="btn btn-secondary btn-sm h-[30px] px-[10px]"
+                onClick={() => {
+                  setEditing(true);
+                  setShowAddPhotos(false);
+                  setShowRemovePhotos(false);
+                }}
               >
-                Close
+                Edit
               </button>
               {auth && (
                 <>
