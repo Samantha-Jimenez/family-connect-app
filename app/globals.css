@@ -333,3 +333,16 @@ fieldset {
 [data-amplify-authenticator] {
   width: 100% !important;
 }
+
+/* CUSTOM ANIMATIONS */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
