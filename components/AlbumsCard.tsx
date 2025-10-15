@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { createAlbum, addPhotoToAlbum, getUserAlbums, getPhotosByAlbum, deleteAlbumById, getUserPhotos, updateAlbum, removePhotoFromAlbum } from '../hooks/dynamoDB';
+import { createAlbum, addPhotoToAlbum, getUserAlbums, getPhotosByAlbum, deleteAlbumById, getUserPhotos, updateAlbum, removePhotoFromAlbum, getUserData } from '../hooks/dynamoDB';
 import Image from 'next/image';
 import Link from 'next/link';
 import { PhotoData, AlbumData } from '../hooks/dynamoDB';
+import PhotoModal from './PhotoModal';
 
 const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
   const [albumName, setAlbumName] = useState('');
@@ -30,6 +31,9 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
   const [selectedRemovePhotoIds, setSelectedRemovePhotoIds] = useState<string[]>([]);
   const [coverPhotoUploading, setCoverPhotoUploading] = useState(false);
   const [coverPhotosByAlbumId, setCoverPhotosByAlbumId] = useState<{ [albumId: string]: PhotoData | null }>({});
+  const [selectedPhoto, setSelectedPhoto] = useState<PhotoData | null>(null);
+  const [photoUploaderName, setPhotoUploaderName] = useState<string | null>(null);
+  const [isEditingPhoto, setIsEditingPhoto] = useState<boolean>(false);
 
   console.log(albums.map((album) => album.cover_photo_id));
 
@@ -244,6 +248,53 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
     }
   };
 
+  const handleImageClick = (photo: PhotoData) => {
+    setSelectedPhoto(photo);
+    fetchPhotoUploaderName(photo.uploaded_by);
+  };
+
+  const fetchPhotoUploaderName = async (uploaderId: string) => {
+    try {
+      const userDetails = await getUserData(uploaderId);
+      if (userDetails) {
+        setPhotoUploaderName(`${userDetails.first_name} ${userDetails.last_name}`);
+      } else {
+        setPhotoUploaderName('Unknown User');
+      }
+    } catch (error) {
+      console.error('Error fetching uploader details:', error);
+      setPhotoUploaderName('Unknown User');
+    }
+  };
+
+  const closePhotoModal = () => {
+    setSelectedPhoto(null);
+    setIsEditingPhoto(false);
+  };
+
+  const handleImageError: React.ReactEventHandler<HTMLImageElement> = (e) => {
+    console.error('Error loading image:', e.currentTarget.src);
+  };
+
+  const renderEditForm = () => {
+    return <div>Edit form goes here</div>;
+  };
+
+  const handlePhotoDeleted = async () => {
+    if (!selectedAlbum) return;
+    // Refresh album photos after deletion
+    const albumPhotos = await getPhotosByAlbum(selectedAlbum.album_id);
+    setPhotos(albumPhotos);
+    setSelectedPhoto(null);
+  };
+
+  const handlePhotoUpdated = async (updatedPhoto: PhotoData) => {
+    // Update the photo in the photos array
+    setPhotos((prevPhotos) =>
+      prevPhotos.map((p) => (p.photo_id === updatedPhoto.photo_id ? updatedPhoto : p))
+    );
+  };
+
   return (
     <div className="p-4 bg-white shadow-lg rounded-lg relative">
       {auth && (
@@ -435,13 +486,22 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
 
             <div className="grid grid-cols-3 gap-4">
               {photos.map((photo) => (
-                <div key={photo.photo_id} className="p-2 bg-gray-200 rounded-lg relative">
+                <div 
+                  key={photo.photo_id} 
+                  className={`p-2 bg-gray-200 rounded-lg relative ${!editing && !showRemovePhotos ? 'cursor-pointer hover:bg-gray-300' : ''}`}
+                  onClick={() => {
+                    if (!editing && !showRemovePhotos) {
+                      handleImageClick(photo);
+                    }
+                  }}
+                >
                   {showRemovePhotos && (
                     <input
                       type="checkbox"
                       className="absolute bottom-[0.6rem] right-[0.6rem] z-10 shadow-[0px_0px_1px_5px_#E4E7EB]"
                       checked={selectedRemovePhotoIds.includes(photo.photo_id)}
-                      onChange={() => {
+                      onChange={(e) => {
+                        e.stopPropagation();
                         setSelectedRemovePhotoIds((prev) =>
                           prev.includes(photo.photo_id)
                             ? prev.filter((id) => id !== photo.photo_id)
@@ -509,84 +569,99 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
               </div>
             )}
 
-            <div className="flex gap-2 mt-4">
-              <button
-                className="btn btn-sm btn-primary px-[10px]"
-                onClick={() => {
-                  setShowAddPhotos((v) => !v);
-                  setShowRemovePhotos(false);
-                  setSelectedRemovePhotoIds([]);
-                }}
-                disabled={addingPhotos || removingPhotos}
-              >
-                {showAddPhotos ? 'Cancel' : 'Add Photos'}
-              </button>
-              <button
-                className="btn btn-sm btn-warning px-[10px]"
-                onClick={() => {
-                  setShowRemovePhotos((v) => !v);
-                  setShowAddPhotos(false);
-                  setSelectedPhotoIds([]);
-                }}
-                disabled={removingPhotos || addingPhotos}
-              >
-                {showRemovePhotos ? 'Cancel' : 'Remove Photos'}
-              </button>
-
-              {showRemovePhotos && (
+            {auth && (
+              <div className="flex gap-2 mt-4">
                 <button
-                  className="btn btn-sm btn-error px-[10px]"
-                  onClick={async () => {
-                    if (!selectedAlbum) return;
-                    setRemovingPhotos(true);
-                    try {
-                      for (const photoId of selectedRemovePhotoIds) {
-                        // You need to implement this function in your hooks/dynamoDB
-                        await removePhotoFromAlbum(photoId, selectedAlbum.album_id);
-                      }
-                      // Refresh album photos
-                      const albumPhotos = await getPhotosByAlbum(selectedAlbum.album_id);
-                      setPhotos(albumPhotos);
-                      setShowRemovePhotos(false);
-                      setSelectedRemovePhotoIds([]);
-                    } catch (error) {
-                      alert('Failed to remove photos.');
-                    } finally {
-                      setRemovingPhotos(false);
-                    }
+                  className="btn btn-sm btn-primary px-[10px]"
+                  onClick={() => {
+                    setShowAddPhotos((v) => !v);
+                    setShowRemovePhotos(false);
+                    setSelectedRemovePhotoIds([]);
                   }}
-                  disabled={removingPhotos || selectedRemovePhotoIds.length === 0}
+                  disabled={addingPhotos || removingPhotos}
                 >
-                  {removingPhotos ? 'Removing...' : 'Remove Selected'}
+                  {showAddPhotos ? 'Cancel' : 'Add Photos'}
                 </button>
-              )}
-            </div>
+                <button
+                  className="btn btn-sm btn-warning px-[10px]"
+                  onClick={() => {
+                    setShowRemovePhotos((v) => !v);
+                    setShowAddPhotos(false);
+                    setSelectedPhotoIds([]);
+                  }}
+                  disabled={removingPhotos || addingPhotos}
+                >
+                  {showRemovePhotos ? 'Cancel' : 'Remove Photos'}
+                </button>
 
-            <div className="flex justify-between mt-4">
-              <button
-                className="btn btn-sm btn-secondary px-[10px]"
-                onClick={() => {
-                  setEditing(true);
-                  setShowAddPhotos(false);
-                  setShowRemovePhotos(false);
-                }}
-              >
-                Edit
-              </button>
-              {auth && (
-                <>
+                {showRemovePhotos && (
                   <button
-                    onClick={handleDeleteAlbum}
                     className="btn btn-sm btn-error px-[10px]"
-                    disabled={deleting || addingPhotos}
-                    >
-                      {deleting ? 'Deleting...' : 'Delete Album'}
-                    </button>
-                  </>
-               )}
-            </div>
+                    onClick={async () => {
+                      if (!selectedAlbum) return;
+                      setRemovingPhotos(true);
+                      try {
+                        for (const photoId of selectedRemovePhotoIds) {
+                          // You need to implement this function in your hooks/dynamoDB
+                          await removePhotoFromAlbum(photoId, selectedAlbum.album_id);
+                        }
+                        // Refresh album photos
+                        const albumPhotos = await getPhotosByAlbum(selectedAlbum.album_id);
+                        setPhotos(albumPhotos);
+                        setShowRemovePhotos(false);
+                        setSelectedRemovePhotoIds([]);
+                      } catch (error) {
+                        alert('Failed to remove photos.');
+                      } finally {
+                        setRemovingPhotos(false);
+                      }
+                    }}
+                    disabled={removingPhotos || selectedRemovePhotoIds.length === 0}
+                  >
+                    {removingPhotos ? 'Removing...' : 'Remove Selected'}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {auth && (
+              <div className="flex justify-between mt-4">
+                <button
+                  className="btn btn-sm btn-secondary px-[10px]"
+                  onClick={() => {
+                    setEditing(true);
+                    setShowAddPhotos(false);
+                    setShowRemovePhotos(false);
+                  }}
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={handleDeleteAlbum}
+                  className="btn btn-sm btn-error px-[10px]"
+                  disabled={deleting || addingPhotos}
+                >
+                  {deleting ? 'Deleting...' : 'Delete Album'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
+      )}
+
+      {selectedPhoto && (
+        <PhotoModal
+          photo={selectedPhoto}
+          uploaderName={photoUploaderName}
+          currentUserId={userId}
+          isEditing={isEditingPhoto}
+          setIsEditing={setIsEditingPhoto}
+          closeModal={closePhotoModal}
+          handleImageError={handleImageError}
+          renderEditForm={renderEditForm}
+          onPhotoDeleted={handlePhotoDeleted}
+          onPhotoUpdated={handlePhotoUpdated}
+        />
       )}
     </div>
   );
