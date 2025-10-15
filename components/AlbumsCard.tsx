@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createAlbum, addPhotoToAlbum, getUserAlbums, getPhotosByAlbum, deleteAlbumById, getUserPhotos, updateAlbum, removePhotoFromAlbum } from '../hooks/dynamoDB';
 import Image from 'next/image';
+import Link from 'next/link';
 import { PhotoData, AlbumData } from '../hooks/dynamoDB';
 
 const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
@@ -464,7 +465,10 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
 
             {showAddPhotos && (
               <div className="my-4 border rounded p-2 bg-gray-50">
-                <h3 className="font-semibold mb-2 text-black">Select photos to add:</h3>
+                <h3 className="font-semibold text-black">Select photos to add:</h3>
+                <h4 className="text-sm text-gray-500 mb-2 font-light italic">
+                  Note: Photos must be <Link href="/upload" className="text-blue-600 hover:text-blue-800 underline poppins-light-italic">uploaded</Link> first before they can be added to an album.
+                </h4>
                 <div className="flex flex-wrap gap-2 md:max-h-64 md:overflow-y-auto justify-evenly">
                   {userPhotos
                     .filter(
