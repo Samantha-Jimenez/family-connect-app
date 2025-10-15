@@ -382,7 +382,22 @@ export default function EventModal({
 
   return (
     <dialog className={`modal ${isOpen ? 'modal-open' : ''}`}>
-      <div className="modal-box bg-gray-100">
+      <div className="modal-box bg-gray-100 relative">
+        {isEditing ? (
+        <button
+          onClick={handleCancel}
+          className="absolute top-1 right-3 text-gray-600 hover:text-gray-800 text-2xl cursor-pointer z-10 font-light"
+        >
+          &times;
+        </button>
+        ) : (
+          <button
+          onClick={handleClose}
+          className="absolute top-1 right-3 text-gray-600 hover:text-gray-800 text-2xl cursor-pointer z-10 font-light"
+        >
+          &times;
+        </button>
+        )}
         {isEditing ? (
           <>
             <h3 className="font-bold text-lg">
@@ -437,7 +452,7 @@ export default function EventModal({
                       type="checkbox"
                       checked={isAllDay}
                       onChange={(e) => setIsAllDay(e.target.checked)}
-                      className="checkbox checkbox-primary"
+                      className="checkbox checkbox-primary justify-left ml-2"
                     />
                   </label>
                 </div>
@@ -517,15 +532,8 @@ export default function EventModal({
                   </>
                 )}
                 <button
-                  type="button"
-                  onClick={handleCancel}
-                  className="btn"
-                >
-                  Cancel
-                </button>
-                <button
                   type="submit"
-                  className="btn btn-primary"
+                  className="btn btn-success"
                 >
                   {mode === 'add' ? 'Add Event' : 'Save Changes'}
                 </button>
@@ -534,7 +542,7 @@ export default function EventModal({
           </>
         ) : (
           <>
-            <h3 className="font-bold text-lg mb-4">{title}</h3>
+            <h3 className="font-bold text-lg mb-4">{event?.title || title}</h3>
             
             <div className="space-y-2">
               <div>
@@ -617,13 +625,13 @@ export default function EventModal({
                   </button>
                 </>
               )}
-              <button
+              {/* <button
                 type="button"
                 onClick={handleClose}
                 className="btn h-[30px] px-[10px]"
               >
                 Close
-              </button>
+              </button> */}
             </div>
 
             <div className="mt-3 flex justify-between gap-2 border-t border-gray-300 pt-3">

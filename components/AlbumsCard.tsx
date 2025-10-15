@@ -562,7 +562,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
 
             <div className="flex justify-between mt-4">
               <button
-                className="btn btn-secondary btn-sm h-[30px] px-[10px]"
+                className="btn btn-secondary h-[30px] px-[10px]"
                 onClick={() => {
                   setEditing(true);
                   setShowAddPhotos(false);
