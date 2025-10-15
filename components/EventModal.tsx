@@ -446,13 +446,13 @@ export default function EventModal({
                 </div>
 
                 <div className="form-control">
-                  <label className="label cursor-pointer">
+                  <label className="label cursor-pointer !justify-stretch">
                     <span className="label-text">All Day Event</span>
                     <input
                       type="checkbox"
                       checked={isAllDay}
                       onChange={(e) => setIsAllDay(e.target.checked)}
-                      className="checkbox checkbox-primary justify-left ml-2"
+                      className="checkbox checkbox-primary ml-2"
                     />
                   </label>
                 </div>
@@ -518,14 +518,14 @@ export default function EventModal({
                     <button
                       type="button"
                       onClick={() => setIsConfirmOpen(true)}
-                      className="btn btn-error"
+                      className="btn btn-sm btn-error"
                     >
                       Delete
                     </button>
                     <button
                       type="button"
                       onClick={() => setIsEditing(true)}
-                      className="btn btn-primary"
+                      className="btn btn-sm btn-primary"
                     >
                       Edit
                     </button>
@@ -533,7 +533,7 @@ export default function EventModal({
                 )}
                 <button
                   type="submit"
-                  className="btn btn-success"
+                  className="btn btn-sm btn-success"
                 >
                   {mode === 'add' ? 'Add Event' : 'Save Changes'}
                 </button>
@@ -612,14 +612,14 @@ export default function EventModal({
                   <button
                     type="button"
                     onClick={() => setIsConfirmOpen(true)}
-                    className="btn btn-error h-[30px] px-[10px]"
+                    className="btn btn-sm btn-error px-[10px]"
                   >
                     Delete
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsEditing(true)}
-                    className="btn btn-primary h-[30px] px-[10px]"
+                    className="btn btn-sm btn-primary px-[10px]"
                   >
                     Edit
                   </button>
@@ -646,15 +646,15 @@ export default function EventModal({
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleRsvp('yes')}
-                  className={`btn btn-success h-[30px] px-[10px]${rsvpStatus === 'yes' ? ' border-2 border-black' : ''}`}
+                  className={`btn btn-sm btn-success px-[10px]${rsvpStatus === 'yes' ? ' border-2 border-black' : ''}`}
                 >Yes</button>
                 <button
                   onClick={() => handleRsvp('no')}
-                  className={`btn btn-error h-[30px] px-[10px]${rsvpStatus === 'no' ? ' border-2 border-black' : ''}`}
+                  className={`btn btn-sm btn-error px-[10px]${rsvpStatus === 'no' ? ' border-2 border-black' : ''}`}
                 >No</button>
                 <button
                   onClick={() => handleRsvp('maybe')}
-                  className={`btn btn-warning h-[30px] px-[10px]${rsvpStatus === 'maybe' ? ' border-2 border-black' : ''}`}
+                  className={`btn btn-sm btn-warning px-[10px]${rsvpStatus === 'maybe' ? ' border-2 border-black' : ''}`}
                 >Maybe</button>
               </div>
             </div>

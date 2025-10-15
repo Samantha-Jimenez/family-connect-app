@@ -266,7 +266,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
           className="input input-bordered w-full bg-gray-200"
         />
       </div>
-      <button onClick={handleCreateAlbum} className="btn btn-primary w-full mb-6">
+      <button onClick={handleCreateAlbum} className="btn btn-sm btn-primary w-full mb-6">
         Create Album
       </button>
 
@@ -332,6 +332,13 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 overflow-y-scroll w-screen">
           <div className="bg-white p-6 rounded-lg shadow-lg md:w-3/4 h-full md:h-auto md:max-w-2xl relative overflow-y-scroll">
+            <button
+              onClick={() => setShowModal(false)}
+              className="absolute right-1 top-1 h-[30px] w-[30px] px-0 text-2xl font-light"
+              disabled={deleting || addingPhotos || savingEdit || removingPhotos}
+            >
+              ×
+            </button>
             <h2 className="font-bold text-black">
               {editing ? (
                 <>
@@ -348,15 +355,6 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
                 selectedAlbum?.name
               )}
             </h2>
-            {auth && !editing && (
-              <button
-                onClick={() => setShowModal(false)}
-                className="absolute right-1 top-1 h-[30px] w-[30px] px-0 text-2xl font-light"
-                disabled={deleting || addingPhotos}
-              >
-                ×
-              </button>
-            )}
             {editing ? (
               <div className="mb-4">
                 <label className="block text-black font-semibold">Description</label>
@@ -395,14 +393,14 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
                 </div>
                 <div className="flex gap-2 mt-4">
                   <button
-                    className="btn btn-primary h-[30px] px-[10px]"
+                    className="btn btn-sm btn-primary px-[10px]"
                     onClick={handleSaveEdit}
                     disabled={savingEdit}
                   >
                     {savingEdit ? 'Saving...' : 'Save'}
                   </button>
                   <button
-                    className="btn btn-secondary h-[30px] px-[10px]"
+                    className="btn btn-sm btn-secondary px-[10px]"
                     onClick={() => setEditing(false)}
                     disabled={savingEdit}
                   >
@@ -502,7 +500,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
                     ))}
                 </div>
                 <button
-                  className="btn btn-success mt-2 h-[30px] px-[10px]"
+                  className="btn btn-sm btn-success mt-2 px-[10px]"
                   onClick={handleAddSelectedPhotos}
                   disabled={addingPhotos || selectedPhotoIds.length === 0}
                 >
@@ -513,7 +511,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
 
             <div className="flex gap-2 mt-4">
               <button
-                className="btn btn-primary h-[30px] px-[10px]"
+                className="btn btn-sm btn-primary px-[10px]"
                 onClick={() => {
                   setShowAddPhotos((v) => !v);
                   setShowRemovePhotos(false);
@@ -524,7 +522,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
                 {showAddPhotos ? 'Cancel' : 'Add Photos'}
               </button>
               <button
-                className="btn btn-warning h-[30px] px-[10px]"
+                className="btn btn-sm btn-warning px-[10px]"
                 onClick={() => {
                   setShowRemovePhotos((v) => !v);
                   setShowAddPhotos(false);
@@ -537,7 +535,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
 
               {showRemovePhotos && (
                 <button
-                  className="btn btn-error h-[30px] px-[10px]"
+                  className="btn btn-sm btn-error px-[10px]"
                   onClick={async () => {
                     if (!selectedAlbum) return;
                     setRemovingPhotos(true);
@@ -566,7 +564,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
 
             <div className="flex justify-between mt-4">
               <button
-                className="btn btn-secondary h-[30px] px-[10px]"
+                className="btn btn-sm btn-secondary px-[10px]"
                 onClick={() => {
                   setEditing(true);
                   setShowAddPhotos(false);
@@ -579,7 +577,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
                 <>
                   <button
                     onClick={handleDeleteAlbum}
-                    className="btn btn-error h-[30px] px-[10px]"
+                    className="btn btn-sm btn-error px-[10px]"
                     disabled={deleting || addingPhotos}
                     >
                       {deleting ? 'Deleting...' : 'Delete Album'}

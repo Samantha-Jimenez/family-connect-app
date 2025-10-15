@@ -355,20 +355,20 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           {isEditing && currentUserId === photo?.uploaded_by && (
           <div className="flex absolute bottom-0 right-2 space-x-2 mb-2">
             <button
-              className="btn bg-green-500 text-white border-0"
+              className="btn btn-sm bg-green-500 text-white border-0"
               onClick={handleSave}
             >
               Save
             </button>
             <button
-              className="btn bg-red-500 text-white border-0"
+              className="btn btn-sm bg-red-500 text-white border-0"
               onClick={() => setIsConfirmOpen(true)}
             >
               Delete
             </button>
             <button
               onClick={() => setIsEditing(false)}
-              className="btn bg-gray-600 text-white border-0"
+              className="btn btn-sm bg-gray-600 text-white border-0"
             >
               Cancel
             </button>
@@ -377,7 +377,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           <div className="flex justify-end space-x-2 mt-auto">
             {currentUserId === photo?.uploaded_by && !isEditing && (
               <button
-                className="btn border-0 bg-green-500 text-white rounded hover:bg-green-600 w-full mt-2.5"
+                className="btn btn-sm border-0 bg-green-500 text-white rounded hover:bg-green-600 w-full mt-2.5"
                 onClick={() => setIsEditing(true)}
               >
                 Edit
@@ -629,12 +629,13 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                         handleAddComment();
                     }
                 }}
-                className="input input-bordered w-full text-black bg-white border-gray-300 rounded-md shadow-sm"
+                name="newComment"
+                className="input input-sm input-bordered w-full text-black bg-white border-gray-300 rounded-md shadow-sm"
                 placeholder="Add a comment..."
             />
             <button
                 onClick={handleAddComment}
-                className="btn bg-blue-500 text-white ml-2 rounded-md shadow hover:bg-blue-600 transition border-0"
+                className="btn btn-sm bg-blue-500 text-white ml-2 rounded-md shadow hover:bg-blue-600 transition border-0"
             >
                 Post
             </button>

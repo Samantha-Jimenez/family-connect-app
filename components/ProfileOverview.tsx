@@ -97,7 +97,7 @@ const ProfileOverview = ({ userId }: { userId: string }) => {
           </ul>
         )}
         <Link href="/familytree">
-          <button className="btn btn-outline mt-4 bg-[#717568] text-white border-0 w-full hover:bg-[#717568]/80">Family Tree</button>
+          <button className="btn btn-sm btn-outline mt-4 bg-[#717568] text-white border-0 w-full hover:bg-[#717568]/80">Family Tree</button>
         </Link>
       </div>
     </div>
