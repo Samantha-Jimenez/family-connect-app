@@ -3,6 +3,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { getUserDataById, getFamilyRelationships } from "@/hooks/dynamoDB";
 import { getFullImageUrl } from '@/utils/imageUtils';
+import FamilyRoleModal from './FamilyRoleModal';
 
 interface UserData {
   first_name: string;
@@ -31,6 +32,8 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [relationships, setRelationships] = useState<Relationship[]>([]);
   const [targetUserNames, setTargetUserNames] = useState<{ [userId: string]: string }>({});
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<{ type: string; relatedNames: string[]; relatedIds: string[] } | null>(null);
 
   const getZodiacSign = (dateString: string) => {
     if (!dateString) return '';
@@ -186,20 +189,29 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                 });
 
                 // 3. Render each relationship type once, with all names in tooltip (vertical)
-                return Object.entries(grouped).map(([type, targetIds]) => (
-                  <div
-                    className="tooltip tooltip-bottom whitespace-pre-line"
-                    data-tip={targetIds
-                      .map((id) => targetUserNames[id])
-                      .filter(Boolean)
-                      .join("\n")}
-                    key={type}
-                  >
-                    <span className="bg-yellow-800/60 text-white px-3 py-1 rounded-full text-sm">
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
-                    </span>
-                  </div>
-                ));
+                return Object.entries(grouped).map(([type, targetIds]) => {
+                  const relatedNames = targetIds
+                    .map((id) => targetUserNames[id])
+                    .filter(Boolean);
+                  
+                  return (
+                    <div
+                      className="tooltip tooltip-bottom whitespace-pre-line"
+                      data-tip={relatedNames.join("\n")}
+                      key={type}
+                    >
+                      <span 
+                        className="bg-yellow-800/60 text-white px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-yellow-700/70 transition-colors"
+                        onClick={() => {
+                          setSelectedRole({ type, relatedNames, relatedIds: targetIds });
+                          setShowRoleModal(true);
+                        }}
+                      >
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                      </span>
+                    </div>
+                  );
+                });
               })()}
             </div>
             
@@ -285,6 +297,21 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
           </div>
         </div>
       </div>
+
+      {/* Family Role Modal */}
+      {showRoleModal && selectedRole && (
+        <FamilyRoleModal
+          isOpen={showRoleModal}
+          onClose={() => {
+            setShowRoleModal(false);
+            setSelectedRole(null);
+          }}
+          userName={`${userData?.first_name || ''} ${userData?.last_name || ''}`}
+          relationshipType={selectedRole.type}
+          relatedUserNames={selectedRole.relatedNames}
+          relatedUserIds={selectedRole.relatedIds}
+        />
+      )}
     </div>
   );
 }
