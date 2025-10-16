@@ -85,11 +85,17 @@ const PhotoComments = ({ comments, editingCommentIndex, setEditingCommentIndex, 
                                                 {new Date(comment.timestamp).toLocaleString()}
                                             </time> */}
                                         </div>
-                                        <div className="chat-bubble bg-gray-200 text-gray-800 text-sm px-2 py-0.5 min-h-3 max-w-[80%] break-words font-light">
+                                        <div className="chat-bubble bg-gray-200 text-gray-800 text-sm px-2 py-0.5 min-h-3 break-words font-light max-w-[55vw]">
                                             {comment.text}
                                         </div>
-                                        <time className="chat-footer opacity-50 text-gray-600 font-light">
-                                            {new Date(comment.timestamp).toLocaleString()}
+                                        <time className="chat-footer opacity-50 text-gray-700 font-light text-sm">
+                                            {new Date(comment.timestamp).toLocaleString([], {
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric',
+                                                hour: 'numeric',
+                                                minute: '2-digit',
+                                            })}
                                         </time>
                                     </div>
                                     {comment.userId === user.userId && (

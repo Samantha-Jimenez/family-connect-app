@@ -423,7 +423,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           <div className="absolute top-[-1.2rem] right-[-0.5rem] cursor-pointer hidden md:block" onClick={handleCloseModal}>
             <span className="text-gray-600 text-2xl">&times;</span>
           </div>
-          <div className="h-full">
+          <div className="h-full mb-2">
             {isEditing ? (
               <div>
                 <div className="mb-1">
@@ -661,7 +661,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                     }
                 }}
                 name="newComment"
-                className="input input-sm input-bordered w-full text-black bg-white border-gray-300 rounded-md shadow-sm"
+                className="input input-sm input-bordered w-full text-black bg-white border-gray-300 rounded-md shadow-sm !text-base"
                 placeholder="Add a comment..."
             />
             <button

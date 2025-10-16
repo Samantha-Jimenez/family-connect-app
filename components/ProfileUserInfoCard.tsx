@@ -195,12 +195,12 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                     .filter(Boolean);
                   
                   return (
-                    <div
-                      className="tooltip tooltip-bottom whitespace-pre-line opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]"
-                      data-tip={relatedNames.join("\n")}
-                      key={type}
-                      style={{ animationDelay: `${index * 0.1}s` }}
-                    >
+                    // <div
+                    //   className="tooltip tooltip-bottom whitespace-pre-line opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]"
+                    //   data-tip={relatedNames.join("\n")}
+                    //   key={type}
+                    //   style={{ animationDelay: `${index * 0.1}s` }}
+                    // >
                       <span 
                         className="text-palm-green bg-tea-green px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-[#227D54]/40 transition-colors"
                         onClick={() => {
@@ -210,7 +210,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                       >
                         {type.charAt(0).toUpperCase() + type.slice(1)}
                       </span>
-                    </div>
+                    // </div>
                   );
                 });
               })()}

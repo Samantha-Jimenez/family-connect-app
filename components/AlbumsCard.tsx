@@ -382,7 +382,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
 
       {showModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className={`bg-black bg-opacity-50 flex items-start justify-center ${photos.length === 0 ? 'h-full' : 'min-h-full'}`}>
+          <div className={`bg-black bg-opacity-50 flex justify-center ${photos.length === 0 ? 'h-full' : 'min-h-full'}`}>
             <div className={`bg-white p-4 md:p-6 shadow-lg w-full relative flex flex-col ${photos.length === 0 ? 'h-full' : ''}`}>
             <button
               onClick={() => setShowModal(false)}
@@ -500,14 +500,26 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
             )}
 
             {/*Photo Count*/}
-            <p className="text-xs text-gray-600 mb-3">Photos: {photoCounts[selectedAlbum?.album_id || ''] || 0}</p>
+            <p className="text-xs text-gray-600">Photos: {photoCounts[selectedAlbum?.album_id || ''] || 0}</p>
+            {auth && (
+              <button
+                    className="btn btn-sm btn-secondary px-[10px] mt-2"
+                    onClick={() => {
+                      setEditing(true);
+                      setShowAddPhotos(false);
+                      setShowRemovePhotos(false);
+                    }}
+                  >
+                    Edit Album
+              </button>
+            )}
 
             {/*No Photos Message*/}
             {photos.length === 0 && (
               <div className="flex flex-1 items-center justify-center text-center text-gray-500 text-lg">No photos in this album yet.</div>
             )}
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-4 mt-4 flex flex-1  justify-center text-center text-gray-500 text-lg items-start items-start">
               {photos.map((photo) => (
                 <div 
                   key={photo.photo_id} 
@@ -650,14 +662,10 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
             {auth && (
               <div className="flex flex-wrap justify-between gap-2 mt-4">
                 <button
-                  className="btn btn-sm btn-secondary px-[10px]"
-                  onClick={() => {
-                    setEditing(true);
-                    setShowAddPhotos(false);
-                    setShowRemovePhotos(false);
-                  }}
+                  className="btn btn-sm px-[10px]"
+                  onClick={() => setShowModal(false)}
                 >
-                  Edit
+                  Close
                 </button>
                 <button
                   onClick={handleDeleteAlbum}

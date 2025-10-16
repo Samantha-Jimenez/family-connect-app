@@ -321,7 +321,8 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
           noOptionsMessage={() => "No family members found"}
           isLoading={familyMembers.length === 0}
           menuPortalTarget={document.body}
-          menuPosition="fixed"
+          // menuPosition="fixed"
+          menuPlacement="bottom"
           theme={(theme) => ({
             ...theme,
             colors: {
