@@ -52,10 +52,10 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
 }) => {
   const { user } = useAuthenticator();
   const [albums, setAlbums] = useState<AlbumData[]>([]);
-  const [selectedAlbumId, setSelectedAlbumId] = useState('');
+  const [selectedAlbumIds, setSelectedAlbumIds] = useState<string[]>([]);
   const [editedDescription, setEditedDescription] = useState(photo.metadata?.description || '');
   const [editedDateTaken, setEditedDateTaken] = useState(photo.metadata?.date_taken || '');
-  const [albumName, setAlbumName] = useState<string | null>(null);
+  const [albumNames, setAlbumNames] = useState<{ id: string; name: string }[]>([]);
   const [editedLocation, setEditedLocation] = useState(photo.metadata?.location || {
     country: '',
     state: '',
@@ -90,10 +90,17 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       }
     };
 
-    const fetchAlbumName = async () => {
-      if (photo.album_id) {
-        const album = await getAlbumById(photo.album_id);
-        setAlbumName(album?.name || null);
+    const fetchAlbumNames = async () => {
+      if (photo.album_ids && photo.album_ids.length > 0) {
+        const names = await Promise.all(
+          photo.album_ids.map(async (albumId) => {
+            const album = await getAlbumById(albumId);
+            return { id: albumId, name: album?.name || 'Unknown Album' };
+          })
+        );
+        setAlbumNames(names);
+      } else {
+        setAlbumNames([]);
       }
     };
 
@@ -134,45 +141,54 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     };
 
     fetchAlbums();
-    fetchAlbumName();
+    fetchAlbumNames();
     loadFamilyMembers();
     fetchFavoriteStatus();
     fetchComments();
     fetchProfilePhoto();
-  }, [isEditing, photo.album_id, user, photo.photo_id]);
+  }, [isEditing, photo.album_ids, user, photo.photo_id]);
 
   useEffect(() => {
     if (isEditing) {
-      setSelectedAlbumId(photo.album_id || '');
+      setSelectedAlbumIds(photo.album_ids || []);
     }
-  }, [isEditing, photo.album_id]);
+  }, [isEditing, photo.album_ids]);
 
-  const handleAddToAlbum = async () => {
+  const handleAddToAlbum = async (albumId: string) => {
     try {
-      if (selectedAlbumId) {
-        await addPhotoToAlbum(photo.photo_id, selectedAlbumId);
+      if (albumId) {
+        await addPhotoToAlbum(photo.photo_id, albumId);
         console.log('Photo added to album successfully!');
+        showToast('Photo added to album!', 'success');
       }
     } catch (error) {
       console.error('Error adding photo to album:', error);
+      showToast('Error adding photo to album.', 'error');
     }
   };
 
   const handleSave = async () => {
     try {
-      // If album changed, update album membership
-      if (selectedAlbumId && selectedAlbumId !== photo.album_id) {
-        if (photo.album_id) {
-          // Remove from old album
-          await removePhotoFromAlbum(photo.photo_id, photo.album_id);
-        }
-        // Add to new album
-        await addPhotoToAlbum(photo.photo_id, selectedAlbumId);
+      // Handle album membership changes
+      const originalAlbumIds = photo.album_ids || [];
+      const newAlbumIds = selectedAlbumIds;
+      
+      // Remove from albums that are no longer selected
+      const albumsToRemove = originalAlbumIds.filter(id => !newAlbumIds.includes(id));
+      for (const albumId of albumsToRemove) {
+        await removePhotoFromAlbum(photo.photo_id, albumId);
       }
-      // Save photo data with new album_id
+      
+      // Add to new albums
+      const albumsToAdd = newAlbumIds.filter(id => !originalAlbumIds.includes(id));
+      for (const albumId of albumsToAdd) {
+        await addPhotoToAlbum(photo.photo_id, albumId);
+      }
+      
+      // Save photo data with updated album_ids
       const updatedPhoto: PhotoData = {
         ...photo,
-        album_id: selectedAlbumId,
+        album_ids: selectedAlbumIds,
         metadata: {
           ...photo.metadata,
           description: editedDescription,
@@ -184,7 +200,6 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       await savePhotoToDB(updatedPhoto);
       console.log('Photo data saved successfully!');
       setIsEditing(false);
-      setSelectedAlbumId(selectedAlbumId);
       showToast('Changes saved successfully!', 'success');
       if (onPhotoUpdated) {
         onPhotoUpdated(updatedPhoto);
@@ -512,26 +527,30 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                 </div>
                 {isEditing && currentUserId === photo?.uploaded_by && (
                   <div className="">
-                    <label className="block text-sm font-bold mb-1 text-black">Album:</label>
-                    <Select<{ value: string; label: string }>
+                    <label className="block text-sm font-bold mb-1 text-black">Albums:</label>
+                    <Select<{ value: string; label: string }, true>
+                      isMulti
                       options={albums.map(album => ({
                         value: album.album_id,
                         label: album.name
                       }))}
                       value={
-                        selectedAlbumId
+                        selectedAlbumIds.length > 0
                           ? albums
+                              .filter(album => selectedAlbumIds.includes(album.album_id))
                               .map(album => ({
                                 value: album.album_id,
                                 label: album.name
                               }))
-                              .find(option => option.value === selectedAlbumId) || null
-                          : null
+                          : []
                       }
-                      onChange={selected => setSelectedAlbumId(selected?.value || '')}
+                      onChange={selected => {
+                        const ids = selected ? selected.map(s => s.value) : [];
+                        setSelectedAlbumIds(ids);
+                      }}
                       className="mt-1"
                       classNamePrefix="select"
-                      placeholder="Select an album..."
+                      placeholder="Select albums (photo can be in multiple)..."
                       noOptionsMessage={() => "No albums found"}
                       isLoading={albums.length === 0}
                       theme={theme => ({
@@ -573,10 +592,15 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                     {formatDate(photo.metadata?.date_taken || '')}
                   </p>
                 )}
-                {albumName && (
+                {albumNames.length > 0 && (
                   <p className="text-sm text-gray-800 dark:text-gray-200 mb-1">
-                    <span className="font-bold">Album: </span>
-                    {albumName}
+                    <span className="font-bold">Album{albumNames.length > 1 ? 's' : ''}: </span>
+                    {albumNames.map((album, index) => (
+                      <React.Fragment key={album.id}>
+                        {index > 0 && ', '}
+                        {album.name}
+                      </React.Fragment>
+                    ))}
                   </p>
                 )}
                 {photo.metadata?.people_tagged && photo.metadata.people_tagged.length > 0 && (

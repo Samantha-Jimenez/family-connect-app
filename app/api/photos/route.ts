@@ -51,7 +51,7 @@ export async function GET(request: Request) {
       try {
         const url = await getSignedUrl(s3Client, getObjectCommand, { expiresIn: 3600 });        
         return {
-          album_id: item.album_id?.S || '',
+          album_ids: item.album_ids?.L?.map((id: any) => id.S || '') || [],
           photo_id: item.photo_id.S || '',
           url,
           s3_key: s3Key,

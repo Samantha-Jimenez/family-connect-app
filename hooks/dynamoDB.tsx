@@ -39,7 +39,7 @@ export interface TaggedPerson {
 }
 
 export interface PhotoData {
-  album_id: string;
+  album_ids: string[];  // Changed from album_id to album_ids to support multiple albums
   photo_id: string;
   url: string;
   s3_key: string;
@@ -228,7 +228,7 @@ export const savePhotoToDB = async (photoData: PhotoData) => {
       s3_key: { S: `photos/${photoData.s3_key.replace(/^photos\//g, '')}` },
       uploaded_by: { S: photoData.uploaded_by },
       upload_date: { S: photoData.upload_date },
-      album_id: { S: photoData.album_id || "" },
+      album_ids: { L: (photoData.album_ids || []).map(id => ({ S: id })) },
     };
 
     // Log the s3_key being saved
@@ -301,15 +301,38 @@ export const addPhotoToAlbum = async (photo_id: string, album_id: string) => {
       throw new Error("Album not found or user doesn't have permission");
     }
 
-    // Update the photo's album_id
+    // Get the current photo data to check if album_id already exists
+    const getPhotoParams = {
+      TableName: TABLES.PHOTOS,
+      Key: {
+        photo_id: { S: photo_id }
+      }
+    };
+
+    const photoData = await dynamoDB.send(new GetItemCommand(getPhotoParams));
+    
+    if (!photoData.Item) {
+      throw new Error("Photo not found");
+    }
+
+    // Check if album_ids already contains this album
+    const currentAlbumIds = photoData.Item.album_ids?.L?.map((item: any) => item.S) || [];
+    
+    if (currentAlbumIds.includes(album_id)) {
+      console.log("✅ Photo is already in this album");
+      return; // Photo is already in this album, no need to add again
+    }
+
+    // Add the album_id to the album_ids list
     const updatePhotoParams = {
       TableName: TABLES.PHOTOS,
       Key: {
         photo_id: { S: photo_id }
       },
-      UpdateExpression: "SET album_id = :albumId",
+      UpdateExpression: "SET album_ids = list_append(if_not_exists(album_ids, :emptyList), :albumId)",
       ExpressionAttributeValues: {
-        ":albumId": { S: album_id }
+        ":albumId": { L: [{ S: album_id }] },
+        ":emptyList": { L: [] }
       }
     };
 
@@ -585,7 +608,7 @@ export const getAllPhotosByTagged = async (taggedUserIds: string[]): Promise<Pho
       s3_key: item.s3_key?.S || '',
       uploaded_by: item.uploaded_by?.S || '',
       upload_date: item.upload_date?.S || '',
-      album_id: item.album_id?.S || '',
+      album_ids: item.album_ids?.L?.map((id: any) => id.S || '') || [],
       url: item.url?.S || '',
       metadata: {
         location: {
@@ -644,7 +667,7 @@ export const getPhotosByAlbum = async (albumId: string) => {
   try {
     const params = {
       TableName: TABLES.PHOTOS,
-      FilterExpression: "album_id = :albumId",
+      FilterExpression: "contains(album_ids, :albumId)",
       ExpressionAttributeValues: {
         ":albumId": { S: albumId }
       }
@@ -674,7 +697,7 @@ export const getPhotosByAlbum = async (albumId: string) => {
           s3_key: s3Key,
           uploaded_by: item.uploaded_by?.S || '',
           upload_date: item.upload_date?.S || '',
-          album_id: item.album_id?.S || '',
+          album_ids: item.album_ids?.L?.map((id: any) => id.S || '') || [],
           url,
           metadata: {
             location: {
@@ -849,7 +872,7 @@ export const getFavoritedPhotosByUser = async (userId: string): Promise<PhotoDat
           s3_key: s3Key,
           uploaded_by: item.uploaded_by?.S || '',
           upload_date: item.upload_date?.S || '',
-          album_id: item.album_id?.S || '',
+          album_ids: item.album_ids?.L?.map((id: any) => id.S || '') || [],
           url,
           metadata: {
             location: {
@@ -1156,10 +1179,10 @@ export const setUserCTAVisible = async (userId: string, visible: boolean) => {
 
 export const deleteAlbumById = async (albumId: string) => {
   try {
-    // Disassociate photos from the album (set album_id to "")
+    // Remove the album from all photos that contain it
     const photos = await getPhotosByAlbum(albumId);
     for (const photo of photos) {
-      // Set album_id to empty string instead of deleting the photo
+      // Remove album_id from the photo's album_ids array
       await removePhotoFromAlbum(photo.photo_id, albumId);
     }
 
@@ -1179,22 +1202,44 @@ export const deleteAlbumById = async (albumId: string) => {
 };
 
 /**
- * Removes a photo from an album by setting its album_id to an empty string.
+ * Removes a photo from an album by removing the album_id from the photo's album_ids array.
  * @param photo_id The ID of the photo to update.
- * @param album_id The ID of the album to remove the photo from (not strictly needed, but for API consistency).
+ * @param album_id The ID of the album to remove the photo from.
  */
 export const removePhotoFromAlbum = async (photo_id: string, album_id: string) => {
   try {
-    // Just set album_id to empty string for the photo
+    // Get the current photo data to find the index of the album_id
+    const getPhotoParams = {
+      TableName: TABLES.PHOTOS,
+      Key: {
+        photo_id: { S: photo_id }
+      }
+    };
+
+    const photoData = await dynamoDB.send(new GetItemCommand(getPhotoParams));
+    
+    if (!photoData.Item) {
+      throw new Error("Photo not found");
+    }
+
+    // Get the current album_ids array
+    const currentAlbumIds = photoData.Item.album_ids?.L?.map((item: any) => item.S) || [];
+    
+    // Find the index of the album to remove
+    const indexToRemove = currentAlbumIds.indexOf(album_id);
+    
+    if (indexToRemove === -1) {
+      console.log(`Photo ${photo_id} is not in album ${album_id}`);
+      return; // Photo is not in this album
+    }
+
+    // Remove the album_id from the array
     const params = {
       TableName: TABLES.PHOTOS,
       Key: {
         photo_id: { S: photo_id }
       },
-      UpdateExpression: "SET album_id = :empty",
-      ExpressionAttributeValues: {
-        ":empty": { S: "" }
-      }
+      UpdateExpression: `REMOVE album_ids[${indexToRemove}]`
     };
 
     await dynamoDB.send(new UpdateItemCommand(params));
@@ -1244,7 +1289,7 @@ export const getUserPhotos = async (userId: string): Promise<PhotoData[]> => {
           s3_key: s3Key,
           uploaded_by: item.uploaded_by?.S || '',
           upload_date: item.upload_date?.S || '',
-          album_id: item.album_id?.S || '',
+          album_ids: item.album_ids?.L?.map((id: any) => id.S || '') || [],
           url,
           metadata: {
             location: {

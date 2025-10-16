@@ -147,7 +147,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
           date_taken: dateTaken,
           people_tagged: taggedPeople,
         },
-        album_id: '',
+        album_ids: [],
         url: s3Url,
         lastModified: new Date().toISOString(),
       });

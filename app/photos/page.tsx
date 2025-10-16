@@ -389,7 +389,7 @@ const Photos = () => {
       if (data.photos) {
         const photoUrls = data.photos.map((photo: any) => {
           return {
-            album_id: photo.album_id,
+            album_ids: photo.album_ids || [],
             photo_id: photo.photo_id,
             s3_key: photo.s3_key,
             uploaded_by: photo.uploaded_by,
