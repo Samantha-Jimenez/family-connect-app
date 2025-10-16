@@ -59,17 +59,17 @@ export async function GET(request: Request) {
           upload_date: item.upload_date?.S || '',
           metadata: {
             location: item.location?.M ? {
-              country: item.location.M.country?.S || '',
-              state: item.location.M.state?.S || '',
-              city: item.location.M.city?.S || '',
-              neighborhood: item.location.M.neighborhood?.S || ''
+              country: (item.location.M.country?.S || '').trim(),
+              state: (item.location.M.state?.S || '').trim(),
+              city: (item.location.M.city?.S || '').trim(),
+              neighborhood: (item.location.M.neighborhood?.S || '').trim()
             } : { country: '', state: '', city: '', neighborhood: '' },
-            description: item.description?.S || '',
+            description: (item.description?.S || '').trim(),
             date_taken: item.date_taken?.S || '',
             people_tagged: item.people_tagged?.L 
               ? item.people_tagged.L.map((person: any) => ({
-                  id: person.M.id.S,
-                  name: person.M.name.S
+                  id: person.M.id.S.trim(),
+                  name: person.M.name.S.trim()
                 }))
               : [],
           },

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, MouseEvent, useMemo } from 'react'
+import React, { useState, useEffect, MouseEvent, useMemo, useCallback, useTransition } from 'react'
 import Image from 'next/image';
 import PhotoUpload from '@/components/PhotoUpload';
 import { Range, getTrackBackground } from 'react-range';
@@ -97,12 +97,66 @@ interface LocationOption {
   label: string;
 }
 
-// State name mapping for normalization
+// State name mapping for normalization - converts abbreviations to full names
 const stateNameMap: { [key: string]: string } = {
+  'AL': 'Alabama',
+  'AK': 'Alaska',
+  'AZ': 'Arizona',
+  'AR': 'Arkansas',
   'CA': 'California',
+  'CO': 'Colorado',
+  'CT': 'Connecticut',
+  'DE': 'Delaware',
+  'FL': 'Florida',
+  'GA': 'Georgia',
+  'HI': 'Hawaii',
+  'ID': 'Idaho',
+  'IL': 'Illinois',
+  'IN': 'Indiana',
+  'IA': 'Iowa',
+  'KS': 'Kansas',
+  'KY': 'Kentucky',
+  'LA': 'Louisiana',
+  'ME': 'Maine',
+  'MD': 'Maryland',
+  'MA': 'Massachusetts',
+  'MI': 'Michigan',
+  'MN': 'Minnesota',
+  'MS': 'Mississippi',
+  'MO': 'Missouri',
+  'MT': 'Montana',
+  'NE': 'Nebraska',
+  'NV': 'Nevada',
+  'NH': 'New Hampshire',
+  'NJ': 'New Jersey',
+  'NM': 'New Mexico',
   'NY': 'New York',
-  // Add other state abbreviations as needed
+  'NC': 'North Carolina',
+  'ND': 'North Dakota',
+  'OH': 'Ohio',
+  'OK': 'Oklahoma',
+  'OR': 'Oregon',
+  'PA': 'Pennsylvania',
+  'RI': 'Rhode Island',
+  'SC': 'South Carolina',
+  'SD': 'South Dakota',
+  'TN': 'Tennessee',
+  'TX': 'Texas',
+  'UT': 'Utah',
+  'VT': 'Vermont',
+  'VA': 'Virginia',
+  'WA': 'Washington',
+  'WV': 'West Virginia',
+  'WI': 'Wisconsin',
+  'WY': 'Wyoming',
+  'DC': 'District of Columbia',
 };
+
+// Reverse mapping: full name to abbreviation
+const stateAbbreviationMap: { [key: string]: string } = Object.entries(stateNameMap).reduce((acc, [abbr, fullName]) => {
+  acc[fullName] = abbr;
+  return acc;
+}, {} as { [key: string]: string });
 
 function cleanAndGroupLocations(data: PhotoData[]) {
   const grouped: { [key: string]: { [key: string]: { [key: string]: string[] } } } = {};
@@ -160,17 +214,26 @@ const Photos = () => {
   });
   const [locationHierarchy, setLocationHierarchy] = useState<any>({}); // Adjust type as needed
 
-  const [countries, setCountries] = useState<LocationOption[]>([]);
-  const [states, setStates] = useState<LocationOption[]>([]);
-  const [cities, setCities] = useState<LocationOption[]>([]);
-  const [neighborhoods, setNeighborhoods] = useState<LocationOption[]>([]);
-
   const [selectedCountry, setSelectedCountry] = useState<LocationOption[]>([]);
   const [selectedState, setSelectedState] = useState<LocationOption[]>([]);
   const [selectedCity, setSelectedCity] = useState<LocationOption[]>([]);
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<LocationOption[]>([]);
 
+  const [isPending, startTransition] = useTransition();
+
   const animatedComponents = makeAnimated();
+
+  // Custom styles for react-select to fix z-index issues
+  const selectStyles = {
+    menu: (provided: any) => ({
+      ...provided,
+      zIndex: 9999,
+    }),
+    menuPortal: (provided: any) => ({
+      ...provided,
+      zIndex: 9999,
+    }),
+  };
 
   const reversedImages = useMemo(() => [...filteredImages].reverse(), [filteredImages]);
 
@@ -252,49 +315,58 @@ const Photos = () => {
     setLocationHierarchy(groupedLocations);
   }, [images]);
 
-  useEffect(() => {
+  // Memoize location options - show ALL options independently for flexible searching
+  const countries = useMemo(() => {
     const countriesList = Object.keys(locationHierarchy);
-    setCountries(countriesList.map(country => ({ value: country, label: country })));
+    return countriesList.map(country => ({ value: country, label: country }));
   }, [locationHierarchy]);
 
-  useEffect(() => {
-    if (selectedCountry.length > 0) {
-      const statesList = selectedCountry.flatMap(country => 
-        Object.keys(locationHierarchy[country.value] || {})
-      );
-      setStates(statesList.map(state => ({ value: state, label: state })));
-    } else {
-      setStates([]);
-      setSelectedState([]);
-      setSelectedCity([]);
-      setSelectedNeighborhood([]);
-    }
-  }, [selectedCountry, locationHierarchy]);
+  const states = useMemo(() => {
+    // Show ALL states from all countries for independent searching
+    const statesSet = new Set<string>();
+    Object.values(locationHierarchy).forEach((countryData: any) => {
+      Object.keys(countryData).forEach(state => {
+        if (state) statesSet.add(state);
+      });
+    });
+    return Array.from(statesSet)
+      .sort()
+      .map(state => ({ value: state, label: state }));
+  }, [locationHierarchy]);
 
-  useEffect(() => {
-    if (selectedState.length > 0 && selectedCountry.length > 0) {
-      const citiesList = selectedState.flatMap(state => 
-        Object.keys(locationHierarchy[selectedCountry[0].value]?.[state.value] || {})
-      );
-      setCities(citiesList.map(city => ({ value: city, label: city })));
-    } else {
-      setCities([]);
-      setSelectedCity([]);
-      setSelectedNeighborhood([]);
-    }
-  }, [selectedState, selectedCountry, locationHierarchy]);
+  const cities = useMemo(() => {
+    // Show ALL cities from all states/countries for independent searching
+    const citiesSet = new Set<string>();
+    Object.values(locationHierarchy).forEach((countryData: any) => {
+      Object.values(countryData).forEach((stateData: any) => {
+        Object.keys(stateData).forEach(city => {
+          if (city) citiesSet.add(city);
+        });
+      });
+    });
+    return Array.from(citiesSet)
+      .sort()
+      .map(city => ({ value: city, label: city }));
+  }, [locationHierarchy]);
 
-  useEffect(() => {
-    if (selectedCity.length > 0 && selectedState.length > 0 && selectedCountry.length > 0) {
-      const neighborhoodsList = selectedCity.flatMap(city => 
-        locationHierarchy[selectedCountry[0].value]?.[selectedState[0].value]?.[city.value] || []
-      );
-      setNeighborhoods(neighborhoodsList.map(neighborhood => ({ value: neighborhood, label: neighborhood })));
-    } else {
-      setNeighborhoods([]);
-      setSelectedNeighborhood([]);
-    }
-  }, [selectedCity, selectedState, selectedCountry, locationHierarchy]);
+  const neighborhoods = useMemo(() => {
+    // Show ALL neighborhoods from all cities/states/countries for independent searching
+    const neighborhoodsSet = new Set<string>();
+    Object.values(locationHierarchy).forEach((countryData: any) => {
+      Object.values(countryData).forEach((stateData: any) => {
+        Object.values(stateData).forEach((cityData: any) => {
+          if (Array.isArray(cityData)) {
+            cityData.forEach(neighborhood => {
+              if (neighborhood) neighborhoodsSet.add(neighborhood);
+            });
+          }
+        });
+      });
+    });
+    return Array.from(neighborhoodsSet)
+      .sort()
+      .map(neighborhood => ({ value: neighborhood, label: neighborhood }));
+  }, [locationHierarchy]);
 
   useEffect(() => {
     if (currentIndex >= shuffledImages.length) {
@@ -425,33 +497,113 @@ const Photos = () => {
     // e.currentTarget.src = '/fallback-image.jpg';
   };
 
-  const filterImagesByDateRangeLocationAndPeople = (range: [number, number], location: string | null, people: TaggedPerson[]) => {
+  // Optimized filtering function with independent location level matching
+  const filterImages = useCallback(() => {
+    // Check if date slider is at default position
+    const isDateSliderAtDefault = currentDateRange[0] === dateRange.min && 
+                                   currentDateRange[1] === dateRange.max;
+
     const filtered = images.filter(image => {
-      const timestamp = dateToTimestamp(image.metadata?.date_taken || '');
-      const matchesDateRange = timestamp >= range[0] && timestamp <= range[1];
-      const matchesLocation = !location || (image.metadata?.location && Object.values(image.metadata.location).includes(location));
-      const matchesPeople = people.every(person => 
-        image.metadata?.people_tagged?.some(tagged => tagged.id === person.id)
-      );
-      return matchesDateRange && matchesLocation && matchesPeople;
+      // Date range filter
+      const dateTaken = image.metadata?.date_taken;
+      
+      // If slider is being used (not at default), exclude photos without dates
+      if (!isDateSliderAtDefault && !dateTaken) {
+        return false;
+      }
+      
+      // If photo has a date, check if it's in range
+      if (dateTaken) {
+        const timestamp = dateToTimestamp(dateTaken);
+        if (timestamp < currentDateRange[0] || timestamp > currentDateRange[1]) {
+          return false;
+        }
+      }
+
+      // Location filter - each level is independent, use AND logic across levels
+      const loc = image.metadata?.location;
+      
+      // Check country filter (if selected)
+      if (selectedCountry.length > 0) {
+        if (!loc || !selectedCountry.some(c => c.value === loc.country)) {
+          return false;
+        }
+      }
+
+      // Check state filter (if selected) - match both full name AND abbreviation
+      if (selectedState.length > 0) {
+        if (!loc) return false;
+        
+        const matchesState = selectedState.some(s => {
+          const stateName = s.value;
+          const stateAbbr = stateAbbreviationMap[stateName];
+          
+          // Match if photo's state equals the full name OR the abbreviation
+          return loc.state === stateName || loc.state === stateAbbr;
+        });
+        
+        if (!matchesState) return false;
+      }
+
+      // Check city filter (if selected)
+      if (selectedCity.length > 0) {
+        if (!loc || !selectedCity.some(c => c.value === loc.city)) {
+          return false;
+        }
+      }
+
+      // Check neighborhood filter (if selected)
+      if (selectedNeighborhood.length > 0) {
+        if (!loc || !selectedNeighborhood.some(n => n.value === loc.neighborhood)) {
+          return false;
+        }
+      }
+
+      // People filter - all selected people must be tagged
+      if (selectedPeople.length > 0) {
+        const hasAllPeople = selectedPeople.every(person => 
+          image.metadata?.people_tagged?.some(tagged => tagged.id === person.id)
+        );
+        if (!hasAllPeople) return false;
+      }
+
+      return true;
     });
+
     setFilteredImages(filtered);
-  };
+  }, [images, currentDateRange, dateRange, selectedCountry, selectedState, selectedCity, 
+      selectedNeighborhood, selectedPeople]);
+
+  // Debounced filter for smooth range slider performance
+  const debouncedFilter = useMemo(
+    () => {
+      let timeoutId: NodeJS.Timeout;
+      return () => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          startTransition(() => {
+            filterImages();
+          });
+        }, 150); // 150ms debounce
+      };
+    },
+    [filterImages]
+  );
+
+  // Auto-trigger filtering when dependencies change
+  useEffect(() => {
+    if (images.length > 0 && currentDateRange[0] !== 0 && currentDateRange[1] !== 0) {
+      startTransition(() => {
+        filterImages();
+      });
+    }
+  }, [currentDateRange, selectedCountry, selectedState, selectedCity, 
+      selectedNeighborhood, selectedPeople, images, filterImages]);
 
   const handleRangeChange = (values: number[]) => {
     const rangeValues: [number, number] = [values[0], values[1]];
     setCurrentDateRange(rangeValues);
-    filterImagesByDateRangeLocationAndPeople(rangeValues, selectedLocation, selectedPeople);
-  };
-
-  const handleLocationChange = async () => {
-    const location = selectedNeighborhood?.length > 0 ? selectedNeighborhood.map(n => n.value).join(',') : selectedCity.length > 0 ? selectedCity.map(c => c.value).join(',') : selectedState.length > 0 ? selectedState.map(s => s.value).join(',') : selectedCountry.length > 0 ? selectedCountry.map(c => c.value).join(',') : null;
-    if (location) {
-      const response = await fetch(`/api/photos?location=${location}`); // Adjust API endpoint
-      const data = await response.json();
-      setImages(data.photos); // Update images based on the selected location
-    }
-    filterImagesByDateRangeLocationAndPeople(currentDateRange, location, selectedPeople);
+    debouncedFilter();
   };
 
   const handlePersonChange = (selectedOptions: any) => {
@@ -461,25 +613,31 @@ const Photos = () => {
     }));
 
     setSelectedPeople(people);
-    filterImagesByDateRangeLocationAndPeople(currentDateRange, selectedLocation, people);
+    // No need to call filter here - useEffect will handle it
   };
 
-  const personOptions = familyMembers.map(member => ({
-    value: `${member.first_name} ${member.last_name}`,
-    label: `${member.first_name} ${member.last_name}`,
-  }));
+  // Memoize person options to avoid recreating on every render
+  const personOptions = useMemo(() => 
+    familyMembers.map(member => ({
+      value: `${member.first_name} ${member.last_name}`,
+      label: `${member.first_name} ${member.last_name}`,
+    })), 
+    [familyMembers]
+  );
 
-  const resetFilters = async () => {
+  const resetFilters = () => {
+    // Reset all filter selections
+    setSelectedCountry([]);
+    setSelectedState([]);
+    setSelectedCity([]);
+    setSelectedNeighborhood([]);
     setSelectedLocation(null);
     setSelectedPeople([]);
     setSelectedPersonId(null);
     setCurrentDateRange([dateRange.min, dateRange.max]);
     
-    // Fetch all photos again to reset the view
-    await fetchPhotos();
-    
-    // Reset the filtered images to all images
-    setFilteredImages(images);
+    // Filter will be triggered automatically by useEffect
+    // No need to refetch or manually set filteredImages
   };
 
   const renderDateRangeSlider = () => {
@@ -672,15 +830,16 @@ const Photos = () => {
               components={animatedComponents}
               className="basic-multi-select text-black poppins-light"
               options={countries}
+              value={selectedCountry}
               isMulti
               onChange={(options) => {
                 setSelectedCountry(options as LocationOption[]);
-                setSelectedState([]);
-                setSelectedCity([]);
-                setSelectedNeighborhood([]);
-                handleLocationChange(); // Fetch photos on change
+                // Filtering handled automatically by useEffect
               }}
               placeholder="Country"
+              styles={selectStyles}
+              menuPortalTarget={document.body}
+              menuPosition="fixed"
             />
           </div>
           <div className="w-1/2 p-2 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.3s' }}> {/* Second column */}
@@ -691,15 +850,16 @@ const Photos = () => {
               components={animatedComponents}
               className="basic-multi-select text-black poppins-light"
               options={states}
+              value={selectedState}
               isMulti
               onChange={(options) => {
                 setSelectedState(options as LocationOption[]);
-                setSelectedCity([]);
-                setSelectedNeighborhood([]);
-                handleLocationChange(); // Fetch photos on change
+                // Filtering handled automatically by useEffect
               }}
               placeholder="State"
-              isDisabled={selectedCountry.length === 0}
+              styles={selectStyles}
+              menuPortalTarget={document.body}
+              menuPosition="fixed"
             />
           </div>
           <div className="w-1/2 p-2 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.4s' }}> {/* Third column */}
@@ -710,14 +870,16 @@ const Photos = () => {
               components={animatedComponents}
               className="basic-multi-select text-black poppins-light"
               options={cities}
+              value={selectedCity}
               isMulti
               onChange={(options) => {
                 setSelectedCity(options as LocationOption[]);
-                setSelectedNeighborhood([]);
-                handleLocationChange(); // Fetch photos on change
+                // Filtering handled automatically by useEffect
               }}  
               placeholder="City"
-              isDisabled={selectedState.length === 0}
+              styles={selectStyles}
+              menuPortalTarget={document.body}
+              menuPosition="fixed"
             />
           </div>
           <div className="w-1/2 p-2 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.5s' }}> {/* Fourth column */}
@@ -728,13 +890,16 @@ const Photos = () => {
               components={animatedComponents}
               className="basic-multi-select text-black poppins-light"
               options={neighborhoods}
+              value={selectedNeighborhood}
               isMulti
               onChange={(options) => {
                 setSelectedNeighborhood(options as LocationOption[]);
-                handleLocationChange(); // Fetch photos on change
+                // Filtering handled automatically by useEffect
               }}
               placeholder="Neighborhood"
-              isDisabled={selectedCity.length === 0}
+              styles={selectStyles}
+              menuPortalTarget={document.body}
+              menuPosition="fixed"
             />
           </div>
         </div>
@@ -753,6 +918,9 @@ const Photos = () => {
             classNamePrefix="select"
             onChange={handlePersonChange}
             value={selectedPeople.map(person => ({ value: person.name, label: person.name }))}
+            styles={selectStyles}
+            menuPortalTarget={document.body}
+            menuPosition="fixed"
           />
         </div>
 
