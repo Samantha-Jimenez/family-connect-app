@@ -1,4 +1,5 @@
 import React, { MouseEvent, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import Select from 'react-select';
 import { PhotoData, TaggedPerson, getUserAlbums, addPhotoToAlbum, savePhotoToDB, getAlbumById, deletePhotoById, getAllFamilyMembers, AlbumData, checkIfPhotoIsFavorited, removePhotoFromFavorites, addPhotoToFavorites, addCommentToPhoto, getCommentsForPhoto, getUserNameById, deleteCommentFromPhoto, editCommentInPhoto, getProfilePhotoById, removePhotoFromAlbum } from '@/hooks/dynamoDB';
@@ -74,6 +75,12 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isDownloadAnimating, setIsDownloadAnimating] = useState(false);
   const [hasDownloaded, setHasDownloaded] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   useEffect(() => {
     const fetchAlbums = async () => {
@@ -304,8 +311,10 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleCloseModal}>
+  if (!mounted) return null;
+
+  const modalContent = (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]" onClick={handleCloseModal}>
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-4xl md:w-full w-auto m-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[670px] overflow-y-auto md:overflow-y-visible" onClick={handleModalClick}>
         <div className="relative">
           <Image
@@ -588,17 +597,15 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                     </p>
                   </p>
                 )}
-                {uploaderName && (
+                  {uploaderName && (
                   <p className="text-sm text-gray-800 dark:text-gray-200">
                     <span className="font-bold">Uploaded By: </span>
-                    <p>
                     <a 
                       href={`/profile/${photo?.uploaded_by}`} 
                       className="text-blue-500 hover:underline"
                     >
                       {uploaderName}
                     </a>
-                    </p>
                   </p>
                 )}
               </>
@@ -654,6 +661,8 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       />
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default PhotoModal; 

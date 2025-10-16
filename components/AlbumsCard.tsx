@@ -296,7 +296,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
   };
 
   return (
-    <div className="p-4 bg-white shadow-lg rounded-lg relative">
+    <div className={`p-4 bg-white shadow-lg rounded-lg relative ${showModal && photos.length > 0 ? 'h-screen' : ''}`}>
       {auth && (
         <>
       <h2 className="text-xl mb-2 text-black">Create Album</h2>
@@ -381,8 +381,9 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 overflow-y-scroll w-screen">
-          <div className="bg-white p-6 rounded-lg shadow-lg md:w-3/4 h-full md:h-auto md:max-w-2xl relative overflow-y-scroll">
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className={`bg-black bg-opacity-50 flex items-start justify-center ${photos.length === 0 ? 'h-full' : 'min-h-full'}`}>
+            <div className={`bg-white p-4 md:p-6 shadow-lg w-full relative flex flex-col ${photos.length === 0 ? 'h-full' : ''}`}>
             <button
               onClick={() => setShowModal(false)}
               className="absolute right-1 top-1 h-[30px] w-[30px] px-0 text-2xl font-light"
@@ -390,7 +391,21 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
             >
               ×
             </button>
-            <h2 className="font-bold text-black">
+            
+            {/* Breadcrumbs */}
+            <div className="mb-3 text-xs text-gray-400">
+              <button 
+                onClick={() => setShowModal(false)}
+                className="hover:text-blue-600 hover:underline font-light"
+                disabled={deleting || addingPhotos || savingEdit || removingPhotos}
+              >
+                Albums
+              </button>
+              <span className="mx-2"> &gt; </span>
+              <span className="text-black underline">{selectedAlbum?.name}</span>
+            </div>
+
+            <h2 className="text-xl text-black">
               {editing ? (
                 <>
                   <label className="block text-black font-semibold">Album Name</label>
@@ -442,7 +457,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
                     </div>
                   ))}
                 </div>
-                <div className="flex gap-2 mt-4">
+                <div className="flex flex-wrap gap-2 mt-4">
                   <button
                     className="btn btn-sm btn-primary px-[10px]"
                     onClick={handleSaveEdit}
@@ -461,7 +476,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
               </div>
             ) : (
               <>
-                <p className="text-black mb-4">{selectedAlbum?.description}</p>
+                <p className="text-sm text-gray-600 mb-4">{selectedAlbum?.description}</p>
                 {/* {selectedAlbum?.cover_photo_id && (
                   <div className="mb-4">
                     <span className="text-xs text-gray-500">Cover Photo:</span>
@@ -484,7 +499,15 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
               </>
             )}
 
-            <div className="grid grid-cols-3 gap-4">
+            {/*Photo Count*/}
+            <p className="text-xs text-gray-600 mb-3">Photos: {photoCounts[selectedAlbum?.album_id || ''] || 0}</p>
+
+            {/*No Photos Message*/}
+            {photos.length === 0 && (
+              <div className="flex flex-1 items-center justify-center text-center text-gray-500 text-lg">No photos in this album yet.</div>
+            )}
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-4">
               {photos.map((photo) => (
                 <div 
                   key={photo.photo_id} 
@@ -570,7 +593,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
             )}
 
             {auth && (
-              <div className="flex gap-2 mt-4">
+              <div className="flex flex-wrap gap-2 mt-4">
                 <button
                   className="btn btn-sm btn-primary px-[10px]"
                   onClick={() => {
@@ -625,7 +648,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
             )}
 
             {auth && (
-              <div className="flex justify-between mt-4">
+              <div className="flex flex-wrap justify-between gap-2 mt-4">
                 <button
                   className="btn btn-sm btn-secondary px-[10px]"
                   onClick={() => {
@@ -645,6 +668,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
                 </button>
               </div>
             )}
+            </div>
           </div>
         </div>
       )}
