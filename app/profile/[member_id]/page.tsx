@@ -21,7 +21,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  type Tab = 'overview' | 'uploads' | 'albums';
+  type Tab = 'overview' | 'uploads' | 'albums' | 'memorials' | 'tagged';
   const [activeTab, setActiveTab] = useState<Tab>('overview');
 
 
@@ -31,7 +31,7 @@ export default function ProfilePage() {
         try {
           const data = await getUserDataById(member_id as string);
           if (data) {
-            setMemberData({
+            const member = {
               family_member_id: data.family_member_id?.S || '',
               first_name: data.first_name?.S || '',
               last_name: data.last_name?.S || '',
@@ -46,7 +46,10 @@ export default function ProfilePage() {
               birth_city: data.birth_city?.S || '',
               birth_state: data.birth_state?.S || '',
               death_date: data.death_date?.S || '',
-            });
+            };
+            setMemberData(member);
+            // Set default tab based on whether member has passed away
+            setActiveTab(member.death_date ? 'memorials' : 'overview');
           } else {
             setError('Member not found');
           }
@@ -84,9 +87,30 @@ export default function ProfilePage() {
       </div>
 
       {memberData?.death_date ? (
-        <div className="opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.3s' }}>
-          <PassedMemberOverview memberData={memberData as FamilyMember} />
+        // <div className="opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.3s' }}>
+        //   <PassedMemberOverview memberData={memberData as FamilyMember} />
+        // </div>
+        <div className="col-span-1 sm:col-span-2">
+        <div data-theme="light" className="tabs tabs-bordered rounded-lg shadow-lg opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.3s' }}>
+          <a 
+            className={`tab tab-lg text-base poppins-light ${activeTab === 'memorials' ? 'tab-active' : ''}`}
+            onClick={() => setActiveTab('memorials')}
+          >
+            Memorials
+          </a>
+          <a 
+            className={`tab tab-lg text-base poppins-light ${activeTab === 'tagged' ? 'tab-active' : ''}`}
+            onClick={() => setActiveTab('tagged')}
+          >
+            Tagged
+          </a>
         </div>
+
+        <div className="mt-4 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.4s' }}>
+          {activeTab === 'memorials' && <PassedMemberOverview memberData={memberData as FamilyMember} />}
+          {activeTab === 'tagged' && <TaggedPhotosCard userId={memberData.family_member_id} />}
+        </div>
+      </div>
       ) : ( 
         <div className="col-span-1 sm:col-span-2">
           <div data-theme="light" className="tabs tabs-bordered rounded-lg shadow-lg opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.3s' }}>

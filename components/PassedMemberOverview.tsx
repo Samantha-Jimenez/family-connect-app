@@ -120,7 +120,6 @@ const PassedMemberOverview = ({ memberData }: { memberData: FamilyMember }) => {
         </div>
       </div>
     </div>
-    <TaggedPhotosCard userId={memberData.family_member_id} />
     </>
   );
 };
