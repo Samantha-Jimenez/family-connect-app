@@ -64,7 +64,7 @@ const PassedMemberOverview = ({ memberData }: { memberData: FamilyMember }) => {
 
   return (
     <>
-    <div className="px-4 py-8">
+    <div className="md:px-4 px-0 py-8">
       {/* Memorial Header */}
       {/* <div className="text-center mb-12">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">
@@ -92,7 +92,7 @@ const PassedMemberOverview = ({ memberData }: { memberData: FamilyMember }) => {
           <div className="flex justify-end">
             <button
               type="submit"
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="btn px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 w-full md:w-auto border-0 min-h-[2.5rem] h-[2.5rem]"
             >
               Share
             </button>

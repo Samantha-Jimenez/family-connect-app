@@ -296,7 +296,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
   };
 
   return (
-    <div className={`p-4 bg-white shadow-lg rounded-lg relative ${showModal && photos.length > 0 ? 'h-screen' : ''}`}>
+    <div className={`p-4 bg-white shadow-lg rounded-lg relative mb-12 md:mb-0 ${showModal && photos.length > 0 ? 'h-screen' : ''}`}>
       {auth && (
         <>
       <h2 className="text-xl mb-2 text-black">Create Album</h2>

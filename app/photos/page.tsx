@@ -828,8 +828,8 @@ const Photos = () => {
         </div> */}
 
         {/* Location filter dropdown */}
-        <div className="flex flex-wrap mb-4">
-          <div className="w-1/2 p-2 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.2s' }}> {/* First column */}
+        <div className="flex flex-wrap">
+          <div className="md:w-1/2 w-full md:p-2 py-1 px-0 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.2s' }}> {/* First column */}
             <label htmlFor="country-filter" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
               Filter by Country:
             </label>
@@ -846,10 +846,11 @@ const Photos = () => {
               placeholder="Country"
               styles={selectStyles}
               menuPortalTarget={document.body}
-              menuPosition="fixed"
+              // menuPosition="fixed"
+              menuPlacement="bottom"
             />
           </div>
-          <div className="w-1/2 p-2 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.3s' }}> {/* Second column */}
+          <div className="md:w-1/2 w-full md:p-2 py-1 px-0 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.3s' }}> {/* Second column */}
             <label htmlFor="state-filter" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
               Filter by State:
             </label>
@@ -866,10 +867,11 @@ const Photos = () => {
               placeholder="State"
               styles={selectStyles}
               menuPortalTarget={document.body}
-              menuPosition="fixed"
+              // menuPosition="fixed"
+              menuPlacement="bottom"
             />
           </div>
-          <div className="w-1/2 p-2 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.4s' }}> {/* Third column */}
+          <div className="md:w-1/2 w-full md:p-2 py-1 px-0 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.4s' }}> {/* Third column */}
             <label htmlFor="city-filter" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
               Filter by City:
             </label>
@@ -886,10 +888,11 @@ const Photos = () => {
               placeholder="City"
               styles={selectStyles}
               menuPortalTarget={document.body}
-              menuPosition="fixed"
+              // menuPosition="fixed"
+              menuPlacement="bottom"
             />
           </div>
-          <div className="w-1/2 p-2 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.5s' }}> {/* Fourth column */}
+          <div className="md:w-1/2 w-full md:p-2 py-1 px-0 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.5s' }}> {/* Fourth column */}
             <label htmlFor="neighborhood-filter" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
               Filter by Neighborhood:
             </label>
@@ -906,13 +909,14 @@ const Photos = () => {
               placeholder="Neighborhood"
               styles={selectStyles}
               menuPortalTarget={document.body}
-              menuPosition="fixed"
+              // menuPosition="fixed"
+              menuPlacement="bottom"
             />
           </div>
         </div>
 
         {/* Person filter dropdown */}
-        <div className="mb-4 px-2 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.6s' }}>
+        <div className="mb-4 md:p-2 px-0 py-1 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.6s' }}>
           <label htmlFor="person-filter" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
             Filter by Person:
           </label>
@@ -927,15 +931,16 @@ const Photos = () => {
             value={selectedPeople.map(person => ({ value: person.name, label: person.name }))}
             styles={selectStyles}
             menuPortalTarget={document.body}
-            menuPosition="fixed"
+            // menuPosition="fixed"
+            menuPlacement="bottom"
           />
         </div>
 
         {/* Clear Filters Button */}
-        <div className="mb-4 px-2 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.7s' }}>
+        <div className="mb-4 md:px-2 px-0 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.7s' }}>
           <button
             onClick={resetFilters}
-            className="px-4 py-2 bg-plantain-green text-white rounded hover:bg-green-600 poppins-light"
+            className="px-4 py-2 bg-plantain-green text-white rounded hover:bg-green-600 poppins-light w-full md:w-auto"
           >
             Clear Filters
           </button>
