@@ -133,7 +133,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
   return (
     <div className="rounded-3xl">
       <div className="rounded-3xl pt-8 transition-all duration-300 md:mt-12">
-        <div className="grid grid-cols-1 md:grid-cols-[286px_1fr_1fr] md:grid-rows-[min-content_min-content_min-content]">
+        <div className="grid grid-cols-1 md:grid-cols-[286px_1fr_1fr] md:grid-rows-[min-content_min-content_min-content] px-2 sm:px-0">
           <div className="text-center md:h-[13rem] h-[17rem] md:row-span-2">
             <div className="avatar md:bottom-20 bottom-6">
               <div className="w-[17rem] h-[17rem] mx-auto rounded-[60px] shadow-lg">
@@ -189,16 +189,17 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                 });
 
                 // 3. Render each relationship type once, with all names in tooltip (vertical)
-                return Object.entries(grouped).map(([type, targetIds]) => {
+                return Object.entries(grouped).map(([type, targetIds], index) => {
                   const relatedNames = targetIds
                     .map((id) => targetUserNames[id])
                     .filter(Boolean);
                   
                   return (
                     <div
-                      className="tooltip tooltip-bottom whitespace-pre-line"
+                      className="tooltip tooltip-bottom whitespace-pre-line opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]"
                       data-tip={relatedNames.join("\n")}
                       key={type}
+                      style={{ animationDelay: `${index * 0.1}s` }}
                     >
                       <span 
                         className="bg-yellow-800/60 text-white px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-yellow-700/70 transition-colors"

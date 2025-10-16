@@ -320,6 +320,8 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
           placeholder="Tag family members in photo..."
           noOptionsMessage={() => "No family members found"}
           isLoading={familyMembers.length === 0}
+          menuPortalTarget={document.body}
+          menuPosition="fixed"
           theme={(theme) => ({
             ...theme,
             colors: {
@@ -336,6 +338,14 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
               fontFamily: "'Poppins', sans-serif",
               fontWeight: 300,
               color: '#9BA3AF',
+            }),
+            menu: (provided) => ({
+              ...provided,
+              zIndex: 9999,
+            }),
+            menuPortal: (provided) => ({
+              ...provided,
+              zIndex: 9999,
             }),
           }}
         />
