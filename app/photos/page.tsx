@@ -490,7 +490,7 @@ const Photos = () => {
     if (uniqueTimestamps.size <= 1) return null;
   
     return (
-      <div className="mb-8">
+      <div className="mb-8 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.8s' }}>
         <div className="mb-2 flex justify-between text-sm text-gray-600 whitespace-nowrap">
           <span>{timestampToDate(currentDateRange[0])}</span>
           <span>{timestampToDate(currentDateRange[1])}</span>
@@ -641,7 +641,7 @@ const Photos = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 bg-gray-100">
+    <div className="container mx-auto px-4 py-8 bg-gray-100 opacity-0 animate-[fadeIn_0.6s_ease-in_forwards]">
       <h1 className="text-4xl mb-6 text-gray-800">Family Photos</h1>
 
       {/* Gallery section with transition */}
@@ -664,7 +664,7 @@ const Photos = () => {
 
         {/* Location filter dropdown */}
         <div className="flex flex-wrap mb-4">
-          <div className="w-1/2 p-2"> {/* First column */}
+          <div className="w-1/2 p-2 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.2s' }}> {/* First column */}
             <label htmlFor="country-filter" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
               Filter by Country:
             </label>
@@ -683,7 +683,7 @@ const Photos = () => {
               placeholder="Country"
             />
           </div>
-          <div className="w-1/2 p-2"> {/* Second column */}
+          <div className="w-1/2 p-2 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.3s' }}> {/* Second column */}
             <label htmlFor="state-filter" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
               Filter by State:
             </label>
@@ -702,7 +702,7 @@ const Photos = () => {
               isDisabled={selectedCountry.length === 0}
             />
           </div>
-          <div className="w-1/2 p-2"> {/* Third column */}
+          <div className="w-1/2 p-2 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.4s' }}> {/* Third column */}
             <label htmlFor="city-filter" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
               Filter by City:
             </label>
@@ -720,7 +720,7 @@ const Photos = () => {
               isDisabled={selectedState.length === 0}
             />
           </div>
-          <div className="w-1/2 p-2"> {/* Fourth column */}
+          <div className="w-1/2 p-2 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.5s' }}> {/* Fourth column */}
             <label htmlFor="neighborhood-filter" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
               Filter by Neighborhood:
             </label>
@@ -740,7 +740,7 @@ const Photos = () => {
         </div>
 
         {/* Person filter dropdown */}
-        <div className="mb-4 px-2">
+        <div className="mb-4 px-2 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.6s' }}>
           <label htmlFor="person-filter" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
             Filter by Person:
           </label>
@@ -757,7 +757,7 @@ const Photos = () => {
         </div>
 
         {/* Clear Filters Button */}
-        <div className="mb-4 px-2">
+        <div className="mb-4 px-2 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.7s' }}>
           <button
             onClick={resetFilters}
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 poppins-light"
@@ -768,11 +768,11 @@ const Photos = () => {
 
         {renderDateRangeSlider()}
 
-        <div className="mb-4 text-sm text-gray-500 poppins-light">
+        <div className="mb-4 text-sm text-gray-500 poppins-light opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.9s' }}>
           {formatPhotoCount(filteredImages.length, images.length)}
         </div>
 
-        <div id="default-carousel" className="relative w-full" data-carousel="slide">
+        <div id="default-carousel" className="relative w-full opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" data-carousel="slide" style={{ animationDelay: '1.0s' }}>
           <div className="relative h-56 overflow-hidden rounded-lg md:h-96">
             {shuffledImages.slice(0, 6).map((photo, index) => (
               <div
@@ -838,7 +838,7 @@ const Photos = () => {
         </div>
       </div>
       
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '1.1s' }}>
         {[...filteredImages.slice().sort((a, b) => new Date(b.upload_date).getTime() - new Date(a.upload_date).getTime())].map((photo, index) => (
           <div 
             key={index} 

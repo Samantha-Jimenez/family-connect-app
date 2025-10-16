@@ -166,7 +166,7 @@ export default function Calendar() {
   };
 
   return (
-    <div className="p-4 bg-white rounded-xl shadow-lg text-gray-800">
+    <div className="p-4 bg-white rounded-xl shadow-lg text-gray-800 opacity-0 animate-[fadeIn_0.6s_ease-in_forwards]">
       <FullCalendar
         plugins={[
           dayGridPlugin,

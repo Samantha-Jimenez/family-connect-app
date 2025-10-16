@@ -50,18 +50,20 @@ const HomePage = () => {
       <ToastProvider>
         <UserProvider>
           <CalendarProvider>
-            <div className="min-h-screen bg-gray-100 p-4 sm:p-6">
+            <div className="min-h-screen bg-gray-100 p-4 sm:p-6 opacity-0 animate-[fadeIn_0.6s_ease-in_forwards]">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_14rem] xl:grid-cols-[1fr_1fr_16rem] gap-4 max-w-7xl mx-auto">
-                <div className="col-span-1 sm:col-span-2">
+                <div className="col-span-1 sm:col-span-2 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.2s' }}>
                   <ProfileUserInfoCard userId={user.userId}/>
                 </div>
-                <div className="col-span-1 sm:col-span-2 lg:col-span-1 lg:row-span-5 lg:col-start-3 max-[1023px]:hidden">
+                <div className="col-span-1 sm:col-span-2 lg:col-span-1 lg:row-span-5 lg:col-start-3 max-[1023px]:hidden opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.3s' }}>
                   <Panel />
                 </div>
-                <CallToAction />
+                <div className="col-span-1 sm:col-span-2 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.4s' }}>
+                  <CallToAction />
+                </div>
                 
                 <div className="col-span-1 sm:col-span-2">
-                  <div data-theme="light" className="tabs tabs-bordered bg-white rounded-lg shadow-lg">
+                  <div data-theme="light" className="tabs tabs-bordered bg-white rounded-lg shadow-lg opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.5s' }}>
                     <a 
                       className={`tab tab-lg text-sm poppins-light ${activeTab === 'uploads' ? 'tab-active' : ''}`}
                       onClick={() => setActiveTab('uploads')}
@@ -88,7 +90,7 @@ const HomePage = () => {
                     </a>
                   </div>
 
-                  <div className="mt-4">
+                  <div className="mt-4 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.6s' }}>
                     {activeTab === 'uploads' && <UploadedPhotosCard userId={user.userId as string} />}
                     {activeTab === 'tagged' && <TaggedPhotosCard userId={user.userId} />}
                     {activeTab === 'favorites' && <FavoritedPhotosCard />}

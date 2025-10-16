@@ -179,7 +179,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.2s' }}>
         <input
           ref={fileInputRef}
           type="file"
@@ -209,7 +209,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
       </div>
 
       {previewUrl && (
-        <div className="mt-4">
+        <div className="mt-4 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.3s' }}>
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-200">Photo Preview</h3>
           <div className="relative w-full h-[300px] mt-2">
             <Image
@@ -223,7 +223,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
         </div>
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-4 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.4s' }}>
         <h3 className="text-sm font-medium text-gray-700 dark:text-gray-200">Photo Details</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -280,7 +280,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
         </div>
       </div>
 
-      <div>
+      <div className="opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.5s' }}>
         <label className="block text-sm font-medium text-gray-500">
           Description
         </label>
@@ -293,7 +293,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
         />
       </div>
 
-      <div>
+      <div className="opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.6s' }}>
         <label className="block text-sm font-medium text-gray-400">
           Date Taken
         </label>
@@ -306,7 +306,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
         />
       </div>
 
-      <div>
+      <div className="opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.7s' }}>
         <label className="block text-sm font-medium text-gray-400">
           Tag People
         </label>
@@ -344,11 +344,12 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
       <button
         type="submit"
         disabled={!selectedFile || isUploading}
-        className={`w-full px-4 py-2 text-white rounded-md poppins-light ${
+        className={`w-full px-4 py-2 text-white rounded-md poppins-light opacity-0 animate-[fadeIn_0.4s_ease-in_forwards] ${
           isUploading || !selectedFile
             ? 'bg-blue-300 cursor-not-allowed'
             : 'bg-blue-500 hover:bg-blue-600'
         }`}
+        style={{ animationDelay: '0.8s' }}
       >
         {isUploading ? 'Uploading...' : 'Upload Photo'}
       </button>

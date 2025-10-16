@@ -75,19 +75,21 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen p-6 bg-white">
+    <div className="min-h-screen p-6 bg-white opacity-0 animate-[fadeIn_0.6s_ease-in_forwards]">
       <div className="max-w-6xl mx-auto grid gap-4 grid-cols-1 md:grid-cols-2"> 
       {/* <h1 className="text-4xl font-bold text-center mb-6 text-[#717568]">User Profile</h1> */}
       {/* User Info */}
-      <div className="col-span-1 sm:col-span-2">
+      <div className="col-span-1 sm:col-span-2 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.2s' }}>
         <ProfileUserInfoCard userId={member_id as string}/>
       </div>
 
       {memberData?.death_date ? (
-        <PassedMemberOverview memberData={memberData as FamilyMember} />
+        <div className="opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.3s' }}>
+          <PassedMemberOverview memberData={memberData as FamilyMember} />
+        </div>
       ) : ( 
         <div className="col-span-1 sm:col-span-2">
-          <div data-theme="light" className="tabs tabs-bordered rounded-lg shadow-lg">
+          <div data-theme="light" className="tabs tabs-bordered rounded-lg shadow-lg opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.3s' }}>
             <a 
               className={`tab tab-lg text-base poppins-light ${activeTab === 'overview' ? 'tab-active' : ''}`}
               onClick={() => setActiveTab('overview')}
@@ -108,7 +110,7 @@ export default function ProfilePage() {
             </a>
           </div>
 
-          <div className="mt-4">
+          <div className="mt-4 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.4s' }}>
             {activeTab === 'overview' && <ProfileOverview userId={member_id as string}/>}
             {activeTab === 'uploads' && <UploadedPhotosCard userId={member_id as string}/>}
             {activeTab === 'albums' && <AlbumsCard userId={member_id as string} auth={false}/>}
