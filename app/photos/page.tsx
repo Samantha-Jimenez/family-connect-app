@@ -3,6 +3,7 @@
 import React, { useState, useEffect, MouseEvent, useMemo, useCallback, useTransition } from 'react'
 import Image from 'next/image';
 import PhotoUpload from '@/components/PhotoUpload';
+import LoadSpinner from '@/components/LoadSpinner';
 import { Range, getTrackBackground } from 'react-range';
 import { FamilyMemberProps } from '../familytree/page'; // Adjust the import path as necessary
 import { familyTreeData } from '../familytree/familyTreeData'; // Import familyTreeData
@@ -792,7 +793,7 @@ const Photos = () => {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <LoadSpinner size={80} />
         </div>
       </div>
     );
@@ -800,6 +801,12 @@ const Photos = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 bg-gray-100 opacity-0 animate-[fadeIn_0.6s_ease-in_forwards]">
+      {refreshing && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <LoadSpinner size={80} />
+        </div>
+      )}
+
       <h1 className="text-4xl mb-6 text-gray-800">Family Photos</h1>
 
       {/* Gallery section with transition */}

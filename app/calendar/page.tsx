@@ -181,15 +181,20 @@ export default function Calendar() {
         headerToolbar={{
           left: 'prev,next today',
           center: 'title',
-          right: 'timeGridDay,timeGridWeek,dayGridMonth,multiMonthYear,listWeek'
+          right: 'timeGridWeek,dayGridMonth,multiMonthYear,listYear'
         }}
         initialView="dayGridMonth"
         views={{
-          timeGridDay: { buttonText: 'Day' },
-          timeGridWeek: { buttonText: 'Week' },
+          // 🗓️ Grid Views
           dayGridMonth: { buttonText: 'Month' },
           multiMonthYear: { buttonText: 'Year' },
-          listWeek: { buttonText: 'List' }
+        
+          // 🕒 Time Grid Views
+          timeGridWeek: { buttonText: 'Week' },
+        
+          // 📋 List Views
+          // listMonth: { buttonText: 'List (Month)' },
+          listYear: { buttonText: 'List' },
         }}
         editable={true}
         selectable={true}
