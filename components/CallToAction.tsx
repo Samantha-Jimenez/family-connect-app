@@ -111,21 +111,22 @@ const CallToAction = () => {
 
   return (
     <div className="col-span-1 sm:col-span-2">
-      <div className="relative bg-yellow-300/10 rounded-lg py-4 pl-4 pr-[5.75rem] text-stone-700 shadow-lg">
+      <div className="relative bg-golden-sand/30 rounded-lg py-2 pl-4 pr-[5.75rem] text-carrot-orange shadow-lg">
         <button
           className="
             group
-            absolute top-3 right-4
+            absolute top-2 right-4
             flex items-center justify-end
-            text-gray-400 hover:text-gray-700 text-xl font-bold
+            text-white hover:text-gray-700 text-2xl font-light
             rounded-full
             transition-all duration-700
             bg-transparent
-            hover:bg-gray-400
+            hover:bg-golden-sand
             hover:text-red-500
-            px-2
+            pl-3 pr-2
             overflow-hidden
             min-w-[2.5rem]
+            leading-6
             "
           aria-label="Close"
           onClick={handleDismiss}
@@ -144,17 +145,15 @@ const CallToAction = () => {
               whitespace-nowrap
               select-none
               text-sm
-              leading-7
               -translate-y-0
-              font-normal
-              text-white
+              text-white source-sans-3
             "
           >
             dismiss
           </span>
-          &times;
+          <p className="">&times;</p>
         </button>
-        <p className="font-medium source-sans-3 italic">
+        <p className="source-sans-3 italic">
           You're just a few details away from a complete profile—finish filling out your {missingText}!
         </p>
       </div>

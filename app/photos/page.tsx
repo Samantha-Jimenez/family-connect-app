@@ -669,7 +669,7 @@ const Photos = () => {
                 ...props.style,
                 background: getTrackBackground({
                   values: currentDateRange,
-                  colors: ["#e5e7eb", "#3b82f6", "#e5e7eb"],
+                  colors: ["#e5e7eb", "#5CAB68", "#e5e7eb"],
                   min: dateRange.min,
                   max: dateRange.max
                 })
@@ -682,7 +682,7 @@ const Photos = () => {
           renderThumb={({ props, isDragged }) => (
             <div
               {...props}
-              className={`h-4 w-4 rounded-full bg-blue-500 focus:outline-none ${isDragged ? 'shadow-lg' : ''}`}
+              className={`h-4 w-4 rounded-full bg-plantain-green focus:outline-none ${isDragged ? 'shadow-lg' : ''}`}
             />
           )}
         />
@@ -935,7 +935,7 @@ const Photos = () => {
         <div className="mb-4 px-2 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.7s' }}>
           <button
             onClick={resetFilters}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 poppins-light"
+            className="px-4 py-2 bg-plantain-green text-white rounded hover:bg-green-600 poppins-light"
           >
             Clear Filters
           </button>

@@ -386,7 +386,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           <div className="flex justify-end space-x-2 mt-auto">
             {currentUserId === photo?.uploaded_by && !isEditing && (
               <button
-                className="btn btn-sm border-0 bg-green-500 text-white rounded hover:bg-green-600 w-full mt-2.5"
+                className="btn btn-sm border-0 bg-palm-green text-white rounded hover:bg-british-racing-green w-full mt-2.5"
                 onClick={() => setIsEditing(true)}
               >
                 Edit
@@ -642,7 +642,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             />
             <button
                 onClick={handleAddComment}
-                className="btn btn-sm bg-blue-500 text-white ml-2 rounded-md shadow hover:bg-blue-600 transition border-0"
+                className="btn btn-sm bg-moonstone text-white ml-2 rounded-md shadow hover:bg-blue-ncs transition border-0"
             >
                 Post
             </button>
