@@ -58,6 +58,16 @@ export default function EventModal({
       setIsEditing(false);
     } else {
       setIsEditing(mode === 'add');
+      
+      // Scroll to bottom on mobile when modal opens
+      if (window.innerWidth < 640) { // sm breakpoint
+        setTimeout(() => {
+          window.scrollTo({
+            top: document.documentElement.scrollHeight,
+            behavior: 'smooth'
+          });
+        }, 100); // Small delay to ensure modal is rendered
+      }
     }
   }, [isOpen, mode]);
 
