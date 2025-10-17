@@ -118,9 +118,9 @@ const CoupleBlock = ({
 
       {/* Children row */}
       {children.length > 0 && (
-        <div className="flex justify-center items-start space-x-8 relative mt-4">
+        <div className={`flex justify-center items-start relative mt-4 ${children.length > 1 ? 'space-x-8' : ''}`}>
           {/* horizontal line behind all children */}
-          <div className="absolute left-0 right-0 top-0 h-0.5 bg-gray-300" />
+          <div className="absolute left-[95px] right-[63px] top-0 h-0.5 bg-gray-300" />
            {children.map((child, index) => (
              <div
                key={index}
@@ -261,7 +261,7 @@ const FamilyTree = () => {
               <button className="bg-gray-400 text-white px-3 py-1 rounded transition-all duration-200 hover:bg-gray-500 hover:scale-110 hover:shadow-lg active:scale-95" onClick={() => resetTransform()}>Reset</button>
             </div>
 
-            <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }} contentStyle={{ justifySelf: 'center' }}>
+            <TransformComponent wrapperStyle={{ width: '100%', height: '100vh' }} contentStyle={{ justifySelf: 'center' }}>
               <div className="flex justify-center min-w-max">
                 <div className="flex flex-col items-center space-y-6">
                   {!initialized ? (

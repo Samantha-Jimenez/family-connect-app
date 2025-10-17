@@ -189,8 +189,8 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
             file:mr-4 file:py-2 file:px-4
             file:rounded-full file:border-0
             file:text-sm file:font-semibold
-            file:bg-blue-50 file:text-blue-700
-            hover:file:bg-blue-100
+            file:bg-sand-beige/40 file:text-carrot-orange
+            hover:file:bg-golden-sand/40
             dark:file:bg-gray-700 dark:file:text-gray-200"
         />
         {previewUrl && (
@@ -201,7 +201,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
               setPreviewUrl(null);
               if (fileInputRef.current) fileInputRef.current.value = "";
             }}
-            className="ml-2 px-3 py-1 bg-red-100 text-gray-700 rounded hover:bg-red-200 poppins-regular"
+            className="ml-2 px-3 py-1 bg-terracotta-red/20 text-terracotta-red rounded hover:bg-terracotta-red hover:text-white poppins-semibold rounded-full font-bold text-sm"
           >
             Clear
           </button>
@@ -234,7 +234,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
               type="text"
               value={location.country}
               onChange={(e) => setLocation({ ...location, country: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-200 dark:border-gray-600 p-2"
+              className="mt-1 block w-full rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors"
               placeholder="Country"
             />
           </div>
@@ -247,7 +247,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
               type="text"
               value={location.state}
               onChange={(e) => setLocation({ ...location, state: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-200 dark:border-gray-600 p-2"
+              className="mt-1 block w-full rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors"
               placeholder="State/Province"
             />
           </div>
@@ -260,7 +260,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
               type="text"
               value={location.city}
               onChange={(e) => setLocation({ ...location, city: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-200 dark:border-gray-600 p-2"
+              className="mt-1 block w-full rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors"
               placeholder="City"
             />
           </div>
@@ -273,7 +273,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
               type="text"
               value={location.neighborhood}
               onChange={(e) => setLocation({ ...location, neighborhood: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-200 dark:border-gray-600 p-2"
+              className="mt-1 block w-full rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors"
               placeholder="Neighborhood"
             />
           </div>
@@ -288,7 +288,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-200 dark:border-gray-600 p-2 placeholder:poppins-extralight placeholder:font-weight-200"
+          className="mt-1 block w-full rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 placeholder:poppins-extralight placeholder:font-weight-200 transition-colors"
           placeholder="Enter photo description"
         />
       </div>
@@ -301,7 +301,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
           type="date"
           value={dateTaken}
           onChange={(e) => setDateTaken(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-200 dark:border-gray-600 p-2"
+          className="mt-1 block w-full rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors"
           placeholder="MM/DD/YYYY"
         />
       </div>
@@ -323,16 +323,6 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
           menuPortalTarget={document.body}
           // menuPosition="fixed"
           menuPlacement="bottom"
-          theme={(theme) => ({
-            ...theme,
-            colors: {
-              ...theme.colors,
-              primary: '#3b82f6',
-              primary25: '#bfdbfe',
-              neutral0: 'var(--bg-color, white)',
-              neutral80: 'var(--text-color, black)',
-            }
-          })}
           styles={{
             placeholder: (base) => ({
               ...base,
@@ -348,6 +338,28 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
               ...provided,
               zIndex: 9999,
             }),
+            control: (base: any, state: any) => ({
+              ...base,
+              borderWidth: '1.5px',
+              borderColor: state.isFocused
+                ? '#C8D5B9' // 🌿 focused border
+                : state.menuIsOpen
+                ? '#D2FF28' // open menu border
+                : '', // default border
+              boxShadow: state.isFocused ? '0 0 0 1px #5CAB68' : 'none',
+              '&:hover': {
+                borderColor: '#D2FF28', // hover border
+              },
+            }),
+            option: (provided: any, state: any) => ({
+              ...provided,
+              backgroundColor: state.isFocused ? '#E8D4B8' : 'transparent',
+              color: state.isFocused ? '#000' : '#000',
+              '&:active': {
+                backgroundColor: '#F4C47A',
+                color: '#fff',
+              },
+            }),
           }}
         />
       </div>
@@ -357,8 +369,8 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
         disabled={!selectedFile || isUploading}
         className={`w-full px-4 py-2 text-white rounded-md poppins-light opacity-0 animate-[fadeIn_0.4s_ease-in_forwards] ${
           isUploading || !selectedFile
-            ? 'bg-blue-300 cursor-not-allowed'
-            : 'bg-blue-500 hover:bg-blue-600'
+            ? 'bg-tea-green cursor-not-allowed'
+            : 'bg-plantain-green hover:bg-dark-spring-green'
         }`}
         style={{ animationDelay: '0.8s' }}
       >
