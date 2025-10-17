@@ -518,14 +518,14 @@ export default function EventModal({
                     <button
                       type="button"
                       onClick={() => setIsConfirmOpen(true)}
-                      className="btn btn-sm btn-error"
+                      className="btn btn-sm bg-[#E12B1F] border-0 text-white hover:bg-[#E12B1F]/70"
                     >
                       Delete
                     </button>
                     <button
                       type="button"
                       onClick={() => setIsEditing(true)}
-                      className="btn btn-sm btn-primary"
+                      className="btn btn-sm bg-sand-beige border-0 text-black hover:bg-sand-beige/70"
                     >
                       Edit
                     </button>
@@ -533,7 +533,7 @@ export default function EventModal({
                 )}
                 <button
                   type="submit"
-                  className="btn btn-sm btn-success"
+                  className="btn btn-sm bg-plantain-green border-0 text-white hover:bg-plantain-green/70"
                 >
                   {mode === 'add' ? 'Add Event' : 'Save Changes'}
                 </button>
@@ -612,14 +612,14 @@ export default function EventModal({
                   <button
                     type="button"
                     onClick={() => setIsConfirmOpen(true)}
-                    className="btn btn-sm btn-error px-[10px]"
+                    className="btn btn-sm bg-[#E12B1F] border-0 text-white hover:bg-[#E12B1F]/70 px-[10px]"
                   >
                     Delete
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsEditing(true)}
-                    className="btn btn-sm btn-primary px-[10px]"
+                    className="btn btn-sm bg-sand-beige border-0 text-black hover:bg-sand-beige/70 px-[10px]"
                   >
                     Edit
                   </button>
@@ -646,15 +646,15 @@ export default function EventModal({
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleRsvp('yes')}
-                  className={`btn btn-sm btn-success px-[10px]${rsvpStatus === 'yes' ? ' border-2 border-black' : ''}`}
+                  className={`btn btn-sm bg-plantain-green border-0 text-white hover:bg-plantain-green/70 px-[10px]${rsvpStatus === 'yes' ? ' border-2 border-black' : ''}`}
                 >Yes</button>
                 <button
                   onClick={() => handleRsvp('no')}
-                  className={`btn btn-sm btn-error px-[10px]${rsvpStatus === 'no' ? ' border-2 border-black' : ''}`}
+                  className={`btn btn-sm bg-engineering-orange border-0 text-white hover:bg-engineering-orange/70 px-[10px]${rsvpStatus === 'no' ? ' border-2 border-black' : ''}`}
                 >No</button>
                 <button
                   onClick={() => handleRsvp('maybe')}
-                  className={`btn btn-sm btn-warning px-[10px]${rsvpStatus === 'maybe' ? ' border-2 border-black' : ''}`}
+                  className={`btn btn-sm bg-golden-sand border-0 text-black hover:bg-golden-sand/70 px-[10px]${rsvpStatus === 'maybe' ? ' border-2 border-black' : ''}`}
                 >Maybe</button>
               </div>
             </div>

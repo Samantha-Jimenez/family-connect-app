@@ -13,7 +13,7 @@ type LoadSpinnerProps = {
 const LoadSpinner: React.FC<LoadSpinnerProps> = ({
   size = 48,
   color = '#FFF',
-  accentColor = '#3b82f6',
+  accentColor = '#5CAB68',
   className,
   style,
   ariaLabel = 'Loading...',

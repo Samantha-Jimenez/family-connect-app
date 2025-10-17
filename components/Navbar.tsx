@@ -60,7 +60,7 @@ export default function Navbar({ signOut, username, userFirstName, userLastName,
                     key={item.name}
                     href={item.href}
                     aria-current={item.current ? 'page' : undefined}
-                    className={`${item.current ? 'text-yellow-800/80' : 'text-gray-400 hover:bg-gray-700 hover:text-gray-800'} btn rounded-md px-3 py-2 text-sm font-medium bg-transparent border-0 hover:bg-transparent poppins-semibold shadow-none`}
+                    className={`${item.current ? 'text-plantain-green' : 'text-gray-400 hover:bg-gray-700 hover:text-gray-800'} btn rounded-md px-3 py-2 text-sm font-medium bg-transparent border-0 hover:bg-transparent poppins-semibold shadow-none`}
                   >
                     {item.name}
                   </a>
@@ -134,7 +134,7 @@ export default function Navbar({ signOut, username, userFirstName, userLastName,
               key={item.name}
               href={item.href}
               aria-current={item.current ? 'page' : undefined}
-              className={`${item.current ? 'bg-yellow-800/60 text-white' : 'text-gray-500 hover:bg-yellow-800/80 hover:text-white'} block rounded-md px-3 py-2 text-base font-medium`}
+              className={`${item.current ? 'bg-golden-sand text-black' : 'text-gray-500 hover:bg-golden-sand/80 hover:text-black'} block rounded-md px-3 py-2 text-base font-medium`}
             >
               {item.name}
             </a>

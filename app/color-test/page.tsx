@@ -9,6 +9,7 @@ const ColorTest = () => {
     { name: 'forest-green', hex: '#2E6E49', description: 'vibrant energy pop' },
     { name: 'british-racing-green', hex: '#16442D', description: '' },
     { name: 'dark-spring-green', hex: '#227D54', description: '' },
+    { name: 'plantain-green', hex: '#5CAB68', description: '' },
     { name: 'tea-green', hex: '#C8D5B9', description: '' },
     { name: 'sand-beige', hex: '#E8D4B8', description: 'soft neutral base' },
     { name: 'golden-sand', hex: '#F4C47A', description: 'warm, glowing accent' },

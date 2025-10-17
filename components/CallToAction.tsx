@@ -111,7 +111,7 @@ const CallToAction = () => {
 
   return (
     <div className="col-span-1 sm:col-span-2">
-      <div className="relative bg-golden-sand/30 rounded-lg py-2 pl-4 pr-[5.75rem] text-carrot-orange shadow-lg">
+      <div className="relative bg-forest-green/60 rounded-lg py-2 pl-4 pr-[5.75rem] text-white shadow-lg">
         <button
           className="
             group
@@ -121,8 +121,8 @@ const CallToAction = () => {
             rounded-full
             transition-all duration-700
             bg-transparent
-            hover:bg-golden-sand
-            hover:text-red-500
+            hover:bg-forest-green/50
+            hover:text-red-400
             pl-3 pr-2
             overflow-hidden
             min-w-[2.5rem]
@@ -135,13 +135,13 @@ const CallToAction = () => {
           <span
             className="
               pointer-events-none
-              mr-1
+              mr-2
               opacity-0
               translate-x-14
               group-hover:opacity-100
               group-hover:translate-x-0
               transition-all duration-700
-              text-base text-gray-500
+              text-base
               whitespace-nowrap
               select-none
               text-sm
@@ -153,7 +153,7 @@ const CallToAction = () => {
           </span>
           <p className="">&times;</p>
         </button>
-        <p className="source-sans-3 italic">
+        <p className="source-sans-3">
           You're just a few details away from a complete profile—finish filling out your {missingText}!
         </p>
       </div>

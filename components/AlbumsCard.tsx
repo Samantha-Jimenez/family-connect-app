@@ -317,7 +317,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
           className="input input-bordered w-full bg-gray-200"
         />
       </div>
-      <button onClick={handleCreateAlbum} className="btn btn-sm btn-primary w-full mb-6">
+      <button onClick={handleCreateAlbum} className="btn btn-sm bg-terracotta-red border-0 text-white w-full mb-6 hover:bg-terracotta-red/70">
         Create Album
       </button>
 
@@ -459,14 +459,14 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-4">
                   <button
-                    className="btn btn-sm btn-primary px-[10px]"
+                    className="btn btn-sm bg-golden-sand border-0 text-black px-[10px] hover:bg-golden-sand/70"
                     onClick={handleSaveEdit}
                     disabled={savingEdit}
                   >
                     {savingEdit ? 'Saving...' : 'Save'}
                   </button>
                   <button
-                    className="btn btn-sm btn-secondary px-[10px]"
+                    className="btn btn-sm bg-sand-beige border-0 text-black px-[10px] hover:bg-sand-beige/70"
                     onClick={() => setEditing(false)}
                     disabled={savingEdit}
                   >
@@ -503,7 +503,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
             <p className="text-xs text-gray-600">Photos: {photoCounts[selectedAlbum?.album_id || ''] || 0}</p>
             {auth && (
               <button
-                    className="btn btn-sm btn-secondary px-[10px] mt-2"
+                    className="btn btn-sm bg-plantain-green border-0 text-white px-[10px] mt-2 hover:bg-plantain-green/70"
                     onClick={() => {
                       setEditing(true);
                       setShowAddPhotos(false);
@@ -607,7 +607,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
             {auth && (
               <div className="flex flex-wrap gap-2 mt-4">
                 <button
-                  className="btn btn-sm btn-primary px-[10px]"
+                  className="btn btn-sm bg-golden-sand border-0 text-black px-[10px] hover:bg-golden-sand/70"
                   onClick={() => {
                     setShowAddPhotos((v) => !v);
                     setShowRemovePhotos(false);
@@ -618,7 +618,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
                   {showAddPhotos ? 'Cancel' : 'Add Photos'}
                 </button>
                 <button
-                  className="btn btn-sm btn-warning px-[10px]"
+                  className={`btn btn-sm ${showRemovePhotos ? 'bg-sand-beige text-black' : 'bg-terracotta-red text-white'} border-0 px-[10px] ${showRemovePhotos ? 'hover:bg-sand-beige/70' : 'hover:bg-terracotta-red/70'}`}
                   onClick={() => {
                     setShowRemovePhotos((v) => !v);
                     setShowAddPhotos(false);
@@ -631,7 +631,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
 
                 {showRemovePhotos && (
                   <button
-                    className="btn btn-sm btn-error px-[10px]"
+                    className="btn btn-sm bg-terracotta-red border-0 text-white px-[10px] hover:bg-terracotta-red/70"
                     onClick={async () => {
                       if (!selectedAlbum) return;
                       setRemovingPhotos(true);
@@ -662,14 +662,14 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
             {auth && (
               <div className="flex flex-wrap justify-between gap-2 mt-4">
                 <button
-                  className="btn btn-sm px-[10px]"
+                  className="btn btn-sm bg-cocoa-brown border-0 text-white px-[10px] hover:bg-cocoa-brown/70"
                   onClick={() => setShowModal(false)}
                 >
                   Close
                 </button>
                 <button
                   onClick={handleDeleteAlbum}
-                  className="btn btn-sm btn-error px-[10px]"
+                  className="btn btn-sm bg-[#E12B1F] border-0 text-white px-[10px] hover:bg-[#E12B1F]/70"
                   disabled={deleting || addingPhotos}
                 >
                   {deleting ? 'Deleting...' : 'Delete Album'}

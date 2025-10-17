@@ -606,7 +606,6 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                 {photo.metadata?.people_tagged && photo.metadata.people_tagged.length > 0 && (
                   <p className="text-sm text-gray-800 dark:text-gray-200 mb-1 mt-6">
                     <span className="font-bold">People Tagged: </span>
-                    <p>
                     {photo.metadata.people_tagged.map((person, index) => (
                       <React.Fragment key={person.id}>
                         {index > 0 && ', '}
@@ -618,7 +617,6 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                         </a>
                       </React.Fragment>
                     ))}
-                    </p>
                   </p>
                 )}
                   {uploaderName && (
