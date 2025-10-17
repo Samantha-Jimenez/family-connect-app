@@ -78,7 +78,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen p-6 bg-white opacity-0 animate-[fadeIn_0.6s_ease-in_forwards]">
+    <div className="min-h-screen p-2 sm:p-6 bg-white opacity-0 animate-[fadeIn_0.6s_ease-in_forwards]">
       <div className="max-w-6xl mx-auto grid gap-4 grid-cols-1 md:grid-cols-2"> 
       {/* <h1 className="text-4xl font-bold text-center mb-6 text-[#717568]">User Profile</h1> */}
       {/* User Info */}

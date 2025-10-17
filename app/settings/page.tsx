@@ -420,15 +420,15 @@ const Settings = () => {
                 type="file"
                 accept="image/*"
                 onChange={handleImageChange}
-                className="file-input file-input-bordered w-[308px]"
+                className="file-input file-input-bordered file-input-sm w-[308px] text-base"
                 disabled={isUploading}
               />
               
-              <div className="w-[67px]">
+              <div className="w-[67px] ml-auto">
                 {(selectedImage || imagePreview || (userData?.profile_photo && !removeProfilePhoto)) && (
                   <button
                     type="button"
-                    className="btn text-xs bg-red-500 hover:bg-red-600 border-none"
+                    className="btn btn-sm bg-engineering-orange hover:bg-engineering-orange/90 border-none text-white"
                     onClick={handleClearImage}
                     disabled={isUploading}
                   >

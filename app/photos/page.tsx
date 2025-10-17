@@ -234,6 +234,28 @@ const Photos = () => {
       ...provided,
       zIndex: 9999,
     }),
+    control: (base: any, state: any) => ({
+      ...base,
+      borderWidth: '1.5px',
+      borderColor: state.isFocused
+        ? '#C8D5B9' // 🌿 focused border
+        : state.menuIsOpen
+        ? '#D2FF28' // open menu border
+        : '', // default border
+      boxShadow: state.isFocused ? '0 0 0 1px #5CAB68' : 'none',
+      '&:hover': {
+        borderColor: '#D2FF28', // hover border
+      },
+    }),
+    option: (provided: any, state: any) => ({
+      ...provided,
+      backgroundColor: state.isFocused ? '#E8D4B8' : 'transparent',
+      color: state.isFocused ? '#000' : '#000',
+      '&:active': {
+        backgroundColor: '#F4C47A',
+        color: '#fff',
+      },
+    }),
   };
 
   const reversedImages = useMemo(() => [...filteredImages].reverse(), [filteredImages]);
@@ -940,7 +962,7 @@ const Photos = () => {
         <div className="mb-4 md:px-2 px-0 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.7s' }}>
           <button
             onClick={resetFilters}
-            className="px-4 py-2 bg-plantain-green text-white rounded hover:bg-green-600 poppins-light w-full md:w-auto"
+            className="px-4 py-2 bg-plantain-green text-white rounded hover:bg-plantain-green/70 poppins-light w-full md:w-auto"
           >
             Clear Filters
           </button>

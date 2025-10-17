@@ -109,8 +109,9 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                             onChange={(option) => setSelectedFamilyMember(option)}
                             placeholder="Select a Family Member"
                             isClearable
-                            menuPlacement="auto"
-                            menuPosition="fixed"
+                            // menuPlacement="auto"
+                            // menuPosition="fixed"
+                            menuPlacement="bottom"
                             menuPortalTarget={typeof window !== "undefined" ? document.body : undefined}
                             styles={{
                               control: (base, state) => ({

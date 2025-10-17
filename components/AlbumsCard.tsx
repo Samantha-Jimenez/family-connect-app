@@ -439,7 +439,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
                   {photos.map((photo) => (
                     <div
                       key={photo.photo_id}
-                      className={`cursor-pointer border-2 rounded-lg p-1 ${editCoverPhotoId === photo.photo_id ? 'border-blue-500' : 'border-transparent'}`}
+                      className={`cursor-pointer border-2 rounded-lg p-1 ${editCoverPhotoId === photo.photo_id ? 'border-terracotta-red' : 'border-transparent'}`}
                       onClick={() =>
                         setEditCoverPhotoId(editCoverPhotoId === photo.photo_id ? '' : photo.photo_id)
                       }
@@ -452,7 +452,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
                         className="object-cover w-full h-full rounded"
                       />
                       {editCoverPhotoId === photo.photo_id && (
-                        <div className="text-center text-xs text-blue-600 font-semibold mt-1.5 place-self-center">Selected</div>
+                        <div className="text-center text-xs text-terracotta-red font-semibold mt-1.5 place-self-center">Selected</div>
                       )}
                     </div>
                   ))}
