@@ -957,9 +957,10 @@ const Photos = () => {
             {shuffledImages.slice(0, 6).map((photo, index) => (
               <div
                 key={photo.photo_id || index}
-                className={`absolute w-full h-full transition-opacity duration-700 ease-in-out ${
-                  index === currentIndex ? 'opacity-100' : 'opacity-0'
+                className={`absolute w-full h-full transition-opacity duration-700 ease-in-out cursor-pointer ${
+                  index === currentIndex ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
                 }`}
+                onClick={() => handleImageClick(photo)}
               >
                 <Image
                   src={photo.url || '/fallback-image.jpg'}
