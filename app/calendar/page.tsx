@@ -15,6 +15,7 @@ import { useAuth } from '@/context/AuthContext';
 import { EventApi } from '@fullcalendar/core';
 import { DEFAULT_EVENTS } from './calendarData'; // Import your default events
 import { useSearchParams } from 'next/navigation';
+import { getAllFamilyMembers, FamilyMember } from '@/hooks/dynamoDB';
 
 interface CalendarEvent {
   id?: string;
@@ -58,14 +59,92 @@ export default function Calendar() {
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const searchParams = useSearchParams();
   const eventIdFromQuery = searchParams.get('eventId');
+  const [familyEvents, setFamilyEvents] = useState<CalendarEvent[]>([]);
+
+  // Fetch family members and create events from birthdays and death dates
+  useEffect(() => {
+    const fetchFamilyEvents = async () => {
+      try {
+        const familyMembers = await getAllFamilyMembers();
+        const generatedEvents: CalendarEvent[] = [];
+
+        familyMembers.forEach((member: FamilyMember) => {
+          // Add birthday events - create events for current and next few years
+          if (member.birthday) {
+            const birthdayDate = new Date(member.birthday);
+            if (!isNaN(birthdayDate.getTime())) {
+              // Create birthday events for the next 5 years
+              const currentYear = new Date().getFullYear();
+              for (let yearOffset = 0; yearOffset < 5; yearOffset++) {
+                const eventDate = new Date(birthdayDate);
+                eventDate.setFullYear(currentYear + yearOffset);
+                
+                generatedEvents.push({
+                  id: `birthday-${member.family_member_id}-${currentYear + yearOffset}`,
+                  title: `${member.first_name} ${member.last_name}'s Birthday 🎂`,
+                  start: eventDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
+                  allDay: true,
+                  backgroundColor: '#10b981', // Green color for birthdays
+                  borderColor: '#059669',
+                  textColor: '#ffffff',
+                  extendedProps: {
+                    category: 'birthday',
+                    userId: member.family_member_id,
+                    description: `Happy Birthday to ${member.first_name} ${member.last_name}! 🎉`,
+                  }
+                });
+              }
+            }
+          }
+
+          // Add death date events (memorial dates) - create for current and next few years
+          if (member.death_date) {
+            const deathDate = new Date(member.death_date);
+            if (!isNaN(deathDate.getTime())) {
+              // Create memorial events for the next 5 years
+              const currentYear = new Date().getFullYear();
+              for (let yearOffset = 0; yearOffset < 5; yearOffset++) {
+                const eventDate = new Date(deathDate);
+                eventDate.setFullYear(currentYear + yearOffset);
+                
+                generatedEvents.push({
+                  id: `memorial-${member.family_member_id}-${currentYear + yearOffset}`,
+                  title: `In Memory of ${member.first_name} ${member.last_name} 🕊️`,
+                  start: eventDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
+                  allDay: true,
+                  backgroundColor: '#6b7280', // Gray color for memorial dates
+                  borderColor: '#4b5563',
+                  textColor: '#ffffff',
+                  extendedProps: {
+                    category: 'family-event',
+                    userId: member.family_member_id,
+                    description: `In loving memory of ${member.first_name} ${member.last_name}. ❤️`,
+                  }
+                });
+              }
+            }
+          }
+        });
+
+        setFamilyEvents(generatedEvents);
+      } catch (error) {
+        console.error('Error fetching family events:', error);
+      }
+    };
+
+    fetchFamilyEvents();
+  }, []);
 
   useEffect(() => {
-    // Initialize events with DEFAULT_EVENTS if events are empty
+    // Combine DEFAULT_EVENTS, familyEvents, and user-created events
+    const baseEvents = [...DEFAULT_EVENTS, ...familyEvents];
+    
+    // Initialize events with base events if events are empty
     if (events.length === 0) {
-      setEvents(DEFAULT_EVENTS);
+      setEvents(baseEvents);
     } else {
-      // Combine DEFAULT_EVENTS with existing events, ensuring no duplicates
-      const combinedEvents = [...events, ...DEFAULT_EVENTS].filter((event, index, self) =>
+      // Combine all events, ensuring no duplicates based on id
+      const combinedEvents = [...events, ...baseEvents].filter((event, index, self) =>
         index === self.findIndex((e) => e.id === event.id)
       );
 
@@ -74,7 +153,7 @@ export default function Calendar() {
         setEvents(combinedEvents);
       }
     }
-  }, [events, setEvents]);
+  }, [familyEvents]);
 
   useEffect(() => {
     if (eventIdFromQuery && events.length > 0) {
