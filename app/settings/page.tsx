@@ -464,22 +464,22 @@ const Settings = () => {
                   )}
                 </div>
               </div>
-              
-              {isUploading && (
-                <div className="w-full">
-                  <progress 
-                    className="progress progress-success w-full" 
-                    value={uploadProgress} 
-                    max="100"
-                  ></progress>
-                  <p className="text-center text-sm text-gray-600 mt-1">
-                    {uploadProgress}%
-                  </p>
-                </div>
-              )}
 
             </div>
           </div>
+          
+          {isUploading && (
+            <div className="w-full mt-4 max-w-[500px] mx-auto">
+              <progress 
+                className="progress progress-success w-full" 
+                value={uploadProgress} 
+                max="100"
+                ></progress>
+              <p className="text-center text-sm text-gray-600 mt-1">
+                {uploadProgress}%
+              </p>
+            </div>
+          )}
         </form>
         <form onSubmit={handleSubmit} className="card bg-white shadow-xl p-6 mx-auto mt-6 max-w-7xl">
           <div className="grid md:grid-cols-2 md:gap-6">
