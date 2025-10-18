@@ -19,6 +19,7 @@ interface UserData {
   current_city?: string;
   current_state?: string;
   death_date?: string;
+  show_zodiac?: boolean;
 }
 
 interface Relationship {
@@ -87,6 +88,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
             current_city: data.current_city?.S || '',
             current_state: data.current_state?.S || '',
             death_date: data.death_date?.S || '',
+            show_zodiac: data.show_zodiac?.BOOL ?? false,
           });
 
           if (data.profile_photo?.S) {
@@ -229,7 +231,10 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                 <>
                   <div className="text-gray-500 flex items-center source-sans-3">
                     <span className="icon-[mdi--date-range] h-5 mr-2" />
-                    {formatBirthday(userData.birthday)} - <span className="text-xl ml-1">{getZodiacSign(userData.birthday)}</span>
+                    {formatBirthday(userData.birthday)}
+                    {userData.show_zodiac && (
+                      <> - <span className="text-xl ml-1">{getZodiacSign(userData.birthday)}</span></>
+                    )}
                   </div>
                 </>
               ) : ''}

@@ -92,8 +92,8 @@ export default function TaggedPhotosCard({ userId }: { userId: string }) {
       setTaggedPhotos(prevPhotos => 
         prevPhotos.filter(photo => photo.photo_id !== updatedPhoto.photo_id)
       );
-      // Close the modal since the photo is no longer relevant
-      setSelectedPhoto(null);
+      // Keep the modal open but update the selected photo so changes are reflected
+      setSelectedPhoto(updatedPhoto);
     } else {
       // Update the photo in the taggedPhotos array
       setTaggedPhotos(prevPhotos => 

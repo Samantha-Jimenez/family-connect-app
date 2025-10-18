@@ -101,7 +101,8 @@ export const saveUserToDB = async (
   birth_state: string,
   profile_photo?: string,
   current_city?: string,
-  current_state?: string
+  current_state?: string,
+  show_zodiac?: boolean
 ) => {
   try {
     const userAttributes = await fetchUserAttributes();
@@ -134,7 +135,8 @@ export const saveUserToDB = async (
         birth_state: { S: birth_state },
         profile_photo: { S: profile_photo || '' },
         current_city: { S: current_city || '' },
-        current_state: { S: current_state || '' }
+        current_state: { S: current_state || '' },
+        show_zodiac: { BOOL: show_zodiac ?? false }
       },
     };
 
@@ -182,6 +184,7 @@ export const getUserData = async (userId: string) => {
       state: data.Item.state?.S || '',
       cta_visible: data.Item.cta_visible?.BOOL,
       death_date: data.Item.death_date?.S || '',
+      show_zodiac: data.Item.show_zodiac?.BOOL ?? false,
     };
   } catch (error) {
     console.error("❌ Error fetching user data:", error);

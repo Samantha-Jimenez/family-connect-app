@@ -25,6 +25,7 @@ interface UserData {
   profile_photo?: string;
   current_city?: string;
   current_state?: string;
+  show_zodiac?: boolean;
 }
 
 const US_STATES = [
@@ -68,6 +69,7 @@ const Settings = () => {
           profile_photo: data.profile_photo || undefined,
           current_city: data.current_city || undefined,
           current_state: data.current_state || undefined,
+          show_zodiac: data.show_zodiac ?? false,
         });
       } else {
         setUserData({
@@ -83,6 +85,7 @@ const Settings = () => {
           profile_photo: undefined,
           current_city: undefined,
           current_state: undefined,
+          show_zodiac: false,
         });
       }
     };
@@ -208,7 +211,8 @@ const Settings = () => {
         userData?.birth_state || '',
         '', // Remove profile photo
         userData?.current_city || '',
-        userData?.current_state || ''
+        userData?.current_state || '',
+        userData?.show_zodiac ?? false
       );
       setRemoveProfilePhoto(false);
       setUserData(prev => prev ? { ...prev, profile_photo: undefined } : null);
@@ -282,7 +286,8 @@ const Settings = () => {
           userData?.birth_state || '',
           result.key,
           userData?.current_city || '',
-          userData?.current_state || ''
+          userData?.current_state || '',
+          userData?.show_zodiac ?? false
         );
 
         // Complete the progress
@@ -351,7 +356,8 @@ const Settings = () => {
         birth_state,
         profilePhotoUrl,
         current_city,
-        current_state
+        current_state,
+        userData?.show_zodiac ?? false
       );
 
       // Update local state
@@ -368,7 +374,8 @@ const Settings = () => {
         birth_state,
         profile_photo: profilePhotoUrl,
         current_city,
-        current_state
+        current_state,
+        show_zodiac: prev.show_zodiac ?? false
       } : null);
 
       // Refresh the user data in context
@@ -425,17 +432,37 @@ const Settings = () => {
                 disabled={isUploading}
               />
               
-              <div className="w-[67px] ml-auto">
-                {(selectedImage || imagePreview || (userData?.profile_photo && !removeProfilePhoto)) && (
-                  <button
-                    type="button"
-                    className="btn btn-sm bg-engineering-orange hover:bg-engineering-orange/90 border-none text-white"
-                    onClick={handleClearImage}
+              <div className="flex items-center gap-2">
+                <div className="">
+                  {selectedImage && (
+                    <button 
+                    type="submit"
+                    className="btn btn-sm text-white bg-plantain-green hover:bg-plantain-green/90 focus:ring-4 focus:outline-none font-medium rounded-lg text-center whitespace-nowrap border-none"
                     disabled={isUploading}
-                  >
-                    Delete
-                  </button>
-                )}
+                    >
+                      {isUploading ? (
+                        <>
+                          <LoadSpinner size={16} />
+                          <span>Uploading...</span>
+                        </>
+                      ) : (
+                        'Upload Photo'
+                      )}
+                    </button>
+                  )}
+                </div>
+                <div className="">
+                  {(selectedImage || imagePreview || (userData?.profile_photo && !removeProfilePhoto)) && (
+                    <button
+                      type="button"
+                      className="btn btn-sm bg-engineering-orange hover:bg-engineering-orange/90 border-none text-white"
+                      onClick={handleClearImage}
+                      disabled={isUploading}
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
               </div>
               
               {isUploading && (
@@ -451,24 +478,6 @@ const Settings = () => {
                 </div>
               )}
 
-              <div className="w-[130px]">
-                {selectedImage && (
-                  <button 
-                  type="submit"
-                  className="btn bg-[#914F2F] hover:bg-[#914F2F]/90 text-white border-none flex items-center justify-center gap-2"
-                  disabled={isUploading}
-                  >
-                    {isUploading ? (
-                      <>
-                        <LoadSpinner size={16} />
-                        <span>Uploading...</span>
-                      </>
-                    ) : (
-                      'Upload Photo'
-                    )}
-                  </button>
-                )}
-              </div>
             </div>
           </div>
         </form>
@@ -529,7 +538,7 @@ const Settings = () => {
             <input type="email" value={authEmail || ''} name="floating_email" id="floating_email" onChange={handleInputChange} className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " required />
             <label htmlFor="floating_email" className="peer-focus:font-medium absolute text-sm text-gray-400 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Email address</label>
           </div>
-          <div className="grid md:grid-cols-2 md:gap-6">
+          <div className="grid md:grid-cols-[1fr_min-content_1fr] md:gap-6">
             <div className="relative z-0 w-full mb-5 group">
               <div className="flex items-center">
               <input 
@@ -564,6 +573,28 @@ const Settings = () => {
                 Birthday (MM/DD/YYYY)
               </label>
             </div>
+            <div className="relative z-0 w-full mb-3 group">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="show_zodiac"
+                name="show_zodiac"
+                checked={userData?.show_zodiac ?? false}
+                onChange={(e) => {
+                  if (userData) {
+                    setUserData({
+                      ...userData,
+                      show_zodiac: e.target.checked
+                    });
+                  }
+                }}
+                className="checkbox checkbox-success w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-lime focus:ring-2"
+              />
+              <label htmlFor="show_zodiac" className="ml-2 text-sm text-gray-900 md:w-[7rem] w-[13rem]">
+                Show zodiac sign on profile
+              </label>
+            </div>
+          </div>
             <div className="relative z-0 w-full mb-5 group">
               <input
                 type="tel"

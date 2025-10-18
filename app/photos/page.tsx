@@ -827,12 +827,10 @@ const Photos = () => {
       );
       
       if (!stillMatchesFilter) {
-        // Remove from filtered images and close modal if it no longer matches the filter
+        // Remove from filtered images but keep modal open
         setFilteredImages(prevFiltered => 
           prevFiltered.filter(img => img.photo_id !== updatedPhoto.photo_id)
         );
-        setSelectedPhoto(null);
-        return;
       }
     }
     
