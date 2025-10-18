@@ -25,13 +25,28 @@ const formatDate = (dateString: string): string => {
   if (!dateString) return '';
   
   try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    // Handle partial dates
+    if (/^\d{4}$/.test(dateString)) {
+      // Year only
+      return dateString;
+    } else if (/^\d{4}-\d{1,2}$/.test(dateString)) {
+      // Year-Month only
+      const [year, month] = dateString.split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long'
+      });
+    } else {
+      // Full date
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
   } catch (error) {
     console.error('Error formatting date:', error);
     return dateString;
@@ -54,7 +69,21 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const [albums, setAlbums] = useState<AlbumData[]>([]);
   const [selectedAlbumIds, setSelectedAlbumIds] = useState<string[]>([]);
   const [editedDescription, setEditedDescription] = useState(photo.metadata?.description || '');
-  const [editedDateTaken, setEditedDateTaken] = useState(photo.metadata?.date_taken || '');
+  
+  // Parse existing date into year, month, day components
+  const parseDateComponents = (dateStr: string) => {
+    if (!dateStr) return { year: '', month: '', day: '' };
+    const parts = dateStr.split('-');
+    return {
+      year: parts[0] || '',
+      month: parts[1] || '',
+      day: parts[2] || ''
+    };
+  };
+  
+  const [dateYear, setDateYear] = useState(parseDateComponents(photo.metadata?.date_taken || '').year);
+  const [dateMonth, setDateMonth] = useState(parseDateComponents(photo.metadata?.date_taken || '').month);
+  const [dateDay, setDateDay] = useState(parseDateComponents(photo.metadata?.date_taken || '').day);
   const [albumNames, setAlbumNames] = useState<{ id: string; name: string }[]>([]);
   const [editedLocation, setEditedLocation] = useState(photo.metadata?.location || {
     country: '',
@@ -167,7 +196,10 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   // Sync local editing state with photo prop changes
   useEffect(() => {
     setEditedDescription(photo.metadata?.description || '');
-    setEditedDateTaken(photo.metadata?.date_taken || '');
+    const dateComponents = parseDateComponents(photo.metadata?.date_taken || '');
+    setDateYear(dateComponents.year);
+    setDateMonth(dateComponents.month);
+    setDateDay(dateComponents.day);
     setEditedLocation(photo.metadata?.location || {
       country: '',
       state: '',
@@ -208,6 +240,18 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
         await addPhotoToAlbum(photo.photo_id, albumId);
       }
       
+      // Construct date string from separate fields
+      let dateTaken = '';
+      if (dateYear) {
+        dateTaken = dateYear;
+        if (dateMonth) {
+          dateTaken += `-${dateMonth.padStart(2, '0')}`;
+          if (dateDay) {
+            dateTaken += `-${dateDay.padStart(2, '0')}`;
+          }
+        }
+      }
+      
       // Save photo data with updated album_ids
       const updatedPhoto: PhotoData = {
         ...photo,
@@ -215,7 +259,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
         metadata: {
           ...photo.metadata,
           description: editedDescription,
-          date_taken: editedDateTaken,
+          date_taken: dateTaken,
           location: editedLocation,
           people_tagged: editedTaggedPeople,
         },
@@ -388,7 +432,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
 
   const modalContent = (
     <div className="fixed inset-0 bg-black bg-opacity-50 md:flex md:items-center md:justify-center z-[100] overflow-y-auto" onClick={handleCloseModal}>
-      <div className="bg-white dark:bg-gray-800 p-6 md:rounded-lg max-w-4xl md:w-full w-full h-full md:h-auto md:m-4 grid grid-cols-1 md:grid-cols-2 grid-rows-[min-content_auto] gap-4 md:max-h-[670px] overflow-y-auto md:overflow-y-visible" onClick={handleModalClick}>
+      <div className="bg-white dark:bg-gray-800 p-6 md:rounded-lg max-w-4xl md:w-full w-full h-full md:h-auto md:m-4 grid grid-cols-1 md:grid-cols-2 grid-rows-[min-content_auto] gap-4 overflow-y-auto md:overflow-y-visible" onClick={handleModalClick}>
         <div className="relative justify-self-center">
           <Image
             src={photo.url || '/fallback-image.jpg'}
@@ -485,7 +529,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             {isEditing ? (
               <div>
                 <div className="mb-1">
-                  <label className="block text-sm font-bold mb-1 text-black">Description:</label>
+                  <label className="block text-sm !font-bold mb-1 text-black">Description:</label>
                   <input
                     type="text"
                     value={editedDescription}
@@ -546,16 +590,164 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                   </div>
                 </div>
                 <div className="mb-1">
-                  <label className="block text-sm font-bold mb-1 text-black">Date Taken:</label>
-                  <input
-                    type="date"
-                    value={editedDateTaken}
-                    onChange={(e) => setEditedDateTaken(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors"
-                  />
+                  <label className="block text-sm !font-bold text-black">Date Taken:</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">
+                        Year
+                      </label>
+                      <input
+                        type="number"
+                        min="1800"
+                        max={new Date().getFullYear()}
+                        value={dateYear}
+                        onChange={(e) => {
+                          const year = e.target.value;
+                          const currentYear = new Date().getFullYear();
+                          
+                          // Prevent future years
+                          if (year && parseInt(year) > currentYear) {
+                            return; // Don't update the state
+                          }
+                          
+                          setDateYear(year);
+                          // Clear month and day if year is invalid or removed
+                          if (!year || year.length !== 4) {
+                            setDateMonth('');
+                            setDateDay('');
+                          }
+                        }}
+                        className={`block w-full rounded-md border-[1.5px] focus:outline-none focus:ring-1 bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors ${
+                          dateYear && dateYear.length < 4
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500 hover:border-red-600'
+                            : 'border-gray-300 focus:border-[#C8D5B9] focus:ring-[#5CAB68] hover:border-[#D2FF28]'
+                        }`}
+                        placeholder="YYYY"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">
+                        Month
+                      </label>
+                      <Select
+                        options={[
+                          { value: '1', label: 'January' },
+                          { value: '2', label: 'February' },
+                          { value: '3', label: 'March' },
+                          { value: '4', label: 'April' },
+                          { value: '5', label: 'May' },
+                          { value: '6', label: 'June' },
+                          { value: '7', label: 'July' },
+                          { value: '8', label: 'August' },
+                          { value: '9', label: 'September' },
+                          { value: '10', label: 'October' },
+                          { value: '11', label: 'November' },
+                          { value: '12', label: 'December' }
+                        ]}
+                        value={dateMonth ? { value: dateMonth, label: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][parseInt(dateMonth) - 1] } : null}
+                        onChange={(selected) => {
+                          const monthValue = selected ? selected.value : '';
+                          setDateMonth(monthValue);
+                          // Clear day if month is removed
+                          if (!monthValue) {
+                            setDateDay('');
+                          }
+                        }}
+                        isDisabled={dateYear.length !== 4}
+                        className="text-black poppins-light"
+                        classNamePrefix="select"
+                        placeholder="MM"
+                        isClearable
+                        menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                        menuPlacement="bottom"
+                        styles={{
+                          placeholder: (base) => ({
+                            ...base,
+                            fontFamily: "'Poppins', sans-serif",
+                            fontWeight: 300,
+                            color: '#9BA3AF',
+                          }),
+                          menu: (provided) => ({
+                            ...provided,
+                            zIndex: 9999,
+                          }),
+                          menuPortal: (provided) => ({
+                            ...provided,
+                            zIndex: 9999,
+                          }),
+                          control: (base: any, state: any) => ({
+                            ...base,
+                            borderWidth: '1.5px',
+                            borderColor: state.isFocused
+                              ? '#C8D5B9'
+                              : state.menuIsOpen
+                              ? '#D2FF28'
+                              : '#d1d5db',
+                            boxShadow: state.isFocused ? '0 0 0 1px #5CAB68' : 'none',
+                            '&:hover': {
+                              borderColor: '#D2FF28',
+                            },
+                            height: '2.7rem',
+                          }),
+                          option: (provided: any, state: any) => ({
+                            ...provided,
+                            backgroundColor: state.isFocused ? '#E8D4B8' : 'transparent',
+                            color: state.isFocused ? '#000' : '#000',
+                            '&:active': {
+                              backgroundColor: '#F4C47A',
+                              color: '#fff',
+                            },
+                          }),
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">
+                        Day
+                      </label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={2}
+                        value={dateDay}
+                        onChange={(e) => {
+                          const day = e.target.value;
+                          
+                          // Only allow numeric input
+                          if (day && !/^\d*$/.test(day)) {
+                            return;
+                          }
+                          
+                          // Allow single "0" (for typing 01-09), but validate complete numbers
+                          if (day.length === 2) {
+                            const dayNum = parseInt(day);
+                            if (dayNum < 1 || dayNum > 31) {
+                              return; // Don't update if invalid 2-digit number
+                            }
+                          }
+                          
+                          setDateDay(day);
+                        }}
+                        onBlur={() => {
+                          // Auto-populate leading zero if single digit
+                          if (dateDay && dateDay.length === 1) {
+                            setDateDay(dateDay.padStart(2, '0'));
+                          }
+                        }}
+                        disabled={!dateMonth}
+                        className={`block w-full rounded-md border-[1.5px] focus:outline-none focus:ring-1 bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed dark:disabled:bg-gray-700 ${
+                          dateDay && dateDay.length === 1
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500 hover:border-red-600'
+                            : 'border-gray-300 focus:border-[#C8D5B9] focus:ring-[#5CAB68] hover:border-[#D2FF28]'
+                        }`}
+                        placeholder="DD"
+                      />
+                    </div>
+                  </div>
                 </div>
                 <div className="mb-1">
-                  <label className="block text-sm font-bold mb-1 text-black">Tagged People:</label>
+                  <label className="block text-sm !font-bold mb-1 text-black">Tagged People:</label>
                   <Select
                     isMulti
                     options={familyMemberOptions}
@@ -615,7 +807,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                 </div>
                 {isEditing && currentUserId === photo?.uploaded_by && (
                   <div className="">
-                    <label className="block text-sm font-bold mb-1 text-black">Albums:</label>
+                    <label className="block text-sm !font-bold mb-1 text-black">Albums:</label>
                     <Select<{ value: string; label: string }, true>
                       isMulti
                       options={albums.map(album => ({

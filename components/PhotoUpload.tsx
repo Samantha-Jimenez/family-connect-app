@@ -33,7 +33,9 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
     neighborhood: ''
   });
   const [description, setDescription] = useState('');
-  const [dateTaken, setDateTaken] = useState('');
+  const [dateYear, setDateYear] = useState('');
+  const [dateMonth, setDateMonth] = useState('');
+  const [dateDay, setDateDay] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<UserOption[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadUrl, setUploadUrl] = useState<string | null>(null);
@@ -100,6 +102,18 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
         throw new Error("User not authenticated");
       }
 
+      // Construct date string from separate fields
+      let dateTaken = '';
+      if (dateYear) {
+        dateTaken = dateYear;
+        if (dateMonth) {
+          dateTaken += `-${dateMonth.padStart(2, '0')}`;
+          if (dateDay) {
+            dateTaken += `-${dateDay.padStart(2, '0')}`;
+          }
+        }
+      }
+
       // First upload to S3
       const formData = new FormData();
       formData.append('file', selectedFile);
@@ -158,7 +172,9 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
       setPreviewUrl(null);
       setLocation({ country: '', state: '', city: '', neighborhood: '' });
       setDescription('');
-      setDateTaken('');
+      setDateYear('');
+      setDateMonth('');
+      setDateDay('');
       setSelectedUsers([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
       
@@ -295,16 +311,163 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
       </div>
 
       <div className="opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.6s' }}>
-        <label className="block text-sm font-medium text-gray-400">
+        <label className="block text-sm font-medium text-gray-400 mb-2">
           Date Taken
         </label>
-        <input
-          type="date"
-          value={dateTaken}
-          onChange={(e) => setDateTaken(e.target.value)}
-          className="mt-1 block w-full rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors"
-          placeholder="MM/DD/YYYY"
-        />
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">
+              Year
+            </label>
+            <input
+              type="number"
+              min="1800"
+              max={new Date().getFullYear()}
+              value={dateYear}
+              onChange={(e) => {
+                const year = e.target.value;
+                const currentYear = new Date().getFullYear();
+                
+                // Prevent future years
+                if (year && parseInt(year) > currentYear) {
+                  return; // Don't update the state
+                }
+                
+                setDateYear(year);
+                // Clear month and day if year is invalid or removed
+                if (!year || year.length !== 4) {
+                  setDateMonth('');
+                  setDateDay('');
+                }
+              }}
+              className={`block w-full rounded-md border-[1.5px] focus:outline-none focus:ring-1 bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors ${
+                dateYear && dateYear.length < 4
+                  ? 'focus:border-yellow-500 focus:ring-yellow-500 hover:border-red-600'
+                  : 'border-gray-300 focus:border-[#C8D5B9] focus:ring-[#5CAB68] hover:border-[#D2FF28]'
+              }`}
+              placeholder="YYYY"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">
+              Month
+            </label>
+            <Select
+              options={[
+                { value: '1', label: 'January' },
+                { value: '2', label: 'February' },
+                { value: '3', label: 'March' },
+                { value: '4', label: 'April' },
+                { value: '5', label: 'May' },
+                { value: '6', label: 'June' },
+                { value: '7', label: 'July' },
+                { value: '8', label: 'August' },
+                { value: '9', label: 'September' },
+                { value: '10', label: 'October' },
+                { value: '11', label: 'November' },
+                { value: '12', label: 'December' }
+              ]}
+              value={dateMonth ? { value: dateMonth, label: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][parseInt(dateMonth) - 1] } : null}
+              onChange={(selected) => {
+                const monthValue = selected ? selected.value : '';
+                setDateMonth(monthValue);
+                // Clear day if month is removed
+                if (!monthValue) {
+                  setDateDay('');
+                }
+              }}
+              isDisabled={dateYear.length !== 4}
+              className="text-black poppins-light"
+              classNamePrefix="select"
+              placeholder="Select month"
+              isClearable
+              menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+              menuPlacement="bottom"
+              styles={{
+                placeholder: (base) => ({
+                  ...base,
+                  fontFamily: "'Poppins', sans-serif",
+                  fontWeight: 300,
+                  color: '#9BA3AF',
+                }),
+                menu: (provided) => ({
+                  ...provided,
+                  zIndex: 9999,
+                }),
+                menuPortal: (provided) => ({
+                  ...provided,
+                  zIndex: 9999,
+                }),
+                control: (base: any, state: any) => ({
+                  ...base,
+                  borderWidth: '1.5px',
+                  borderColor: state.isFocused
+                    ? '#C8D5B9'
+                    : state.menuIsOpen
+                    ? '#D2FF28'
+                    : '#d1d5db',
+                  boxShadow: state.isFocused ? '0 0 0 1px #5CAB68' : 'none',
+                  '&:hover': {
+                    borderColor: '#D2FF28',
+                  },
+                  height: '2.7rem',
+                }),
+                option: (provided: any, state: any) => ({
+                  ...provided,
+                  backgroundColor: state.isFocused ? '#E8D4B8' : 'transparent',
+                  color: state.isFocused ? '#000' : '#000',
+                  '&:active': {
+                    backgroundColor: '#F4C47A',
+                    color: '#fff',
+                  },
+                }),
+              }}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">
+              Day
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={2}
+              value={dateDay}
+              onChange={(e) => {
+                const day = e.target.value;
+                
+                // Only allow numeric input
+                if (day && !/^\d*$/.test(day)) {
+                  return;
+                }
+                
+                // Allow single "0" (for typing 01-09), but validate complete numbers
+                if (day.length === 2) {
+                  const dayNum = parseInt(day);
+                  if (dayNum < 1 || dayNum > 31) {
+                    return; // Don't update if invalid 2-digit number
+                  }
+                }
+                
+                setDateDay(day);
+              }}
+              onBlur={() => {
+                // Auto-populate leading zero if single digit
+                if (dateDay && dateDay.length === 1) {
+                  setDateDay(dateDay.padStart(2, '0'));
+                }
+              }}
+              disabled={!dateMonth}
+              className={`block w-full rounded-md border-[1.5px] focus:outline-none focus:ring-1 bg-white p-2 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed disabled:hover:border-gray-300 ${
+                dateDay && dateDay.length === 1
+                  ? 'focus:border-yellow-500 focus:ring-yellow-500 hover:border-red-600'
+                  : 'border-gray-300 focus:border-[#C8D5B9] focus:ring-[#5CAB68] hover:border-[#D2FF28]'
+              }`}
+              placeholder="DD"
+            />
+          </div>
+        </div>
       </div>
 
       <div className="opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.7s' }}>

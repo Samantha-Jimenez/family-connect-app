@@ -23,13 +23,28 @@ const formatDate = (dateString: string): string => {
   if (!dateString) return '';
   
   try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    // Handle partial dates
+    if (/^\d{4}$/.test(dateString)) {
+      // Year only
+      return dateString;
+    } else if (/^\d{4}-\d{1,2}$/.test(dateString)) {
+      // Year-Month only
+      const [year, month] = dateString.split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short'
+      });
+    } else {
+      // Full date
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    }
   } catch (error) {
     console.error('Error formatting date:', error);
     return dateString;
@@ -42,7 +57,17 @@ const dateToTimestamp = (date: string): number => {
     return new Date('1970-01-01').getTime(); // Use a default date
   }
   
-  const parsedDate = new Date(date);
+  // Handle partial dates (year only or year-month)
+  let fullDate = date;
+  if (/^\d{4}$/.test(date)) {
+    // Year only - use January 1st of that year
+    fullDate = `${date}-01-01`;
+  } else if (/^\d{4}-\d{1,2}$/.test(date)) {
+    // Year-Month only - use 1st day of that month
+    fullDate = `${date}-01`;
+  }
+  
+  const parsedDate = new Date(fullDate);
   if (isNaN(parsedDate.getTime())) {
     console.error('Invalid date string:', date);
     return new Date('1970-01-01').getTime(); // Use a default date
@@ -538,7 +563,23 @@ const Photos = () => {
       // If photo has a date, check if it's in range
       if (dateTaken) {
         const timestamp = dateToTimestamp(dateTaken);
-        if (timestamp < currentDateRange[0] || timestamp > currentDateRange[1]) {
+        
+        // For partial dates, we need to consider the entire potential range
+        // e.g., "2020" could be anywhere in 2020, so include if the year overlaps with the range
+        let endTimestamp = timestamp;
+        
+        if (/^\d{4}$/.test(dateTaken)) {
+          // Year only - consider the entire year (Jan 1 to Dec 31)
+          const year = parseInt(dateTaken);
+          endTimestamp = new Date(year, 11, 31, 23, 59, 59).getTime();
+        } else if (/^\d{4}-\d{1,2}$/.test(dateTaken)) {
+          // Year-Month only - consider the entire month
+          const [year, month] = dateTaken.split('-').map(Number);
+          endTimestamp = new Date(year, month, 0, 23, 59, 59).getTime(); // Last day of month
+        }
+        
+        // Check if there's any overlap between the photo's date range and the filter range
+        if (endTimestamp < currentDateRange[0] || timestamp > currentDateRange[1]) {
           return false;
         }
       }
@@ -670,15 +711,24 @@ const Photos = () => {
     );
     if (uniqueTimestamps.size <= 1) return null;
   
+    // Always use month-based steps
+    // Calculate step as the average number of milliseconds in a month
+    const msPerMonth = (365.25 / 12) * 24 * 60 * 60 * 1000; // ~30.44 days
+    
+    const formatLabel = (timestamp: number) => {
+      const date = new Date(timestamp);
+      return `${date.toLocaleDateString('en-US', { month: 'long' })} ${date.getFullYear()}`;
+    };
+  
     return (
       <div className="mb-8 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.8s' }}>
         <div className="mb-2 flex justify-between text-sm text-gray-600 whitespace-nowrap">
-          <span>{timestampToDate(currentDateRange[0])}</span>
-          <span>{timestampToDate(currentDateRange[1])}</span>
+          <span>{formatLabel(currentDateRange[0])}</span>
+          <span>{formatLabel(currentDateRange[1])}</span>
         </div>
         <Range
           values={currentDateRange}
-          step={86400000} // One day
+          step={msPerMonth}
           min={dateRange.min}
           max={dateRange.max}
           onChange={handleRangeChange}
