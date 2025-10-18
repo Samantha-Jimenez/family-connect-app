@@ -26,6 +26,8 @@ export default function Navbar({
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isProfileOpen, setProfileOpen] = useState(false); // headless control
   const profileRef = useRef<HTMLDivElement | null>(null);
+  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
+  const mobileMenuButtonRef = useRef<HTMLDivElement | null>(null);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -42,21 +44,31 @@ export default function Navbar({
     router.push('/');
   };
 
-  // Close profile menu on route change
+  // Close profile menu and mobile menu on route change
   useEffect(() => {
     setProfileOpen(false);
+    setMobileMenuOpen(false);
   }, [pathname]);
 
   // Close on click outside & on Esc
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
-      if (!profileRef.current) return;
-      if (!profileRef.current.contains(e.target as Node)) {
+      // Close profile menu if clicking outside
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
         setProfileOpen(false);
+      }
+      // Close mobile menu if clicking outside both the button and menu
+      const clickedButton = mobileMenuButtonRef.current?.contains(e.target as Node);
+      const clickedMenu = mobileMenuRef.current?.contains(e.target as Node);
+      if (!clickedButton && !clickedMenu) {
+        setMobileMenuOpen(false);
       }
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setProfileOpen(false);
+      if (e.key === 'Escape') {
+        setProfileOpen(false);
+        setMobileMenuOpen(false);
+      }
     };
     document.addEventListener('mousedown', onDocClick);
     document.addEventListener('keydown', onKey);
@@ -70,7 +82,7 @@ export default function Navbar({
     <nav className="bg-white border-b border-gray-200">
       <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
         <div className="relative flex h-16 items-center justify-between">
-          <div className="absolute inset-y-0 left-0 flex items-center sm:hidden pl-4">
+          <div className="absolute inset-y-0 left-0 flex items-center sm:hidden pl-4" ref={mobileMenuButtonRef}>
             {/* Mobile menu button */}
             <button
               className="btn btn-square bg-transparent border-0 text-gray-700 hover:text-black shadow-none hover:bg-transparent"
@@ -184,6 +196,7 @@ export default function Navbar({
 
       {/* Mobile Nav */}
       <div
+        ref={mobileMenuRef}
         className={`sm:hidden ${isMobileMenuOpen ? 'block' : 'hidden'} absolute w-full bg-white z-[20] rounded-b-lg border border-gray-200 shadow-lg`}
       >
         <div className="space-y-1 px-2 pt-2 pb-3">
