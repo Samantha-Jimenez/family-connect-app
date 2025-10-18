@@ -58,7 +58,7 @@ const FamilyRoleModal: React.FC<FamilyRoleModalProps> = ({
               <li key={index} className="text-gray-700 dark:text-gray-300 ml-4">
                 <Link 
                   href={`/profile/${relatedUserIds[index]}`}
-                  className="text-blue-600 dark:text-blue-400 hover:underline"
+                  className="text-plantain-green hover:underline"
                   onClick={onClose}
                 >
                   {name}
@@ -71,7 +71,7 @@ const FamilyRoleModal: React.FC<FamilyRoleModalProps> = ({
         <div className="mt-6 flex justify-end">
           <button
             onClick={onClose}
-            className="btn btn-sm btn-primary"
+            className="btn btn-sm bg-golden-sand text-black border-0 hover:bg-golden-sand/70"
           >
             Close
           </button>

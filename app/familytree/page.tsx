@@ -86,7 +86,7 @@ const CoupleBlock = ({
 
   return (
     // <div className="relative flex flex-col items-center">
-    <div className="flex flex-col items-center opacity-0 animate-[fadeIn_0.6s_ease-in_forwards]">
+    <div className="flex flex-col items-center opacity-0 animate-[fadeIn_0.6s_ease-in_forwards] w-[10rem]">
       {/* Top row: either A alone, or A—spouse */}
       <div className="flex items-center space-x-2">
         <PersonCard member={a} />
@@ -105,7 +105,7 @@ const CoupleBlock = ({
       </div>
 
       {/* Down line from the knot (or from center of A if single parent) */}
-      <div className="relative w-full flex justify-center">
+      <div className="relative flex justify-center">
         <div
           className={`w-0.5 bg-gray-400 mt-[5px] ${children.length ? "h-8" : "h-0"}`}
           style={{
@@ -142,7 +142,7 @@ const CoupleBlock = ({
                {/* Expand/Collapse button - positioned absolutely to stay in place */}
                {child.children && child.children.length > 0 && (
                  <button
-                   className="absolute top-[148px] text-xs text-blue-600 hover:text-blue-800 hover:font-light hover:text-sm transition-all duration-200 ease-in-out hover:scale-110 active:scale-95"
+                   className="absolute top-[148px] text-xs text-green-600 font-extralight hover:text-dark-spring-green hover:font-light hover:text-sm transition-all duration-200 ease-in-out hover:scale-110 active:scale-95"
                    onClick={() => onToggleChild(index)}
                  >
                    {expandedChildIndex === index ? "Collapse" : "Expand"}
@@ -256,9 +256,9 @@ const FamilyTree = () => {
         {({ zoomIn, zoomOut, resetTransform }) => (
           <>
             <div className="flex justify-center mb-4 gap-2 opacity-0 animate-[fadeIn_0.6s_ease-in_forwards] [animation-delay:0.2s]">
-              <button className="bg-blue-500 text-white px-3 py-1 rounded transition-all duration-200 hover:bg-blue-600 hover:scale-110 hover:shadow-lg active:scale-95" onClick={() => zoomIn()}>Zoom In</button>
-              <button className="bg-blue-500 text-white px-3 py-1 rounded transition-all duration-200 hover:bg-blue-600 hover:scale-110 hover:shadow-lg active:scale-95" onClick={() => zoomOut()}>Zoom Out</button>
-              <button className="bg-gray-400 text-white px-3 py-1 rounded transition-all duration-200 hover:bg-gray-500 hover:scale-110 hover:shadow-lg active:scale-95" onClick={() => resetTransform()}>Reset</button>
+              <button className="bg-plantain-green text-white px-3 py-1 rounded transition-all duration-200 hover:bg-dark-spring-green hover:scale-110 hover:shadow-lg active:scale-95" onClick={() => zoomIn()}>Zoom In</button>
+              <button className="bg-plantain-green text-white px-3 py-1 rounded transition-all duration-200 hover:bg-dark-spring-green hover:scale-110 hover:shadow-lg active:scale-95" onClick={() => zoomOut()}>Zoom Out</button>
+              <button className="bg-sand-beige text-black px-3 py-1 rounded transition-all duration-200 hover:bg-golden-sand hover:scale-110 hover:shadow-lg active:scale-95" onClick={() => resetTransform()}>Reset</button>
             </div>
 
             <TransformComponent wrapperStyle={{ width: '100%', height: '100vh' }} contentStyle={{ justifySelf: 'center' }}>

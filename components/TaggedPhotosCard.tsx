@@ -80,6 +80,24 @@ export default function TaggedPhotosCard({ userId }: { userId: string }) {
     return <div>Edit form goes here</div>;
   };
 
+  // Handler to update photo data after editing
+  const handlePhotoUpdated = (updatedPhoto: PhotoData) => {
+    // Update the photo in the taggedPhotos array
+    setTaggedPhotos(prevPhotos => 
+      prevPhotos.map(photo => 
+        photo.photo_id === updatedPhoto.photo_id ? updatedPhoto : photo
+      )
+    );
+    // Update the selected photo so modal reflects changes
+    setSelectedPhoto(updatedPhoto);
+  };
+
+  // Handler for when a photo is deleted
+  const handlePhotoDeleted = () => {
+    fetchTaggedPhotos();
+    setSelectedPhoto(null);
+  };
+
   if (loading) {
     return (
       <div className="card bg-white text-black shadow-lg p-6">
@@ -120,6 +138,8 @@ export default function TaggedPhotosCard({ userId }: { userId: string }) {
           closeModal={closeModal}
           handleImageError={handleImageError}
           renderEditForm={renderEditForm}
+          onPhotoDeleted={handlePhotoDeleted}
+          onPhotoUpdated={handlePhotoUpdated}
         />
       )}
     </div>

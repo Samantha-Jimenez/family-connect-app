@@ -35,6 +35,30 @@ export default function FavoritedPhotosCard() {
     setSelectedPhoto(null);
   };
 
+  // Handler to update photo data after editing
+  const handlePhotoUpdated = (updatedPhoto: PhotoData) => {
+    // Update the photo in the favoritedPhotos array
+    setFavoritedPhotos(prevPhotos => 
+      prevPhotos.map(photo => 
+        photo.photo_id === updatedPhoto.photo_id ? updatedPhoto : photo
+      )
+    );
+    // Update the selected photo so modal reflects changes
+    setSelectedPhoto(updatedPhoto);
+  };
+
+  // Handler for when a photo is deleted
+  const handlePhotoDeleted = async () => {
+    setLoading(true);
+    if (user && user.userId) {
+      const photos = await getFavoritedPhotosByUser(user.userId);
+      setFavoritedPhotos(photos);
+    }
+    setLoading(false);
+    setSelectedPhoto(null);
+    setIsModalOpen(false);
+  };
+
   if (loading) {
     return (
       <div className="card bg-white text-black shadow-lg p-6">
@@ -76,6 +100,8 @@ export default function FavoritedPhotosCard() {
           closeModal={closeModal}
           handleImageError={() => {}}
           renderEditForm={() => <></>}
+          onPhotoDeleted={handlePhotoDeleted}
+          onPhotoUpdated={handlePhotoUpdated}
         />
       )}
     </div>

@@ -246,8 +246,12 @@ input, select, textarea, label {
 /* AUTHENTICATOR */
 
 .amplify-tabs__item--active {
-  border-color: green !important;
-  color: green !important;
+  border-color: #227D54 !important;
+  color: #5CAB68 !important;
+}
+
+.amplify-tabs__item--active:hover {
+  color: #227D54 !important;
 }
 
 .amplify-tabs__item {
@@ -272,16 +276,33 @@ input, select, textarea, label {
 }
 
 .amplify-button--primary {
-  background-color: green !important;
+  background-color: #5CAB68 !important;
+}
+
+.amplify-button--primary:hover {
+  background-color: #227D54 !important;
 }
 
 .amplify-button--link {
-  color: green !important;
+  color: #D2A267 !important;
+}
+
+.amplify-button--link:hover {
+  background-color: transparent !important;
+  color: #A97453 !important;
 }
 
 .amplify-field {
   margin-bottom: 10px !important;
   gap: 0.25rem !important;
+}
+
+.amplify-input {
+  border-color: rgb(209 213 219 / var(--tw-border-opacity, 1)) !important;
+}
+
+.amplify-input:hover {
+  border-color: #D2FF28 !important;
 }
 
 fieldset {
@@ -307,7 +328,7 @@ fieldset {
 }
 
 .amplify-tabs__item:hover {
-  color: gray !important;
+  color: #227D54 !important;
 }
 
 .amplify-button--loading {

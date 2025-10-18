@@ -811,6 +811,18 @@ const Photos = () => {
     setSelectedPhoto(null);
   };
 
+  // Handler to update photo data after editing
+  const handlePhotoUpdated = (updatedPhoto: PhotoData) => {
+    // Update the photo in the images array
+    setImages(prevImages => 
+      prevImages.map(img => 
+        img.photo_id === updatedPhoto.photo_id ? updatedPhoto : img
+      )
+    );
+    // Update the selected photo so modal reflects changes
+    setSelectedPhoto(updatedPhoto);
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -1078,6 +1090,7 @@ const Photos = () => {
           handleImageError={handleImageError}
           renderEditForm={renderEditForm}
           onPhotoDeleted={handlePhotoDeleted}
+          onPhotoUpdated={handlePhotoUpdated}
         />
       )}
     </div>

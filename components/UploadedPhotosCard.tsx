@@ -88,6 +88,18 @@ export default function UploadedPhotosCard({ userId }: { userId: string }) {
     setSelectedPhoto(null); // Also close the modal after deletion
   };
 
+  // Handler to update photo data after editing
+  const handlePhotoUpdated = (updatedPhoto: PhotoData) => {
+    // Update the photo in the userPhotos array
+    setUserPhotos(prevPhotos => 
+      prevPhotos.map(photo => 
+        photo.photo_id === updatedPhoto.photo_id ? updatedPhoto : photo
+      )
+    );
+    // Update the selected photo so modal reflects changes
+    setSelectedPhoto(updatedPhoto);
+  };
+
   if (loading) {
     return (
       <div className="card bg-white text-black shadow-lg p-6">
@@ -133,6 +145,7 @@ export default function UploadedPhotosCard({ userId }: { userId: string }) {
           handleImageError={handleImageError}
           renderEditForm={renderEditForm}
           onPhotoDeleted={handlePhotoDeleted}
+          onPhotoUpdated={handlePhotoUpdated}
         />
       )}
     </div>

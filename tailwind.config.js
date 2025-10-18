@@ -28,7 +28,9 @@ module.exports = {
         'blue-ncs': '#1D84B5',
         'lime': '#D2FF28',
         'carrot-orange': '#EA9010',
-        'giants-orange': '#F05D23'
+        'giants-orange': '#F05D23',
+        'lighter-brown': '#D2A267',
+        'highlight-brown': '#A97453',
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

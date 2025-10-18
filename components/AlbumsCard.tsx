@@ -308,6 +308,8 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
     setPhotos((prevPhotos) =>
       prevPhotos.map((p) => (p.photo_id === updatedPhoto.photo_id ? updatedPhoto : p))
     );
+    // Update the selected photo so modal reflects changes
+    setSelectedPhoto(updatedPhoto);
   };
 
   return (

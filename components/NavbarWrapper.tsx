@@ -34,12 +34,12 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
       <div className="flex justify-center items-stretch min-h-screen">
         <div className="grid lg:grid-cols-2 items-center max-w-6xl max-lg:max-w-[30rem] w-full justify-center">
           <div className="px-6 py-16 lg:pt-0">
-            <h1 className="text-5xl leading-[57px] text-slate-900 font-bold">
+            <h1 className="text-5xl leading-[57px] text-slate-900 font-bold text-british-racing-green">
               Family Connect App
             </h1>
             <h3 className="font-light mt-12 text-slate-500 leading-relaxed">This is our shared space to celebrate memories, explore our family tree, and stay connected. Sign in to view and share photos, find birthdays, and discover our roots. 
               <br/> Don't have an account yet? Create one and join the family online.</h3>
-            <h3 className="font-light mt-8 text-slate-500">Aren't a family member? <a href="javascript:void(0);" className="text-blue-600 font-medium hover:underline ml-1">View a demo here.</a></h3>
+            <h3 className="font-light mt-8 text-slate-500">Aren't a family member? <a href="javascript:void(0);" className="text-lighter-brown hover:text-highlight-brown font-medium hover:underline ml-1">View a demo here.</a></h3>
           </div>
 
           <div className="w-full mb-12">
@@ -116,11 +116,15 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                             styles={{
                               control: (base, state) => ({
                                 ...base,
-                                borderColor: state.isFocused || state.menuIsOpen ? 'green' : '#89949f',
-                                boxShadow: state.isFocused || state.menuIsOpen ? '0 0 0 2px rgba(0, 128, 0, 0.2)' : undefined,
+                                borderColor: state.isFocused
+                                  ? '#C8D5B9' // 🌿 focused border
+                                  : state.menuIsOpen
+                                  ? '#D2FF28' // open menu border
+                                  : 'rgb(209 213 219 / var(--tw-border-opacity, 1))', // default border
+                                boxShadow: state.isFocused || state.menuIsOpen ? '0 0 0 2px #5CAB68' : undefined,
                                 height: '42px',
                                 '&:hover': {
-                                  borderColor: state.isFocused || state.menuIsOpen ? 'green' : '#89949f',
+                                  borderColor: '#D2FF28',
                                 },
                               }),
                               menu: (base) => ({
@@ -147,12 +151,11 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                               }),
                               option: (base, state) => ({
                                 ...base,
-                                backgroundColor: state.isFocused ? 'white' : state.isSelected ? 'green' : '#F4F2E6',
+                                backgroundColor: state.isFocused ? '#E8D4B8' : 'transparent',
+                                color: state.isFocused ? '#000' : '#000',
                                 '&:active': {
-                                  backgroundColor: state.isFocused ? '#B19071' : 'white',
-                                },
-                                '&:hover': {
-                                  color: state.isFocused ? 'black' : '',
+                                  backgroundColor: '#F4C47A',
+                                  color: '#fff',
                                 },
                               }),
                             }}

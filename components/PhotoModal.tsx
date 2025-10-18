@@ -164,6 +164,19 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     }
   }, [isEditing, photo.album_ids]);
 
+  // Sync local editing state with photo prop changes
+  useEffect(() => {
+    setEditedDescription(photo.metadata?.description || '');
+    setEditedDateTaken(photo.metadata?.date_taken || '');
+    setEditedLocation(photo.metadata?.location || {
+      country: '',
+      state: '',
+      city: '',
+      neighborhood: ''
+    });
+    setEditedTaggedPeople(photo.metadata?.people_tagged || []);
+  }, [photo]);
+
   const handleAddToAlbum = async (albumId: string) => {
     try {
       if (albumId) {
@@ -442,21 +455,22 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                     type="text"
                     value={editedDescription}
                     onChange={(e) => setEditedDescription(e.target.value)}
-                    className="input input-bordered w-full text-black bg-white border-gray-300"
+                    className="mt-1 block w-full rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors"
+
                   />
                 </div>
                 <div className="mb-1">
                   <h3 className="block text-sm font-bold text-black">Location Details:</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-sm font-medium text-gray-500 mb-1">
+                      <label className="block text-sm font-medium text-gray-500">
                         Country
                       </label>
                       <input
                         type="text"
                         value={editedLocation.country}
                         onChange={(e) => setEditedLocation({ ...editedLocation, country: e.target.value })}
-                        className="input input-bordered w-full text-black bg-white border-gray-300"
+                        className="mt-1 block w-full rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors"
                       />
                     </div>
 
@@ -468,7 +482,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                         type="text"
                         value={editedLocation.state}
                         onChange={(e) => setEditedLocation({ ...editedLocation, state: e.target.value })}
-                        className="input input-bordered w-full text-black bg-white border-gray-300"
+                        className="mt-1 block w-full rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors"
                       />
                     </div>
 
@@ -480,7 +494,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                         type="text"
                         value={editedLocation.city}
                         onChange={(e) => setEditedLocation({ ...editedLocation, city: e.target.value })}
-                        className="input input-bordered w-full text-black bg-white border-gray-300"
+                        className="mt-1 block w-full rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors"
                       />
                     </div>
                     <div>
@@ -491,7 +505,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                         type="text"
                         value={editedLocation.neighborhood}
                         onChange={(e) => setEditedLocation({ ...editedLocation, neighborhood: e.target.value })}
-                        className="input input-bordered w-full text-black bg-white border-gray-300"
+                        className="mt-1 block w-full rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors"
                       />
                     </div>
                   </div>
@@ -502,7 +516,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                     type="date"
                     value={editedDateTaken}
                     onChange={(e) => setEditedDateTaken(e.target.value)}
-                    className="input input-bordered w-full text-black bg-white border-gray-300"
+                    className="mt-1 block w-full rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors"
                   />
                 </div>
                 <div className="mb-1">
@@ -523,16 +537,45 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                     placeholder="Select family members in this photo..."
                     noOptionsMessage={() => "No family members found"}
                     isLoading={familyMembers.length === 0}
-                    theme={(theme) => ({
-                      ...theme,
-                      colors: {
-                        ...theme.colors,
-                        primary: '#3b82f6',
-                        primary25: '#bfdbfe',
-                        neutral0: 'var(--bg-color, white)',
-                        neutral80: 'var(--text-color, black)',
-                      },
-                    })}
+                    menuPlacement="bottom"
+                    styles={{
+                      placeholder: (base) => ({
+                        ...base,
+                        fontFamily: "'Poppins', sans-serif",
+                        fontWeight: 300,
+                        color: '#9BA3AF',
+                      }),
+                      menu: (provided) => ({
+                        ...provided,
+                        zIndex: 9999,
+                      }),
+                      menuPortal: (provided) => ({
+                        ...provided,
+                        zIndex: 9999,
+                      }),
+                      control: (base: any, state: any) => ({
+                        ...base,
+                        borderWidth: '1.5px',
+                        borderColor: state.isFocused
+                          ? '#C8D5B9' // 🌿 focused border
+                          : state.menuIsOpen
+                          ? '#D2FF28' // open menu border
+                          : '', // default border
+                        boxShadow: state.isFocused ? '0 0 0 1px #5CAB68' : 'none',
+                        '&:hover': {
+                          borderColor: '#D2FF28', // hover border
+                        },
+                      }),
+                      option: (provided: any, state: any) => ({
+                        ...provided,
+                        backgroundColor: state.isFocused ? '#E8D4B8' : 'transparent',
+                        color: state.isFocused ? '#000' : '#000',
+                        '&:active': {
+                          backgroundColor: '#F4C47A',
+                          color: '#fff',
+                        },
+                      }),
+                    }}
                   />
                 </div>
                 {isEditing && currentUserId === photo?.uploaded_by && (
@@ -563,16 +606,45 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                       placeholder="Select albums (photo can be in multiple)..."
                       noOptionsMessage={() => "No albums found"}
                       isLoading={albums.length === 0}
-                      theme={theme => ({
-                        ...theme,
-                        colors: {
-                          ...theme.colors,
-                          primary: '#3b82f6',
-                          primary25: '#bfdbfe',
-                          neutral0: 'var(--bg-color, white)',
-                          neutral80: 'var(--text-color, black)'
-                        }
-                      })}
+                      menuPlacement="bottom"
+                      styles={{
+                        placeholder: (base) => ({
+                          ...base,
+                          fontFamily: "'Poppins', sans-serif",
+                          fontWeight: 300,
+                          color: '#9BA3AF',
+                        }),
+                        menu: (provided) => ({
+                          ...provided,
+                          zIndex: 9999,
+                        }),
+                        menuPortal: (provided) => ({
+                          ...provided,
+                          zIndex: 9999,
+                        }),
+                        control: (base: any, state: any) => ({
+                          ...base,
+                          borderWidth: '1.5px',
+                          borderColor: state.isFocused
+                            ? '#C8D5B9' // 🌿 focused border
+                            : state.menuIsOpen
+                            ? '#D2FF28' // open menu border
+                            : '', // default border
+                          boxShadow: state.isFocused ? '0 0 0 1px #5CAB68' : 'none',
+                          '&:hover': {
+                            borderColor: '#D2FF28', // hover border
+                          },
+                        }),
+                        option: (provided: any, state: any) => ({
+                          ...provided,
+                          backgroundColor: state.isFocused ? '#E8D4B8' : 'transparent',
+                          color: state.isFocused ? '#000' : '#000',
+                          '&:active': {
+                            backgroundColor: '#F4C47A',
+                            color: '#fff',
+                          },
+                        }),
+                      }}
                     />
                   </div>
                 )}
@@ -669,7 +741,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                     }
                 }}
                 name="newComment"
-                className="input input-sm input-bordered w-full text-black bg-white border-gray-300 rounded-md shadow-sm !text-base"
+                className="input input-sm input-bordered w-full text-black bg-white border-gray-300 rounded-md shadow-sm !text-base block rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors"
                 placeholder="Add a comment..."
             />
             <button

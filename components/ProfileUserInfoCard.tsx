@@ -202,7 +202,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                     //   style={{ animationDelay: `${index * 0.1}s` }}
                     // >
                       <span 
-                        className="text-palm-green bg-tea-green px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-[#227D54]/40 transition-colors"
+                        className="text-palm-green bg-tea-green/30 px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-tea-green/60 transition-colors"
                         onClick={() => {
                           setSelectedRole({ type, relatedNames, relatedIds: targetIds });
                           setShowRoleModal(true);

@@ -21,6 +21,11 @@ const ColorTest = () => {
     { name: 'lime', hex: '#D2FF28', description: '' },
     { name: 'carrot-orange', hex: '#EA9010', description: '' },
     { name: 'giants-orange', hex: '#F05D23', description: '' },
+    { name: 'lighter-brown', hex: '#D2A267', description: '' },
+    { name: 'highlight-brown', hex: '#A97453', description: '' },
+    // { name: '1another-brown', hex: '#B08154', description: '' },
+    // { name: '2another-dark-brown', hex: '#8D6041', description: '' },
+    // { name: '3highlight-brown', hex: '#B97A56', description: '' },
   ];
 
   // DaisyUI theme colors

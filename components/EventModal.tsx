@@ -424,7 +424,7 @@ export default function EventModal({
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="input input-bordered w-full bg-white"
+                    className="input input-bordered w-full bg-white block rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors"
                     placeholder="Enter event title"
                   />
                 </div>
@@ -437,7 +437,7 @@ export default function EventModal({
                     type="text"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    className="input input-bordered w-full bg-white"
+                    className="input input-bordered w-full bg-white block rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors"
                     placeholder="Enter location (optional)"
                   />
                 </div>
@@ -450,7 +450,7 @@ export default function EventModal({
                     type="text"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="input input-bordered w-full bg-white"
+                    className="input input-bordered w-full bg-white block rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors"
                     placeholder="Enter description (optional)"
                   />
                 </div>
@@ -462,7 +462,7 @@ export default function EventModal({
                       type="checkbox"
                       checked={isAllDay}
                       onChange={(e) => setIsAllDay(e.target.checked)}
-                      className="checkbox checkbox-primary ml-2"
+                      className="checkbox checkbox-success ml-2"
                     />
                   </label>
                 </div>
@@ -476,7 +476,7 @@ export default function EventModal({
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="input input-bordered bg-white"
+                      className="input input-bordered w-full bg-white block rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors"
                     />
                   </div>
                   {!isAllDay && (
@@ -488,8 +488,8 @@ export default function EventModal({
                         type="time"
                         value={startTime}
                         onChange={(e) => setStartTime(e.target.value)}
-                        className="input input-bordered bg-white"
-                      />
+                        className="input input-bordered w-full bg-white block rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors"
+                        />
                     </div>
                   )}
                 </div>
@@ -503,8 +503,8 @@ export default function EventModal({
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className="input input-bordered bg-white"
-                    />
+                      className="input input-bordered w-full bg-white block rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors"
+                      />
                   </div>
                   {!isAllDay && (
                     <div className="form-control">
@@ -515,8 +515,8 @@ export default function EventModal({
                         type="time"
                         value={endTime}
                         onChange={(e) => setEndTime(e.target.value)}
-                        className="input input-bordered bg-white"
-                      />
+                        className="input input-bordered w-full bg-white block rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors"
+                        />
                     </div>
                   )}
                 </div>
