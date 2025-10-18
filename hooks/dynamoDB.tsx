@@ -1357,3 +1357,52 @@ export async function updateAlbum(
 
   await dynamoDB.send(new UpdateItemCommand(params));
 }
+
+/**
+ * Remove a tagged person from a photo's people_tagged array.
+ * @param photo_id The ID of the photo to update.
+ * @param user_id The ID of the user to untag.
+ */
+export const removeTagFromPhoto = async (photo_id: string, user_id: string) => {
+  try {
+    // Get the current photo data to find the index of the tagged person
+    const getPhotoParams = {
+      TableName: TABLES.PHOTOS,
+      Key: {
+        photo_id: { S: photo_id }
+      }
+    };
+
+    const photoData = await dynamoDB.send(new GetItemCommand(getPhotoParams));
+    
+    if (!photoData.Item) {
+      throw new Error("Photo not found");
+    }
+
+    // Get the current people_tagged array
+    const currentTaggedPeople = photoData.Item.people_tagged?.L || [];
+    
+    // Find the index of the user to untag
+    const indexToRemove = currentTaggedPeople.findIndex((person: any) => person.M?.id?.S === user_id);
+    
+    if (indexToRemove === -1) {
+      console.log(`User ${user_id} is not tagged in photo ${photo_id}`);
+      return; // User is not tagged in this photo
+    }
+
+    // Remove the tag from the array
+    const params = {
+      TableName: TABLES.PHOTOS,
+      Key: {
+        photo_id: { S: photo_id }
+      },
+      UpdateExpression: `REMOVE people_tagged[${indexToRemove}]`
+    };
+
+    await dynamoDB.send(new UpdateItemCommand(params));
+    console.log(`✅ User ${user_id} untagged from photo ${photo_id}`);
+  } catch (error) {
+    console.error(`❌ Error untagging user ${user_id} from photo ${photo_id}:`, error);
+    throw error;
+  }
+};

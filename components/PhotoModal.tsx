@@ -2,7 +2,7 @@ import React, { MouseEvent, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import Select from 'react-select';
-import { PhotoData, TaggedPerson, getUserAlbums, addPhotoToAlbum, savePhotoToDB, getAlbumById, deletePhotoById, getAllFamilyMembers, AlbumData, checkIfPhotoIsFavorited, removePhotoFromFavorites, addPhotoToFavorites, addCommentToPhoto, getCommentsForPhoto, getUserNameById, deleteCommentFromPhoto, editCommentInPhoto, getProfilePhotoById, removePhotoFromAlbum } from '@/hooks/dynamoDB';
+import { PhotoData, TaggedPerson, getUserAlbums, addPhotoToAlbum, savePhotoToDB, getAlbumById, deletePhotoById, getAllFamilyMembers, AlbumData, checkIfPhotoIsFavorited, removePhotoFromFavorites, addPhotoToFavorites, addCommentToPhoto, getCommentsForPhoto, getUserNameById, deleteCommentFromPhoto, editCommentInPhoto, getProfilePhotoById, removePhotoFromAlbum, removeTagFromPhoto } from '@/hooks/dynamoDB';
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import PhotoComments from './PhotoComments';
 import { useToast } from '@/context/ToastContext';
@@ -319,6 +319,41 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       }
     }
   };
+
+  const handleUntagYourself = async () => {
+    if (user && photo.photo_id) {
+      try {
+        await removeTagFromPhoto(photo.photo_id, user.userId);
+        showToast('You have been untagged from this photo.', 'success');
+        
+        // Update the local state to reflect the change
+        const updatedTaggedPeople = photo.metadata.people_tagged.filter(
+          person => person.id !== user.userId
+        );
+        setEditedTaggedPeople(updatedTaggedPeople);
+        
+        // Update the photo data if callback is provided
+        if (onPhotoUpdated) {
+          onPhotoUpdated({
+            ...photo,
+            metadata: {
+              ...photo.metadata,
+              people_tagged: updatedTaggedPeople
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error untagging yourself:', error);
+        showToast('Error untagging yourself from photo.', 'error');
+      }
+    }
+  };
+
+  // Check if current user is tagged in the photo but didn't upload it
+  const isCurrentUserTagged = user && photo.metadata?.people_tagged?.some(
+    person => person.id === user.userId
+  );
+  const canUntagSelf = isCurrentUserTagged && user && currentUserId !== photo?.uploaded_by;
 
   // Transform familyMembers into UserOption format for react-select
   const familyMemberOptions = familyMembers.map((member) => ({
@@ -697,6 +732,14 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                         >
                           {person.name}
                         </a>
+                        {user && person.id === user.userId && currentUserId !== photo?.uploaded_by && !isEditing && (
+                          <button
+                            className="text-sm border-0 text-terracotta-red hover:underline rounded ml-1 source-sans-3"
+                            onClick={handleUntagYourself}
+                          >
+                            (remove me)
+                          </button>
+                        )}
                       </React.Fragment>
                     ))}
                   </p>

@@ -819,6 +819,23 @@ const Photos = () => {
         img.photo_id === updatedPhoto.photo_id ? updatedPhoto : img
       )
     );
+    
+    // Check if the photo still matches the current people filter (if any)
+    if (selectedPeople.length > 0) {
+      const stillMatchesFilter = selectedPeople.every(person => 
+        updatedPhoto.metadata?.people_tagged?.some(tagged => tagged.id === person.id)
+      );
+      
+      if (!stillMatchesFilter) {
+        // Remove from filtered images and close modal if it no longer matches the filter
+        setFilteredImages(prevFiltered => 
+          prevFiltered.filter(img => img.photo_id !== updatedPhoto.photo_id)
+        );
+        setSelectedPhoto(null);
+        return;
+      }
+    }
+    
     // Update the selected photo so modal reflects changes
     setSelectedPhoto(updatedPhoto);
   };

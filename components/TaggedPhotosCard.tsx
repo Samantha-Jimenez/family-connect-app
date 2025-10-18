@@ -82,14 +82,28 @@ export default function TaggedPhotosCard({ userId }: { userId: string }) {
 
   // Handler to update photo data after editing
   const handlePhotoUpdated = (updatedPhoto: PhotoData) => {
-    // Update the photo in the taggedPhotos array
-    setTaggedPhotos(prevPhotos => 
-      prevPhotos.map(photo => 
-        photo.photo_id === updatedPhoto.photo_id ? updatedPhoto : photo
-      )
+    // Check if current user is still tagged in the photo
+    const isStillTagged = updatedPhoto.metadata?.people_tagged?.some(
+      (person: TaggedPerson) => person.id === userId
     );
-    // Update the selected photo so modal reflects changes
-    setSelectedPhoto(updatedPhoto);
+
+    if (!isStillTagged) {
+      // Remove the photo from the taggedPhotos array if user is no longer tagged
+      setTaggedPhotos(prevPhotos => 
+        prevPhotos.filter(photo => photo.photo_id !== updatedPhoto.photo_id)
+      );
+      // Close the modal since the photo is no longer relevant
+      setSelectedPhoto(null);
+    } else {
+      // Update the photo in the taggedPhotos array
+      setTaggedPhotos(prevPhotos => 
+        prevPhotos.map(photo => 
+          photo.photo_id === updatedPhoto.photo_id ? updatedPhoto : photo
+        )
+      );
+      // Update the selected photo so modal reflects changes
+      setSelectedPhoto(updatedPhoto);
+    }
   };
 
   // Handler for when a photo is deleted
