@@ -71,18 +71,21 @@ export default function Calendar() {
         familyMembers.forEach((member: FamilyMember) => {
           // Add birthday events - create events for current and next few years
           if (member.birthday) {
-            const birthdayDate = new Date(member.birthday);
-            if (!isNaN(birthdayDate.getTime())) {
+            // Parse the date string directly to avoid timezone issues
+            const dateStr = member.birthday.split('T')[0]; // Get YYYY-MM-DD part
+            const [year, month, day] = dateStr.split('-').map(Number);
+            
+            if (year && month && day) {
               // Create birthday events for the next 5 years
               const currentYear = new Date().getFullYear();
               for (let yearOffset = 0; yearOffset < 5; yearOffset++) {
-                const eventDate = new Date(birthdayDate);
-                eventDate.setFullYear(currentYear + yearOffset);
+                // Format date directly as YYYY-MM-DD to avoid timezone conversion
+                const eventDateStr = `${currentYear + yearOffset}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 
                 generatedEvents.push({
                   id: `birthday-${member.family_member_id}-${currentYear + yearOffset}`,
                   title: `${member.first_name} ${member.last_name}'s Birthday 🎂`,
-                  start: eventDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
+                  start: eventDateStr,
                   allDay: true,
                   backgroundColor: '#10b981', // Green color for birthdays
                   borderColor: '#059669',
@@ -99,18 +102,21 @@ export default function Calendar() {
 
           // Add death date events (memorial dates) - create for current and next few years
           if (member.death_date) {
-            const deathDate = new Date(member.death_date);
-            if (!isNaN(deathDate.getTime())) {
+            // Parse the date string directly to avoid timezone issues
+            const dateStr = member.death_date.split('T')[0]; // Get YYYY-MM-DD part
+            const [year, month, day] = dateStr.split('-').map(Number);
+            
+            if (year && month && day) {
               // Create memorial events for the next 5 years
               const currentYear = new Date().getFullYear();
               for (let yearOffset = 0; yearOffset < 5; yearOffset++) {
-                const eventDate = new Date(deathDate);
-                eventDate.setFullYear(currentYear + yearOffset);
+                // Format date directly as YYYY-MM-DD to avoid timezone conversion
+                const eventDateStr = `${currentYear + yearOffset}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 
                 generatedEvents.push({
                   id: `memorial-${member.family_member_id}-${currentYear + yearOffset}`,
                   title: `In Memory of ${member.first_name} ${member.last_name} 🕊️`,
-                  start: eventDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
+                  start: eventDateStr,
                   allDay: true,
                   backgroundColor: '#6b7280', // Gray color for memorial dates
                   borderColor: '#4b5563',
