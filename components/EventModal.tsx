@@ -3,6 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getUserNameById, getRSVPStatus, getEventRSVPs } from '@/hooks/dynamoDB';
 import { CalendarEvent } from '@/context/CalendarContext';
 import ConfirmationModal from './ConfirmationModal';
+import { useToast } from '@/context/ToastContext';
 
 interface EventModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export default function EventModal({
   rsvpEvent,
 }: EventModalProps) {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [isEditing, setIsEditing] = useState(mode === 'add');
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -245,11 +247,19 @@ export default function EventModal({
           description.trim() || undefined
         );
 
+        // Show success toast
+        showToast(
+          mode === 'add' ? 'Event created successfully!' : 'Event updated successfully!',
+          'success', {
+            position: 'top-right',
+          }
+        );
+
         // Close the modal after successful submission
         onClose();
       } catch (error) {
         console.error('Error submitting event:', error);
-        alert('Please enter valid date and time values');
+        showToast('Please enter valid date and time values', 'error');
       }
     }
   };
@@ -323,6 +333,9 @@ export default function EventModal({
     if (onDelete) {
       onDelete();
       setIsConfirmOpen(false);
+      showToast('Event deleted successfully!', 'error', {
+        position: 'top-right',
+      });
     }
   };
 

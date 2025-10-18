@@ -6,6 +6,8 @@ import awsconfig from '../aws-exports';
 import { ToastProvider } from '@/context/ToastContext';
 import { Providers } from '../app/providers';
 import { UserProvider } from '@/context/UserContext';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 Amplify.configure(awsconfig);
 
@@ -23,6 +25,7 @@ export default function ClientProviders({
           </Providers>
         </UserProvider>
       </ToastProvider>
+      <ToastContainer />
     </Authenticator.Provider>
   );
 } 

@@ -281,6 +281,9 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     try {
       await deletePhotoById(photo.photo_id);
       console.log('Photo deleted successfully!');
+      showToast('Photo deleted successfully!', 'success', {
+        position: 'top-right',
+      });
       if (onPhotoDeleted) {
         onPhotoDeleted();
       } else {
@@ -288,6 +291,9 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       }
     } catch (error) {
       console.error('Error deleting photo:', error);
+      showToast('Failed to delete photo. Please try again.', 'error', {
+        position: 'top-right',
+      });
     }
   };
 
