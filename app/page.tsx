@@ -14,6 +14,7 @@ import FavoritedPhotosCard from "@/components/FavoritedPhotosCard";
 import AlbumsCard from "@/components/AlbumsCard";
 import { CalendarProvider } from '@/context/CalendarContext';
 import Calendar from '@/app/calendar/page';
+import LoadSpinner from '@/components/LoadSpinner';
 
 // Move Amplify configuration into a try-catch block
 try {
@@ -42,7 +43,11 @@ const HomePage = () => {
   }, []);
 
   if (!isConfigured) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <LoadSpinner size={64} />
+      </div>
+    );
   }
 
   return (

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getFamilyRelationships, FamilyMember } from '../hooks/dynamoDB';
+import LoadSpinner from '@/components/LoadSpinner';
 
 interface MemberRelationshipsProps {
   memberId: string;
@@ -30,7 +31,11 @@ export default function MemberRelationships({ memberId, familyMembers }: MemberR
   }, [memberId]);
 
   if (loading) {
-    return <div className="text-gray-500">Loading relationships...</div>;
+    return (
+      <div className="flex justify-center items-center py-4">
+        <LoadSpinner size={32} />
+      </div>
+    );
   }
 
   if (relationships.length === 0) {

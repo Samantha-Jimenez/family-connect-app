@@ -4,6 +4,7 @@ import { getCurrentUser } from 'aws-amplify/auth';
 import Image from 'next/image';
 import { getUserData, PhotoData, TaggedPerson } from '@/hooks/dynamoDB';
 import PhotoModal from '@/components/PhotoModal';
+import LoadSpinner from '@/components/LoadSpinner';
 
 
 export default function TaggedPhotosCard({ userId }: { userId: string }) {
@@ -83,7 +84,9 @@ export default function TaggedPhotosCard({ userId }: { userId: string }) {
     return (
       <div className="card bg-white text-black shadow-lg p-6">
         <h2 className="text-xl font-bold">Tagged Photos</h2>
-        <p className="mt-2">Loading tagged photos...</p>
+        <div className="flex justify-center items-center py-8">
+          <LoadSpinner size={48} />
+        </div>
       </div>
     );
   }

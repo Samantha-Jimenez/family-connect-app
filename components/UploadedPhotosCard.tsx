@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import PhotoModal from '@/components/PhotoModal';
 import { getUserData, PhotoData } from '@/hooks/dynamoDB';
+import LoadSpinner from '@/components/LoadSpinner';
 
 export default function UploadedPhotosCard({ userId }: { userId: string }) {
   const [userPhotos, setUserPhotos] = useState<PhotoData[]>([]);
@@ -91,7 +92,9 @@ export default function UploadedPhotosCard({ userId }: { userId: string }) {
     return (
       <div className="card bg-white text-black shadow-lg p-6">
         <h2 className="text-xl font-bold">Uploaded Photos</h2>
-        <p className="mt-2">Loading photos...</p>
+        <div className="flex justify-center items-center py-8">
+          <LoadSpinner size={48} />
+        </div>
       </div>
     );
   }

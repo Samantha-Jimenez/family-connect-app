@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useCalendar } from '@/context/CalendarContext';
 import { getUserRSVPs } from '@/hooks/dynamoDB';
 import Link from 'next/link';
+import LoadSpinner from '@/components/LoadSpinner';
 
 interface Event {
   id?: string;
@@ -79,7 +80,14 @@ const RSVP = ({ userId }: { userId: string }) => {
   }, [userId, events]);
 
   if (loading) {
-    return <div>Loading RSVP'd events...</div>;
+    return (
+      <div className="card bg-yellow-800/20 text-black shadow-lg p-4 col-span-1 col-start-1 h-min">
+        <h2 className="text-xl mb-2">Upcoming RSVP'd Events</h2>
+        <div className="flex justify-center items-center py-8">
+          <LoadSpinner size={48} />
+        </div>
+      </div>
+    );
   }
 
   if (upcomingRSVPEvents.length === 0) {

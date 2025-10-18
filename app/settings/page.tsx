@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { getFullImageUrl } from '@/utils/imageUtils';
 import { useToast } from '@/context/ToastContext';
 import { useUser } from '@/context/UserContext';
+import LoadSpinner from '@/components/LoadSpinner';
 
 interface UserData {
   first_name: string;
@@ -454,10 +455,17 @@ const Settings = () => {
                 {selectedImage && (
                   <button 
                   type="submit"
-                  className="btn bg-[#914F2F] hover:bg-[#914F2F]/90 text-white border-none"
+                  className="btn bg-[#914F2F] hover:bg-[#914F2F]/90 text-white border-none flex items-center justify-center gap-2"
                   disabled={isUploading}
                   >
-                    {isUploading ? 'Uploading...' : 'Upload Photo'}
+                    {isUploading ? (
+                      <>
+                        <LoadSpinner size={16} />
+                        <span>Uploading...</span>
+                      </>
+                    ) : (
+                      'Upload Photo'
+                    )}
                   </button>
                 )}
               </div>

@@ -2,6 +2,7 @@
 
 import { createContext } from 'react';
 import { Authenticator, useAuthenticator } from '@aws-amplify/ui-react';
+import LoadSpinner from '@/components/LoadSpinner';
 
 const AuthContext = createContext({});
 
@@ -9,7 +10,11 @@ function AuthStateProvider({ children }: { children: React.ReactNode }) {
   const auth = useAuthenticator();
   return (
     <>
-      {auth.authStatus === 'configuring' && <div>Loading...</div>}
+      {auth.authStatus === 'configuring' && (
+        <div className="flex items-center justify-center min-h-screen bg-gray-100">
+          <LoadSpinner size={64} />
+        </div>
+      )}
       {auth.authStatus === 'unauthenticated' && (
         <div className="grid items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)] bg-gray-100">
           <h3 className="text-2xl font-bold text-center mb-4">

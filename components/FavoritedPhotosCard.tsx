@@ -3,19 +3,23 @@ import { useAuthenticator } from '@aws-amplify/ui-react';
 import { getFavoritedPhotosByUser, PhotoData } from '@/hooks/dynamoDB';
 import Image from 'next/image';
 import PhotoModal from './PhotoModal';
+import LoadSpinner from '@/components/LoadSpinner';
 
 export default function FavoritedPhotosCard() {
   const { user } = useAuthenticator();
   const [favoritedPhotos, setFavoritedPhotos] = useState<PhotoData[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchFavoritedPhotos = async () => {
+      setLoading(true);
       if (user && user.userId) {
         const photos = await getFavoritedPhotosByUser(user.userId);
         setFavoritedPhotos(photos);
       }
+      setLoading(false);
     };
 
     fetchFavoritedPhotos();
@@ -30,6 +34,17 @@ export default function FavoritedPhotosCard() {
     setIsModalOpen(false);
     setSelectedPhoto(null);
   };
+
+  if (loading) {
+    return (
+      <div className="card bg-white text-black shadow-lg p-6">
+        <h2 className="text-xl font-bold">Favorited Photos</h2>
+        <div className="flex justify-center items-center py-8">
+          <LoadSpinner size={48} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="card bg-white text-black p-6 shadow-lg">

@@ -6,6 +6,7 @@ import { savePhotoToDB, getAllFamilyMembers } from '@/hooks/dynamoDB';
 import { getCurrentUser } from 'aws-amplify/auth';
 import Select from 'react-select';
 import { useToast } from '@/context/ToastContext';
+import LoadSpinner from '@/components/LoadSpinner';
 
 interface PhotoUploadProps {
   onUploadComplete: () => void;
@@ -367,14 +368,21 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
       <button
         type="submit"
         disabled={!selectedFile || isUploading}
-        className={`w-full px-4 py-2 text-white rounded-md poppins-light opacity-0 animate-[fadeIn_0.4s_ease-in_forwards] ${
+        className={`w-full px-4 py-2 text-white rounded-md poppins-light opacity-0 animate-[fadeIn_0.4s_ease-in_forwards] flex items-center justify-center gap-2 ${
           isUploading || !selectedFile
             ? 'bg-tea-green cursor-not-allowed'
             : 'bg-plantain-green hover:bg-dark-spring-green'
         }`}
         style={{ animationDelay: '0.8s' }}
       >
-        {isUploading ? 'Uploading...' : 'Upload Photo'}
+        {isUploading ? (
+          <>
+            <LoadSpinner size={20} />
+            <span>Uploading...</span>
+          </>
+        ) : (
+          'Upload Photo'
+        )}
       </button>
 
       {uploadUrl && (

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import RSVP from './RSVP';
 import { getFamilyRelationships, getAllFamilyMembers } from '@/hooks/dynamoDB';
 import Link from 'next/link';
+import LoadSpinner from '@/components/LoadSpinner';
 
 interface Relationship {
   source_id: string;
@@ -81,7 +82,9 @@ const ProfileOverview = ({ userId }: { userId: string }) => {
         <h2 className="text-xl">Family Tree</h2>
         <p className="mt-2">Nuclear family connections</p>
         {loading ? (
-          <div className="text-gray-500">Loading relatives...</div>
+          <div className="flex justify-center items-center py-6">
+            <LoadSpinner size={48} />
+          </div>
         ) : directRelatives.length === 0 ? (
           <div className="text-gray-500 text-sm">No direct relatives found.</div>
         ) : (
