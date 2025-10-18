@@ -389,20 +389,20 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           {isEditing && currentUserId === photo?.uploaded_by && (
           <div className="flex absolute bottom-0 right-2 space-x-2 mb-2">
             <button
-              className="btn btn-sm bg-green-500 text-white border-0"
+              className="btn btn-sm bg-dark-spring-green text-white border-0 hover:bg-plantain-green"
               onClick={handleSave}
             >
               Save
             </button>
             <button
-              className="btn btn-sm bg-red-500 text-white border-0"
+              className="btn btn-sm bg-[#E12B1F] text-white border-0 hover:bg-red-500"
               onClick={() => setIsConfirmOpen(true)}
             >
               Delete
             </button>
             <button
               onClick={() => setIsEditing(false)}
-              className="btn btn-sm bg-gray-600 text-white border-0"
+              className="btn btn-sm bg-golden-sand text-black border-0 hover:bg-sand-beige"
             >
               Cancel
             </button>
@@ -411,7 +411,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           <div className="flex justify-end space-x-2 mt-auto">
             {currentUserId === photo?.uploaded_by && !isEditing && (
               <button
-                className="btn btn-sm border-0 bg-palm-green text-white rounded hover:bg-british-racing-green w-full mt-2.5"
+                className="btn btn-sm border-0 bg-plantain-green text-white rounded hover:bg-plantain-green/70 w-full mt-2.5"
                 onClick={() => setIsEditing(true)}
               >
                 Edit
@@ -674,7 +674,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             />
             <button
                 onClick={handleAddComment}
-                className="btn btn-sm bg-moonstone text-white ml-2 rounded-md shadow hover:bg-blue-ncs transition border-0"
+                className="btn btn-sm bg-carrot-orange text-white ml-2 rounded-md shadow hover:bg-carrot-orange/80 transition border-0"
             >
                 Post
             </button>
