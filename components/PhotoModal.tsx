@@ -83,6 +83,16 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   }, []);
 
   useEffect(() => {
+    // Prevent background scrolling when modal is open
+    document.body.style.overflow = 'hidden';
+
+    // Cleanup function to restore scrolling when component unmounts
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
+  useEffect(() => {
     const fetchAlbums = async () => {
       if (user && user.userId) {
         const userAlbums = await getUserAlbums(user.userId);
@@ -329,9 +339,9 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   if (!mounted) return null;
 
   const modalContent = (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]" onClick={handleCloseModal}>
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-4xl md:w-full w-auto m-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[670px] overflow-y-auto md:overflow-y-visible" onClick={handleModalClick}>
-        <div className="relative">
+    <div className="fixed inset-0 bg-black bg-opacity-50 md:flex md:items-center md:justify-center z-[100] overflow-y-auto" onClick={handleCloseModal}>
+      <div className="bg-white dark:bg-gray-800 p-6 md:rounded-lg max-w-4xl md:w-full w-full h-full md:h-auto md:m-4 grid grid-cols-1 md:grid-cols-2 grid-rows-[min-content_auto] gap-4 md:max-h-[670px] overflow-y-auto md:overflow-y-visible" onClick={handleModalClick}>
+        <div className="relative justify-self-center">
           <Image
             src={photo.url || '/fallback-image.jpg'}
             alt="Selected photo"
@@ -374,7 +384,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             )}
           </div>
           <div className="absolute top-[-1.6rem] md:right-[-0.9rem] right-[-0.1rem] cursor-pointer block md:hidden" onClick={handleCloseModal}>
-            <span className="fixed text-gray-600 text-2xl">&times;</span>
+            <span className="fixed text-gray-600 text-2xl top-1 right-2">&times;</span>
           </div>
           {isEditing && currentUserId === photo?.uploaded_by && (
           <div className="flex absolute bottom-0 right-2 space-x-2 mb-2">

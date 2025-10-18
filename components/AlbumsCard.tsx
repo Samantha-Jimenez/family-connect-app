@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { createAlbum, addPhotoToAlbum, getUserAlbums, getPhotosByAlbum, deleteAlbumById, getUserPhotos, updateAlbum, removePhotoFromAlbum, getUserData } from '../hooks/dynamoDB';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -88,6 +89,20 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
       setShowRemovePhotos(false);
       setShowAddPhotos(false);
     }
+  }, [showModal]);
+
+  useEffect(() => {
+    // Prevent background scrolling when modal is open
+    if (showModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    // Cleanup function to restore scrolling when component unmounts
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
   }, [showModal]);
 
   const handleCreateAlbum = async () => {
@@ -296,7 +311,8 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
   };
 
   return (
-    <div className={`p-4 bg-white shadow-lg rounded-lg relative mb-12 md:mb-0 ${showModal && photos.length > 0 ? 'h-screen' : ''}`}>
+    <>
+    <div className="p-4 bg-white shadow-lg rounded-lg mb-12 md:mb-0">
       {auth && (
         <>
       <h2 className="text-xl mb-2 text-black">Create Album</h2>
@@ -379,11 +395,12 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
             );
           })}
       </div>
+    </div>
 
-      {showModal && (
+      {showModal && typeof window !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className={`bg-black bg-opacity-50 flex justify-center ${photos.length === 0 ? 'h-full' : 'min-h-full'}`}>
-            <div className={`bg-white p-4 md:p-6 shadow-lg w-full relative flex flex-col ${photos.length === 0 ? 'h-full' : ''}`}>
+          <div className="bg-black bg-opacity-50 md:flex md:justify-center md:items-start md:pt-8 min-h-full">
+            <div className="bg-white p-4 md:p-6 shadow-lg w-full md:max-w-5xl md:rounded-lg h-full md:h-auto md:my-8 relative flex flex-col overflow-y-auto">
             <button
               onClick={() => setShowModal(false)}
               className="absolute right-1 top-1 h-[30px] w-[30px] px-0 text-2xl font-light"
@@ -678,7 +695,8 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
             )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {selectedPhoto && (
@@ -695,7 +713,7 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
           onPhotoUpdated={handlePhotoUpdated}
         />
       )}
-    </div>
+    </>
   );
 };
 

@@ -33,7 +33,7 @@ const PhotoComments = ({ comments, editingCommentIndex, setEditingCommentIndex, 
             <div className="md:overflow-y-scroll md:overflow-x-hidden md:max-h-[309px] scrollbar scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-gray-400 scrollbar-thumb-rounded-full scrollbar-track-rounded-full">
                 <div className="grid grid-cols-1 gap-2">
                     {comments.map((comment, index) => (
-                        <div key={index} className="grid grid-cols-[1fr_auto] items-start gap-2 pr-[10px]">
+                        <div key={index} className="grid grid-cols-[1fr_auto] items-start gap-2 pr-[10px] min-w-0">
                             {editingCommentIndex === index ? (
                                 <div className="flex items-center w-full">
                                     <input
@@ -57,7 +57,7 @@ const PhotoComments = ({ comments, editingCommentIndex, setEditingCommentIndex, 
                                 </div>
                             ) : (
                                 <>
-                                    <div className="chat chat-start">
+                                    <div className="chat chat-start max-w-full overflow-hidden min-w-0">
                                         <div className="chat-image avatar">
                                             <div className="w-10 rounded-full">
                                                 {/* <img
@@ -85,7 +85,7 @@ const PhotoComments = ({ comments, editingCommentIndex, setEditingCommentIndex, 
                                                 {new Date(comment.timestamp).toLocaleString()}
                                             </time> */}
                                         </div>
-                                        <div className="chat-bubble bg-gray-200 text-gray-800 text-sm px-2 py-0.5 min-h-3 break-words font-light max-w-[55vw]">
+                                        <div className="chat-bubble bg-gray-200 text-gray-800 text-sm px-2 py-0.5 min-h-3 font-light !max-w-[calc(100vw-140px)] md:!max-w-full break-all whitespace-normal overflow-hidden">
                                             {comment.text}
                                         </div>
                                         <time className="chat-footer opacity-50 text-gray-700 font-light text-sm">

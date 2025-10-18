@@ -955,6 +955,7 @@ const Photos = () => {
             menuPortalTarget={document.body}
             // menuPosition="fixed"
             menuPlacement="bottom"
+            placeholder="Family Member"
           />
         </div>
 
