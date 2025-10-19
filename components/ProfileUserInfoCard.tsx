@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { getUserDataById, getFamilyRelationships } from "@/hooks/dynamoDB";
+import { getUserDataById, getFamilyRelationships, FamilyRelationship } from "@/hooks/dynamoDB";
 import { getFullImageUrl } from '@/utils/imageUtils';
 import FamilyRoleModal from './FamilyRoleModal';
 
@@ -22,19 +22,31 @@ interface UserData {
   show_zodiac?: boolean;
 }
 
-interface Relationship {
-  source_id: string;
-  target_id: string;
-  relationship_type: string;
-}
-
 export default function ProfileUserInfoCard({ userId }: { userId: string }) {
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [relationships, setRelationships] = useState<Relationship[]>([]);
+  const [relationships, setRelationships] = useState<FamilyRelationship[]>([]);
   const [targetUserNames, setTargetUserNames] = useState<{ [userId: string]: string }>({});
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState<{ type: string; relatedNames: string[]; relatedIds: string[] } | null>(null);
+
+  // Helper function to get inverse relationship type
+  const getInverseRelationshipType = (type: string): string => {
+    switch (type) {
+      case 'parent': return 'child';
+      case 'child': return 'parent';
+      case 'sibling': return 'sibling';
+      case 'spouse': return 'spouse';
+      case 'grandparent': return 'grandchild';
+      case 'grandchild': return 'grandparent';
+      case 'aunt': return 'niece';
+      case 'uncle': return 'nephew';
+      case 'niece': return 'aunt';
+      case 'nephew': return 'uncle';
+      case 'cousin': return 'cousin';
+      default: return type;
+    }
+  };
 
   const getZodiacSign = (dateString: string) => {
     if (!dateString) return '';
@@ -102,17 +114,20 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
           const userRelationships = await getFamilyRelationships(userId);
           setRelationships(userRelationships);
 
-          // Fetch names for each target_id
+          // Fetch names for each related person
           const names: { [userId: string]: string } = {};
           await Promise.all(
             userRelationships.map(async (relationship) => {
-              if (!names[relationship.target_id]) {
+              // Determine which person is the related person (not the current user)
+              const relatedPersonId = relationship.person_a_id === userId ? relationship.person_b_id : relationship.person_a_id;
+              
+              if (!names[relatedPersonId]) {
                 try {
-                  const targetData = await getUserDataById(relationship.target_id);
+                  const targetData = await getUserDataById(relatedPersonId);
                   if (targetData) {
                     const firstName = targetData.first_name?.S || '';
                     const lastName = targetData.last_name?.S || '';
-                    names[relationship.target_id] = `${firstName} ${lastName}`.trim();
+                    names[relatedPersonId] = `${firstName} ${lastName}`.trim();
                   }
                 } catch (e) {
                   // Optionally handle error
@@ -178,16 +193,24 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
               {(() => {
                 // 1. Filter relationships for this user
                 const userRelationships = relationships.filter(
-                  (relationship) => relationship.source_id === userId
+                  (relationship) => relationship.person_a_id === userId
                 );
 
                 // 2. Group by relationship_type
                 const grouped: { [type: string]: string[] } = {};
                 userRelationships.forEach((relationship) => {
-                  if (!grouped[relationship.relationship_type]) {
-                    grouped[relationship.relationship_type] = [];
+                  // Determine which person is the related person (not the current user)
+                  const relatedPersonId = relationship.person_a_id === userId ? relationship.person_b_id : relationship.person_a_id;
+                  
+                  // Determine the relationship type from the user's perspective
+                  const relationshipTypeFromUserPerspective = relationship.person_a_id === userId 
+                    ? relationship.relationship_type 
+                    : getInverseRelationshipType(relationship.relationship_type);
+                  
+                  if (!grouped[relationshipTypeFromUserPerspective]) {
+                    grouped[relationshipTypeFromUserPerspective] = [];
                   }
-                  grouped[relationship.relationship_type].push(relationship.target_id);
+                  grouped[relationshipTypeFromUserPerspective].push(relatedPersonId);
                 });
 
                 // 3. Render each relationship type once, with all names in tooltip (vertical)
@@ -209,6 +232,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                           setSelectedRole({ type, relatedNames, relatedIds: targetIds });
                           setShowRoleModal(true);
                         }}
+                        key={type}
                       >
                         {type.charAt(0).toUpperCase() + type.slice(1)}
                       </span>

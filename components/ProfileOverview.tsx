@@ -1,15 +1,9 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import RSVP from './RSVP';
-import { getFamilyRelationships, getAllFamilyMembers } from '@/hooks/dynamoDB';
+import { getFamilyRelationships, getAllFamilyMembers, FamilyRelationship } from '@/hooks/dynamoDB';
 import Link from 'next/link';
 import LoadSpinner from '@/components/LoadSpinner';
-
-interface Relationship {
-  source_id: string;
-  target_id: string;
-  relationship_type: string;
-}
 
 interface FamilyMember {
   family_member_id: string;
@@ -19,7 +13,7 @@ interface FamilyMember {
 }
 
 const ProfileOverview = ({ userId }: { userId: string }) => {
-  const [relationships, setRelationships] = useState<Relationship[]>([]);
+  const [relationships, setRelationships] = useState<FamilyRelationship[]>([]);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,21 +36,29 @@ const ProfileOverview = ({ userId }: { userId: string }) => {
     fetchData();
   }, [userId]);
 
-  // Find direct relatives (where user is source or target)
+  // Find direct relatives (where user is person_a or person_b)
   const nuclearTypes = ['parent', 'child', 'sibling'];
   const directRelatives = relationships
-    .filter(rel => nuclearTypes.includes(rel.relationship_type) && rel.target_id === userId)
+    .filter(rel => nuclearTypes.includes(rel.relationship_type) && (rel.person_b_id === userId))
     .map(rel => {
-      const relative = familyMembers.find(m => m.family_member_id === rel.source_id);
-      return relative
-        ? {
-            ...rel,
-            relativeName: `${relative.first_name} ${relative.last_name}`,
-            relativeId: relative.family_member_id,
-            direction: 'is their',
-            relationship: rel.relationship_type,
-          }
-        : null;
+      // Determine which person is the relative (not the current user)
+      const relativeId = rel.person_a_id === userId ? rel.person_b_id : rel.person_a_id;
+      const relative = familyMembers.find(m => m.family_member_id === relativeId);
+      
+      if (!relative) return null;
+      
+      // Determine the relationship direction from the user's perspective
+      const relationshipFromUserPerspective = rel.person_a_id === userId 
+        ? rel.relationship_type 
+        : inverseRelationship(rel.relationship_type);
+      
+      return {
+        ...rel,
+        relativeName: `${relative.first_name} ${relative.last_name}`,
+        relativeId: relative.family_member_id,
+        direction: 'is their',
+        relationship: rel.relationship_type,
+      };
     })
     .filter(Boolean);
 

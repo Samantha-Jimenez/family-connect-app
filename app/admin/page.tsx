@@ -6,6 +6,8 @@ import { FamilyMember } from "@/hooks/dynamoDB";
 import { useToast } from '@/context/ToastContext';
 import AdminMembers from '@/components/AdminMembers';
 import AdminRelationships from '@/components/AdminRelationships';
+import EnhancedRelationshipForm from '@/components/EnhancedRelationshipForm';
+import EnhancedMemberRelationships from '@/components/EnhancedMemberRelationships';
 
 const initialFormData = {
   firstName: '',
@@ -25,7 +27,7 @@ const initialFormData = {
 
 type FormDataKey = keyof typeof initialFormData;
 
-type Tab = 'members' | 'relationships';
+type Tab = 'members' | 'relationships' | 'enhanced-relationships';
 
 const AdminPage = () => {
   const { user } = useAuthenticator();
@@ -47,6 +49,7 @@ const AdminPage = () => {
   const [editUploadProgress, setEditUploadProgress] = useState(0);
   const [editIsUploading, setEditIsUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('members');
+  const [relationshipRefreshKey, setRelationshipRefreshKey] = useState<number>(Date.now());
 
   useEffect(() => {
     if (user && user.userId === "f16b1510-0001-705f-8680-28689883e706") {
@@ -274,10 +277,47 @@ const AdminPage = () => {
           >
             Relationships
           </a>
+          <a 
+            className={`tab tab-lg text-sm poppins-light ${activeTab === 'enhanced-relationships' ? 'tab-active bg-yellow-800/80 rounded-lg text-white hover:text-white' : ''}`}
+            onClick={() => setActiveTab('enhanced-relationships')}
+          >
+            Enhanced Relationships
+          </a>
         </div>
         <div className="mt-4">
           {activeTab === 'members' && <AdminMembers familyMembers={familyMembers} handleAddFamilyMember={handleAddFamilyMember} formData={formData} handleInputChange={handleInputChange} imagePreview={imagePreview} handleImageChange={handleImageChange} isUploading={isUploading} uploadProgress={uploadProgress} handleClearImage={handleClearImage} editingMemberId={editingMemberId} setEditingMemberId={setEditingMemberId} editFormData={editFormData} setEditFormData={setEditFormData} handleEditInputChange={handleEditInputChange} handleUpdateMember={handleUpdateMember} handleEditImageChange={handleEditImageChange} editImagePreview={editImagePreview} editIsUploading={editIsUploading} editUploadProgress={editUploadProgress} />}
           {activeTab === 'relationships' && <AdminRelationships familyMembers={familyMembers} handleCreateRelationship={handleCreateRelationship} selectedSourceMemberId={selectedSourceMemberId} setSelectedSourceMemberId={setSelectedSourceMemberId} selectedTargetMemberId={selectedTargetMemberId} setSelectedTargetMemberId={setSelectedTargetMemberId} relationshipType={relationshipType} setRelationshipType={setRelationshipType} />}
+          {activeTab === 'enhanced-relationships' && (
+            <div className="space-y-8">
+              <EnhancedRelationshipForm 
+                onRelationshipCreated={() => {
+                  showToast('Relationship created successfully!', 'success');
+                  fetchFamilyMembers(); // Refresh the family members list
+                  // Force refresh of relationship components by updating a refresh key
+                  setRelationshipRefreshKey(Date.now());
+                }}
+                showToast={showToast}
+              />
+              <div className="bg-white p-6 rounded-lg shadow-md">
+                <h2 className="text-2xl font-bold mb-6 text-gray-800">Family Member Relationships</h2>
+                <div className="space-y-6">
+                  {familyMembers.map((member) => (
+                    <div key={member.family_member_id} className="border rounded-lg p-4">
+                      <EnhancedMemberRelationships
+                        key={`${member.family_member_id}-${relationshipRefreshKey}`}
+                        memberId={member.family_member_id}
+                        familyMembers={familyMembers}
+                        onRelationshipRemoved={() => {
+                          showToast('Relationship removed successfully', 'success');
+                        }}
+                        showToast={showToast}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

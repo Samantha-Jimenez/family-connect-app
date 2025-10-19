@@ -2,11 +2,12 @@
 import React, { useState, useEffect } from "react";
 import Link from 'next/link';
 import { familyTreeData } from './familyTreeData';
-import { getAllFamilyMembers } from "@/hooks/dynamoDB";
+import { getAllFamilyMembers, buildFamilyTreeFromRelationships, FamilyTreeNode } from "@/hooks/dynamoDB";
 import { FamilyMember as FamilyMemberType } from "@/hooks/dynamoDB";
 import Image from "next/image";
 import { getFullImageUrl } from "@/utils/imageUtils";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import { useAuthenticator } from "@aws-amplify/ui-react";
 
 export type FamilyMemberProps = {
   id?: string;
@@ -36,33 +37,38 @@ const updateFamilyTreeData = (membersFromDB: PartialFamilyMember[], member: Fami
   }
 };
 
-const PersonCard = ({ member }: { member: FamilyMemberProps }) => (
-  <div className="bg-white shadow-md p-2 rounded-lg text-center w-36 h-28 transition-all duration-300 hover:shadow-xl hover:scale-105 hover:-translate-y-1">
-    <Link
-      href={`/profile/${member.id || (member.first_name ? member.first_name.toLowerCase() : "unknown")}`}
-      className="group"
-    >
-      <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 mx-auto group-hover:animate-bounce">
-        {member.profile_photo && member.profile_photo !== "https://family-connect-app.s3.us-east-2.amazonaws.com/" ? (
-          <Image
-            src={member.profile_photo}
-            alt={member.first_name}
-            width={64}
-            height={64}
-            className="object-cover w-16 h-16"
-          />
-        ) : (
-          <div className="w-full h-full bg-gray-200 rounded-[60px] flex items-center justify-center">
-            <span className="icon-[mdi--account] text-4xl text-gray-400" />
-          </div>
-        )}
-      </div>
-      <p className="text-sm font-light mt-2 text-black hover:text-yellow-800/80 hover:font-medium hover:text-md transition-all duration-200 ease-in-out">
-        {member.first_name} {member.last_name}
-      </p>
-    </Link>
-  </div>
-);
+const PersonCard = ({ member }: { member: FamilyMemberProps }) => {
+  const [imageError, setImageError] = useState(false);
+  
+  return (
+    <div className="bg-white shadow-md p-2 rounded-lg text-center w-36 h-28 transition-all duration-300 hover:shadow-xl hover:scale-105 hover:-translate-y-1">
+      <Link
+        href={`/profile/${member.id || (member.first_name ? member.first_name.toLowerCase() : "unknown")}`}
+        className="group"
+      >
+        <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 mx-auto group-hover:animate-bounce">
+          {member.profile_photo && member.profile_photo !== "https://family-connect-app.s3.us-east-2.amazonaws.com/" && !imageError ? (
+            <Image
+              src={member.profile_photo.startsWith('http') ? member.profile_photo : getFullImageUrl(member.profile_photo)}
+              alt={member.first_name}
+              width={64}
+              height={64}
+              className="object-cover w-16 h-16"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <div className="w-full h-full bg-gray-200 rounded-[60px] flex items-center justify-center">
+              <span className="icon-[mdi--account] text-4xl text-gray-400" />
+            </div>
+          )}
+        </div>
+        <p className="text-sm font-light mt-2 text-black hover:text-yellow-800/80 hover:font-medium hover:text-md transition-all duration-200 ease-in-out">
+          {member.first_name} {member.last_name}
+        </p>
+      </Link>
+    </div>
+  );
+};
 
 /**
  * CoupleBlock:
@@ -217,28 +223,137 @@ const FamilyMember = ({
 };
 
 const FamilyTree = () => {
+  const { user } = useAuthenticator();
   const [initialized, setInitialized] = useState(false);
   const [expandedChildIndex, setExpandedChildIndex] = useState<number | null>(null);
+  const [dynamicTree, setDynamicTree] = useState<FamilyTreeNode | null>(null);
+  const [useDynamicTree, setUseDynamicTree] = useState(false);
+  const [rootPersonId, setRootPersonId] = useState<string>('');
+  const [familyMembers, setFamilyMembers] = useState<FamilyMemberType[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    // Check if user is admin
+    if (user && user.userId === "f16b1510-0001-705f-8680-28689883e706") {
+      setIsAdmin(true);
+    }
+
     const fetchMembers = async () => {
-      const membersFromDB = await getAllFamilyMembers();
-      const formattedMembers: PartialFamilyMember[] = membersFromDB.map(member => ({
-        family_member_id: member.family_member_id,
-        first_name: member.first_name || "Unknown",
-        last_name: member.last_name || "",
-        profile_photo: member.profile_photo || "",
-      }));
-      updateFamilyTreeData(formattedMembers, familyTreeData as FamilyMemberProps);
-      setInitialized(true);
+      try {
+        const membersFromDB = await getAllFamilyMembers();
+        setFamilyMembers(membersFromDB);
+        
+        const formattedMembers: PartialFamilyMember[] = membersFromDB.map(member => ({
+          family_member_id: member.family_member_id,
+          first_name: member.first_name || "Unknown",
+          last_name: member.last_name || "",
+          profile_photo: member.profile_photo || "",
+        }));
+        
+        // Update static tree data
+        updateFamilyTreeData(formattedMembers, familyTreeData as FamilyMemberProps);
+        
+        // Set default root person (look for Cynthia first, otherwise use first member)
+        if (membersFromDB.length > 0) {
+          const cynthia = membersFromDB.find(member => 
+            member.first_name?.toLowerCase().includes('cynthia') || 
+            member.first_name?.toLowerCase().includes('cindy')
+          );
+          setRootPersonId(cynthia ? cynthia.family_member_id : membersFromDB[0].family_member_id);
+        }
+        
+        setInitialized(true);
+      } catch (error) {
+        console.error('Error fetching family members:', error);
+        setInitialized(true);
+      }
     };
 
     fetchMembers();
-  }, []);
+  }, [user]);
+
+  useEffect(() => {
+    const buildDynamicTree = async () => {
+      if (rootPersonId && useDynamicTree) {
+        try {
+          const tree = await buildFamilyTreeFromRelationships(rootPersonId);
+          setDynamicTree(tree);
+        } catch (error) {
+          console.error('Error building dynamic tree:', error);
+        }
+      } else if (!useDynamicTree) {
+        // Clear dynamic tree when switching back to static
+        setDynamicTree(null);
+      }
+    };
+
+    buildDynamicTree();
+  }, [rootPersonId, useDynamicTree]);
+
+  // Convert FamilyTreeNode to FamilyMemberProps for compatibility
+  const convertTreeNodeToFamilyMemberProps = (node: FamilyTreeNode): FamilyMemberProps => {
+    return {
+      id: node.id,
+      first_name: node.first_name,
+      last_name: node.last_name,
+      profile_photo: node.profile_photo,
+      spouse: node.spouse ? convertTreeNodeToFamilyMemberProps(node.spouse) : undefined,
+      previousSpouses: node.previousSpouses?.map(spouse => convertTreeNodeToFamilyMemberProps(spouse)),
+      children: node.children?.map(child => convertTreeNodeToFamilyMemberProps(child))
+    };
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 p-6 overflow-hidden">
       <h1 className="text-4xl text-center mb-6 text-gray-800 opacity-0 animate-[fadeIn_0.6s_ease-in_forwards]">Our Family Tree</h1>
+
+      {/* Tree Mode Selector - Admin Only */}
+      {isAdmin && (
+        <div className="flex justify-center mb-6 gap-4 opacity-0 animate-[fadeIn_0.6s_ease-in_forwards] [animation-delay:0.1s]">
+          <button
+            onClick={() => setUseDynamicTree(false)}
+            className={`px-4 py-2 rounded-lg transition-all duration-200 ${
+              !useDynamicTree 
+                ? 'bg-blue-600 text-white shadow-lg' 
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            Static Tree (Current)
+          </button>
+          <button
+            onClick={() => setUseDynamicTree(true)}
+            className={`px-4 py-2 rounded-lg transition-all duration-200 ${
+              useDynamicTree 
+                ? 'bg-blue-600 text-white shadow-lg' 
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            Dynamic Tree (From Relationships)
+          </button>
+        </div>
+      )}
+
+      {/* Root Person Selector for Dynamic Tree - Admin Only */}
+      {isAdmin && useDynamicTree && (
+        <div className="flex justify-center mb-6 opacity-0 animate-[fadeIn_0.6s_ease-in_forwards] [animation-delay:0.2s]">
+          <div className="bg-white p-4 rounded-lg shadow-md">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Root Person (Starting Point)
+            </label>
+            <select
+              value={rootPersonId}
+              onChange={(e) => setRootPersonId(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              {familyMembers.map((member) => (
+                <option key={member.family_member_id} value={member.family_member_id}>
+                  {member.first_name} {member.last_name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
 
       <TransformWrapper
         initialScale={1}
@@ -294,6 +409,23 @@ const FamilyTree = () => {
                           <div className="h-4 bg-gray-300 rounded mt-2 w-20 mx-auto"></div>
                         </div>
                       </div>
+                    </div>
+                  ) : useDynamicTree && dynamicTree ? (
+                    <FamilyMember
+                      member={convertTreeNodeToFamilyMemberProps(dynamicTree)}
+                      expandedChildIndex={expandedChildIndex}
+                      setExpandedChildIndex={setExpandedChildIndex}
+                    />
+                  ) : useDynamicTree && !dynamicTree ? (
+                    <div className="text-center py-12">
+                      <div className="text-6xl mb-4">🌳</div>
+                      <h3 className="text-xl font-semibold text-gray-800 mb-2">No Relationships Found</h3>
+                      <p className="text-gray-600 mb-4">
+                        The selected person doesn't have any family relationships yet.
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Go to the Admin panel to add family relationships, then come back to see the dynamic tree.
+                      </p>
                     </div>
                   ) : (
                     <FamilyMember

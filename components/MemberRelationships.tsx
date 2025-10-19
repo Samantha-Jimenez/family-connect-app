@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getFamilyRelationships, FamilyMember } from '../hooks/dynamoDB';
+import { getFamilyRelationships, FamilyMember, FamilyRelationship } from '../hooks/dynamoDB';
 import LoadSpinner from '@/components/LoadSpinner';
 
 interface MemberRelationshipsProps {
@@ -8,11 +8,7 @@ interface MemberRelationshipsProps {
 }
 
 export default function MemberRelationships({ memberId, familyMembers }: MemberRelationshipsProps) {
-  const [relationships, setRelationships] = useState<Array<{
-    source_id: string;
-    target_id: string;
-    relationship_type: string;
-  }>>([]);
+  const [relationships, setRelationships] = useState<FamilyRelationship[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,9 +44,9 @@ export default function MemberRelationships({ memberId, familyMembers }: MemberR
   return (
     <div className="space-y-1">
       {relationships
-        .filter(rel => rel.source_id === memberId)
+        .filter(rel => rel.person_a_id === memberId)
         .map((rel, index) => {
-          const relatedMember = familyMembers.find(m => m.family_member_id === rel.target_id);
+          const relatedMember = familyMembers.find(m => m.family_member_id === rel.person_b_id);
           if (!relatedMember) return null;
 
           const relationshipText = `${currentMember.first_name} is the ${rel.relationship_type} of ${relatedMember.first_name}`;
