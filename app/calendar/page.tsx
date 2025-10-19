@@ -87,9 +87,9 @@ export default function Calendar() {
                   title: `${member.first_name} ${member.last_name}'s Birthday 🎂`,
                   start: eventDateStr,
                   allDay: true,
-                  backgroundColor: '#10b981', // Green color for birthdays
-                  borderColor: '#059669',
-                  textColor: '#ffffff',
+                  backgroundColor: '#F4C47A', // Green color for birthdays
+                  borderColor: '#EA9010',
+                  textColor: '#000000',
                   extendedProps: {
                     category: 'birthday',
                     userId: member.family_member_id,
