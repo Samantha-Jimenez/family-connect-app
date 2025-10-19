@@ -24,7 +24,6 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
         console.error('Error fetching family members:', error);
       }
     }
-
     fetchFamilyMembers();
   }, []);
   
@@ -37,9 +36,13 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
             <h1 className="text-5xl leading-[57px] text-slate-900 font-bold text-british-racing-green">
               Family Connect App
             </h1>
-            <h3 className="font-light mt-12 text-slate-500 leading-relaxed">This is our shared space to celebrate memories, explore our family tree, and stay connected. Sign in to view and share photos, find birthdays, and discover our roots. 
-              <br/> Don't have an account yet? Create one and join the family online.</h3>
-            <h3 className="font-light mt-8 text-slate-500">Aren't a family member? <a href="javascript:void(0);" className="text-lighter-brown hover:text-highlight-brown font-medium hover:underline ml-1">View a demo here.</a></h3>
+            <h3 className="font-light mt-12 text-slate-500 leading-relaxed">
+              This is our shared space to celebrate memories, explore our family tree, and stay connected. Sign in to view and share photos, find birthdays, and discover our roots. 
+              <br/> Don't have an account yet? Create one and join the family online.
+            </h3>
+            <h3 className="font-light mt-8 text-slate-500">
+              Aren't a family member? <a href="/demo-login" className="text-lighter-brown hover:text-highlight-brown font-medium hover:underline ml-1">View a demo here.</a>
+            </h3>
           </div>
 
           <div className="w-full mb-12">
@@ -50,120 +53,62 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
               loginMechanisms={['username', 'email']}
               components={{
                 SignUp: {
-                  FormFields() {
-                    const { validationErrors, submitForm } = useAuthenticator();
-        
-                    // Convert familyMembers to react-select options
+                  Header() {
+                    const { submitForm } = useAuthenticator();
+
                     const familyMemberOptions = familyMembers.map((member) => ({
-                      value: member.family_member_id,
-                      label: `${member.first_name} ${member.last_name}`,
-                    }));
+                       value: member.family_member_id,
+                       label: `${member.first_name} ${member.last_name}`,
+                     }));
 
+                    // Handle submit in the footer button
                     return (
-                      <form
-                        onSubmit={async (event) => {
-                          event.preventDefault();
-                          if (!selectedFamilyMember) {
-                            alert("Please select a family member.");
-                            return;
-                          }
-                          const formData = new FormData(event.target as HTMLFormElement);
-                          const email = formData.get('email') as string;
-                          const username = formData.get('username') as string;
-                          // Add other fields as needed
-
-                          // Update the family member in the database
-                          await updateFamilyMember(selectedFamilyMember.value, { 
-                            firstName: '',
-                            lastName: '',
-                            email, 
-                            username,
-                            bio: '',
-                            phoneNumber: '',
-                            birthday: '',
-                            birth_city: '',
-                            birth_state: '',
-                            profile_photo: '', // or some default profile photo URL
-                            current_city: '',
-                            current_state: '',
-                            death_date: '',
-                          });
-
-                          // Proceed with the sign-up
-                          await submitForm();
+                      <>
+                      <div className="form-control w-full gap-1 grid mb-[-20px] px-8">
+                      <label htmlFor="familyMember" className="label !pb-0">
+                        <span className="label-text text-base text-[#304050]">Select Family Member</span>
+                      </label>
+                      <Select
+                        inputId="familyMember"
+                        name="familyMember"
+                        classNamePrefix="react-select"
+                        options={familyMemberOptions}
+                        value={selectedFamilyMember}
+                        onChange={(option) => setSelectedFamilyMember(option)}
+                        placeholder="Select a Family Member"
+                        isClearable
+                        menuPlacement="bottom"
+                        menuPortalTarget={typeof window !== "undefined" ? document.body : undefined}
+                        styles={{
+                          control: (base, state) => ({
+                            ...base,
+                            borderColor: state.isFocused
+                              ? '#C8D5B9'
+                              : state.menuIsOpen
+                              ? '#D2FF28'
+                              : 'rgb(209 213 219 / var(--tw-border-opacity, 1))',
+                            boxShadow: state.isFocused || state.menuIsOpen ? '0 0 0 2px #5CAB68' : undefined,
+                            height: '42px',
+                            '&:hover': { borderColor: '#D2FF28' },
+                          }),
+                          menu: (base) => ({
+                            ...base, zIndex: 9999, maxHeight: '40vh',
+                          }),
+                          placeholder: (base) => ({ ...base, color: '#9BA3AF' }),
+                          indicatorSeparator: (base) => ({ ...base, height: '100%', marginTop: '0px' }),
+                          dropdownIndicator: (base) => ({
+                            ...base, width: '50px', textAlignLast: 'center', display: 'flow', padding: '0px', color: 'black',
+                          }),
+                          option: (base, state) => ({
+                            ...base,
+                            backgroundColor: state.isFocused ? '#E8D4B8' : 'transparent',
+                            color: '#000',
+                            '&:active': { backgroundColor: '#F4C47A', color: '#fff' },
+                          }),
                         }}
-                        className="mb-4"
-                      >
-                        {/* Render only the necessary form fields without the default button */}
-        
-                        <div className="form-control w-full gap-1 grid mb-[5px]">
-                          <label htmlFor="familyMember" className="label">
-                            <span className="label-text text-[#304050]">Select Family Member</span>
-                          </label>
-                          <Select
-                            inputId="familyMember"
-                            name="familyMember"
-                            classNamePrefix="react-select"
-                            options={familyMemberOptions}
-                            value={selectedFamilyMember}
-                            onChange={(option) => setSelectedFamilyMember(option)}
-                            placeholder="Select a Family Member"
-                            isClearable
-                            // menuPlacement="auto"
-                            // menuPosition="fixed"
-                            menuPlacement="bottom"
-                            menuPortalTarget={typeof window !== "undefined" ? document.body : undefined}
-                            styles={{
-                              control: (base, state) => ({
-                                ...base,
-                                borderColor: state.isFocused
-                                  ? '#C8D5B9' // 🌿 focused border
-                                  : state.menuIsOpen
-                                  ? '#D2FF28' // open menu border
-                                  : 'rgb(209 213 219 / var(--tw-border-opacity, 1))', // default border
-                                boxShadow: state.isFocused || state.menuIsOpen ? '0 0 0 2px #5CAB68' : undefined,
-                                height: '42px',
-                                '&:hover': {
-                                  borderColor: '#D2FF28',
-                                },
-                              }),
-                              menu: (base) => ({
-                                ...base,
-                                zIndex: 9999,
-                                maxHeight: '40vh',
-                              }),
-                              placeholder: (base) => ({
-                                ...base,
-                                color: '#9BA3AF',
-                              }),
-                              indicatorSeparator: (base) => ({
-                                ...base,
-                                height: '100%',
-                                marginTop: '0px',
-                              }),
-                              dropdownIndicator: (base) => ({
-                                ...base,
-                                width: '50px',
-                                textAlignLast: 'center',
-                                display: 'flow',
-                                padding: '0px',
-                                color: 'black',
-                              }),
-                              option: (base, state) => ({
-                                ...base,
-                                backgroundColor: state.isFocused ? '#E8D4B8' : 'transparent',
-                                color: state.isFocused ? '#000' : '#000',
-                                '&:active': {
-                                  backgroundColor: '#F4C47A',
-                                  color: '#fff',
-                                },
-                              }),
-                            }}
-                          />
-                        </div>
-                        <Authenticator.SignUp.FormFields/>
-
-                      </form>
+                      />
+                    </div>
+                      </>
                     );
                   },
                 },
@@ -198,4 +143,4 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
       </div>
     </CalendarProvider>
   );
-} 
+}

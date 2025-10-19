@@ -309,6 +309,11 @@ fieldset {
   gap: 0.25rem !important;
 }
 
+form > fieldset > .amplify-flex {
+  gap: 0 !important;
+  margin-bottom: 1rem !important;
+}
+
 .select-member {
   outline-color: var(--amplify-components-fieldcontrol-outline-color);
 }
