@@ -218,7 +218,7 @@ export default function Calendar() {
       borderColor: '#16a34a',    // Darker green border
       textColor: '#ffffff',       // White text
       extendedProps: {
-        category: 'appointment' // Default category for user-created events
+        category: 'appointment' as const // Default category for user-created events
       }
     };
 
