@@ -87,7 +87,7 @@ export default function Calendar() {
                   title: `${member.first_name} ${member.last_name}'s Birthday 🎂`,
                   start: eventDateStr,
                   allDay: true,
-                  backgroundColor: '#F4C47A', // Green color for birthdays
+                  backgroundColor: '#F4C47A',
                   borderColor: '#EA9010',
                   textColor: '#000000',
                   extendedProps: {
@@ -212,7 +212,14 @@ export default function Calendar() {
       allDay,
       location,
       userId,
-      description
+      description,
+      // Apply default green colors for user-created events
+      backgroundColor: '#5CAB68', // Green background
+      borderColor: '#16a34a',    // Darker green border
+      textColor: '#ffffff',       // White text
+      extendedProps: {
+        category: 'appointment' // Default category for user-created events
+      }
     };
 
     // Check if the event already exists based on title and start time

@@ -62,6 +62,13 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
         location,
         createdBy,
         description,
+        // Apply default green colors for non-birthday events
+        backgroundColor: '#5CAB68', // Green background
+        borderColor: '#16a34a',    // Darker green border
+        textColor: '#ffffff',       // White text
+        extendedProps: {
+          category: 'appointment' // Default category for user-created events
+        }
       },
     ]);
   };
