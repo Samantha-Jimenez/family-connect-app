@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { getUserDataById, getFamilyRelationships, FamilyRelationship } from "@/hooks/dynamoDB";
 import { getFullImageUrl } from '@/utils/imageUtils';
 import FamilyRoleModal from './FamilyRoleModal';
+import { getSocialMediaIcon } from '@/utils/socialMediaIcons';
+import { size } from "@/app/icon";
 
 interface UserData {
   first_name: string;
@@ -20,6 +22,7 @@ interface UserData {
   current_state?: string;
   death_date?: string;
   show_zodiac?: boolean;
+  social_media?: { platform: string; url: string }[];
 }
 
 export default function ProfileUserInfoCard({ userId }: { userId: string }) {
@@ -101,6 +104,10 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
             current_state: data.current_state?.S || '',
             death_date: data.death_date?.S || '',
             show_zodiac: data.show_zodiac?.BOOL ?? false,
+            social_media: data.social_media?.L?.map((item: any) => ({
+              platform: item.M?.platform?.S || '',
+              url: item.M?.url?.S || ''
+            })) || [],
           });
 
           if (data.profile_photo?.S) {
@@ -150,9 +157,9 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
   return (
     <div className="rounded-3xl">
       <div className="rounded-3xl pt-8 transition-all duration-300 md:mt-12">
-        <div className="grid grid-cols-1 md:grid-cols-[286px_1fr_1fr] md:grid-rows-[min-content_min-content_min-content] px-2 sm:px-0">
+        <div className="grid grid-cols-1 md:grid-cols-[286px_1fr_1fr] md:grid-rows-[min-content_min-content_min-content_min-content] px-2 sm:px-0">
           <div className="text-center md:h-[13rem] h-[17rem] md:row-span-2">
-            <div className="avatar md:bottom-20 bottom-6">
+            <div className="avatar md:bottom-10 bottom-6">
               <div className="w-[17rem] h-[17rem] mx-auto rounded-[60px] shadow-lg">
                 {profilePhotoUrl ? (
                   <Image 
@@ -312,8 +319,31 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                 ) : ''}
               </div>
             </div>
-
           </div>
+            <div className="md:pl-4 xl:pl-8 md:col-start-2 md:col-span-2">
+              {userData?.social_media && userData.social_media.length > 0 ? (
+                <>
+                  <div className="flex flex-wrap gap-3">
+                    {userData.social_media.map((link, index) => {
+                      const IconComponent = getSocialMediaIcon(link.platform);
+                      return (
+                        <a
+                          key={index}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200 text-gray-700 hover:text-gray-900"
+                          title={`${link.platform.charAt(0).toUpperCase() + link.platform.slice(1)} - ${link.url}`}
+                        >
+                          <IconComponent className="w-5 h-5" />
+                        </a>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : ""}
+            </div>
+
 
           <div className="md:pl-4 md:col-span-3">
             {userData?.bio ? (
@@ -323,7 +353,9 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                   {userData?.bio || ''}
                 </p>
               </>
-            ) : ""}
+            ) : (
+              <div className="h-10"></div>
+            )}
           </div>
         </div>
       </div>

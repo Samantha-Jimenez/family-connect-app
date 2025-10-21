@@ -11,6 +11,7 @@ import { getFullImageUrl } from '@/utils/imageUtils';
 import { useToast } from '@/context/ToastContext';
 import { useUser } from '@/context/UserContext';
 import LoadSpinner from '@/components/LoadSpinner';
+import Select from 'react-select';
 
 interface UserData {
   first_name: string;
@@ -26,6 +27,7 @@ interface UserData {
   current_city?: string;
   current_state?: string;
   show_zodiac?: boolean;
+  social_media?: { platform: string; url: string }[];
 }
 
 const US_STATES = [
@@ -34,6 +36,18 @@ const US_STATES = [
   'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
   'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
   'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
+];
+
+const SOCIAL_MEDIA_PLATFORMS = [
+  { value: 'facebook', label: 'Facebook' },
+  { value: 'instagram', label: 'Instagram' },
+  { value: 'twitter', label: 'Twitter' },
+  { value: 'linkedin', label: 'LinkedIn' },
+  { value: 'tiktok', label: 'TikTok' },
+  { value: 'youtube', label: 'YouTube' },
+  { value: 'goodreads', label: 'GoodReads' },
+  { value: 'strava', label: 'Strava' },
+  { value: 'other', label: 'Other' }
 ];
 
 const Settings = () => {
@@ -51,6 +65,8 @@ const Settings = () => {
   const { refreshUserData } = useUser();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [removeProfilePhoto, setRemoveProfilePhoto] = useState(false);
+  const [socialMediaEntries, setSocialMediaEntries] = useState<{ platform: string; url: string }[]>([]);
+  const [newSocialMedia, setNewSocialMedia] = useState({ platform: '', url: '' });
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -70,7 +86,9 @@ const Settings = () => {
           current_city: data.current_city || undefined,
           current_state: data.current_state || undefined,
           show_zodiac: data.show_zodiac ?? false,
+          social_media: data.social_media || [],
         });
+        setSocialMediaEntries(data.social_media || []);
       } else {
         setUserData({
           first_name: '',
@@ -86,7 +104,9 @@ const Settings = () => {
           current_city: undefined,
           current_state: undefined,
           show_zodiac: false,
+          social_media: [],
         });
+        setSocialMediaEntries([]);
       }
     };
 
@@ -322,6 +342,10 @@ const Settings = () => {
     }
   };
 
+  const handleRemoveSocialMedia = (index: number) => {
+    setSocialMediaEntries(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
@@ -344,6 +368,18 @@ const Settings = () => {
       const current_state = formData.get('floating_current_state') as string || userData?.current_state || '';
       const email = authEmail || '';
 
+      // Include new social media entry if both platform and URL are filled
+      let finalSocialMediaEntries = [...socialMediaEntries];
+      if (newSocialMedia.platform && newSocialMedia.url) {
+        // Auto-add https:// if no protocol is provided
+        let formattedUrl = newSocialMedia.url;
+        if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+          formattedUrl = `https://${formattedUrl}`;
+        }
+        
+        finalSocialMediaEntries.push({ ...newSocialMedia, url: formattedUrl });
+      }
+
       await saveUserToDB(
         first_name, 
         last_name, 
@@ -357,7 +393,8 @@ const Settings = () => {
         profilePhotoUrl,
         current_city,
         current_state,
-        userData?.show_zodiac ?? false
+        userData?.show_zodiac ?? false,
+        finalSocialMediaEntries
       );
 
       // Update local state
@@ -375,8 +412,13 @@ const Settings = () => {
         profile_photo: profilePhotoUrl,
         current_city,
         current_state,
-        show_zodiac: prev.show_zodiac ?? false
+        show_zodiac: prev.show_zodiac ?? false,
+        social_media: finalSocialMediaEntries
       } : null);
+
+      // Update social media entries and clear the new entry form
+      setSocialMediaEntries(finalSocialMediaEntries);
+      setNewSocialMedia({ platform: '', url: '' });
 
       // Refresh the user data in context
       await refreshUserData();
@@ -650,6 +692,86 @@ const Settings = () => {
               <label htmlFor="floating_current_state" className="peer-focus:font-medium absolute text-sm text-gray-400 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">State</label>
             </div>
           </div>
+          
+          {/* Social Media Section */}
+          <div className="">
+            <div className="p-2 bg-gray-50 rounded-lg">
+            {/* Existing Social Media Entries */}
+            {socialMediaEntries.map((entry, index) => (
+              <div key={index} className="flex items-center gap-4 mb-4 rounded-lg p-2 group-hover:bg-gray-200">
+                <div className="flex-1">
+                  <span className="text-sm font-medium text-gray-700 capitalize">
+                    {SOCIAL_MEDIA_PLATFORMS.find(p => p.value === entry.platform)?.label || entry.platform}
+                  </span>
+                  <p className="text-sm text-gray-600 break-all">{entry.url}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveSocialMedia(index)}
+                  className="text-red-600 hover:text-red-800 text-sm font-medium group"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+            </div>
+            
+            {/* Add New Social Media */}
+            <div className="">
+              <h4 className="text-md font-medium text-gray-900 mb-3">Add Social Media</h4>
+              <div className="grid md:grid-cols-2 gap-4 mb-5">
+                <div className="relative z-0 w-full group self-end">
+                  <Select
+                    value={SOCIAL_MEDIA_PLATFORMS.find(option => option.value === newSocialMedia.platform) || null}
+                    onChange={(selectedOption) => 
+                      setNewSocialMedia(prev => ({ ...prev, platform: selectedOption?.value || '' }))
+                    }
+                    options={SOCIAL_MEDIA_PLATFORMS}
+                    placeholder="Select platform"
+                    className="text-sm"
+                    styles={{
+                      control: (provided) => ({
+                        ...provided,
+                        borderBottom: '2px solid #d1d5db',
+                        borderTop: 'none',
+                        borderLeft: 'none',
+                        borderRight: 'none',
+                        borderRadius: '0',
+                        boxShadow: 'none',
+                        '&:hover': {
+                          borderBottom: '2px solid #3b82f6',
+                        },
+                        '&:focus': {
+                          borderBottom: '2px solid #3b82f6',
+                        },
+                      }),
+                      placeholder: (provided) => ({
+                        ...provided,
+                        color: '#9ca3af',
+                        fontSize: '14px',
+                      }),
+                    }}
+                  />
+                  <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-2 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
+                    Platform
+                  </label>
+                </div>
+                <div className="relative z-0 w-full group">
+                  <input
+                    type="text"
+                    value={newSocialMedia.url}
+                    onChange={(e) => setNewSocialMedia(prev => ({ ...prev, url: e.target.value }))}
+                    className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                    placeholder=" "
+                  />
+                  <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
+                    URL
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+          
           <div className="flex gap-2">
             <button
               type="submit"

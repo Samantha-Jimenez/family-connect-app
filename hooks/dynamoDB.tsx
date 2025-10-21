@@ -83,6 +83,10 @@ export interface FamilyMember {
   current_city: string;
   current_state: string;
   death_date: string;
+  social_media?: {
+    platform: string;
+    url: string;
+  }[];
 }
 
 // Enhanced relationship types
@@ -193,7 +197,8 @@ export const saveUserToDB = async (
   profile_photo?: string,
   current_city?: string,
   current_state?: string,
-  show_zodiac?: boolean
+  show_zodiac?: boolean,
+  social_media?: { platform: string; url: string }[]
 ) => {
   try {
     const userAttributes = await fetchUserAttributes();
@@ -211,24 +216,38 @@ export const saveUserToDB = async (
     }
 
     // Prepare data for DynamoDB
+    const item: any = {
+      family_member_id: { S: userId },
+      first_name: { S: first_name },
+      last_name: { S: last_name },
+      email: { S: userEmail },
+      username: { S: username },
+      bio: { S: bio },
+      phone_number: { S: phone_number },
+      birthday: { S: birthday },
+      birth_city: { S: birth_city },
+      birth_state: { S: birth_state },
+      profile_photo: { S: profile_photo || '' },
+      current_city: { S: current_city || '' },
+      current_state: { S: current_state || '' },
+      show_zodiac: { BOOL: show_zodiac ?? false }
+    };
+
+    // Add social media data if provided
+    if (social_media && social_media.length > 0) {
+      item.social_media = {
+        L: social_media.map(sm => ({
+          M: {
+            platform: { S: sm.platform },
+            url: { S: sm.url }
+          }
+        }))
+      };
+    }
+
     const params = {
       TableName: TABLES.FAMILY,
-      Item: {
-        family_member_id: { S: userId },
-        first_name: { S: first_name },
-        last_name: { S: last_name },
-        email: { S: userEmail },
-        username: { S: username },
-        bio: { S: bio },
-        phone_number: { S: phone_number },
-        birthday: { S: birthday },
-        birth_city: { S: birth_city },
-        birth_state: { S: birth_state },
-        profile_photo: { S: profile_photo || '' },
-        current_city: { S: current_city || '' },
-        current_state: { S: current_state || '' },
-        show_zodiac: { BOOL: show_zodiac ?? false }
-      },
+      Item: item,
     };
 
     await dynamoDB.send(new PutItemCommand(params));
@@ -276,6 +295,10 @@ export const getUserData = async (userId: string) => {
       cta_visible: data.Item.cta_visible?.BOOL,
       death_date: data.Item.death_date?.S || '',
       show_zodiac: data.Item.show_zodiac?.BOOL ?? false,
+      social_media: data.Item.social_media?.L?.map((item: any) => ({
+        platform: item.M?.platform?.S || '',
+        url: item.M?.url?.S || ''
+      })) || [],
     };
   } catch (error) {
     console.error("❌ Error fetching user data:", error);
