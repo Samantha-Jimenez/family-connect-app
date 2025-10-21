@@ -493,6 +493,8 @@ const Photos = () => {
         family_member_id: member.family_member_id,
         first_name: member.first_name,
         last_name: member.last_name,
+        middle_name: member.middle_name,
+        nick_name: member.nick_name,
         email: member.email,
         username: member.username || '', // Provide default values for missing properties
         bio: member.bio || '',
@@ -504,6 +506,9 @@ const Photos = () => {
         current_city: member.current_city || '',
         current_state: member.current_state || '',
         death_date: member.death_date || '',
+        use_first_name: member.use_first_name,
+        use_middle_name: member.use_middle_name,
+        use_nick_name: member.use_nick_name,
       }));
       setFamilyMembers(formattedMembers);
     } catch (error) {

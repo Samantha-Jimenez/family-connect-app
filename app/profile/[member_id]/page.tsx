@@ -35,6 +35,8 @@ export default function ProfilePage() {
               family_member_id: data.family_member_id?.S || '',
               first_name: data.first_name?.S || '',
               last_name: data.last_name?.S || '',
+              middle_name: data.middle_name?.S || '',
+              nick_name: data.nick_name?.S || '',
               email: data.email?.S || '',
               username: data.username?.S || '',
               bio: data.bio?.S || '',
@@ -46,6 +48,9 @@ export default function ProfilePage() {
               birth_city: data.birth_city?.S || '',
               birth_state: data.birth_state?.S || '',
               death_date: data.death_date?.S || '',
+              use_first_name: data.use_first_name?.BOOL ?? true,
+              use_middle_name: data.use_middle_name?.BOOL ?? false,
+              use_nick_name: data.use_nick_name?.BOOL ?? false,
             };
             setMemberData(member);
             // Set default tab based on whether member has passed away
