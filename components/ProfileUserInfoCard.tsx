@@ -185,7 +185,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
 
           <div className="md:pl-4 xl:pl-8 md:col-span-2 mb-2">
             <h1 className="text-4xl text-black">
-              {userData?.first_name || ''} "{userData?.nick_name || ''}" {userData?.middle_name || ''} {userData?.last_name || ''}
+              {userData?.first_name || ''} {userData?.nick_name && `"${userData?.nick_name}"` || ''} {userData?.middle_name || ''} {userData?.last_name || ''}
             </h1>
           </div>
 

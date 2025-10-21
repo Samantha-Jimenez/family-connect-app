@@ -4,6 +4,17 @@ import Link from 'next/link';
 import { familyTreeData } from './familyTreeData';
 import { getAllFamilyMembers, buildFamilyTreeFromRelationships, FamilyTreeNode } from "@/hooks/dynamoDB";
 import { FamilyMember as FamilyMemberType } from "@/hooks/dynamoDB";
+
+// Helper function to get the preferred display name
+const getDisplayName = (member: FamilyMemberType): string => {
+  if (member.use_nick_name && member.nick_name && member.nick_name.trim() !== '') {
+    return member.nick_name;
+  } else if (member.use_middle_name && member.middle_name && member.middle_name.trim() !== '') {
+    return member.middle_name;
+  } else {
+    return member.first_name;
+  }
+};
 import Image from "next/image";
 import { getFullImageUrl } from "@/utils/imageUtils";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
@@ -21,12 +32,21 @@ export type FamilyMemberProps = {
 
 type PartialFamilyMember = Pick<FamilyMemberType, 'family_member_id' | 'first_name' | 'last_name' | 'profile_photo'>;
 
-const updateFamilyTreeData = (membersFromDB: PartialFamilyMember[], member: FamilyMemberProps) => {
-  const dbMember = membersFromDB.find(dbMem => dbMem.first_name === member.first_name && dbMem.last_name.includes(member.last_name));
+const updateFamilyTreeData = (membersFromDB: FamilyMemberType[], member: FamilyMemberProps) => {
+  const dbMember = membersFromDB.find(dbMem => 
+    dbMem.first_name === member.first_name && 
+    (dbMem.last_name === member.last_name || dbMem.last_name.includes(member.last_name) || member.last_name.includes(dbMem.last_name))
+  );
+  
   if (dbMember) {
     member.id = dbMember.family_member_id;
     member.profile_photo = getFullImageUrl(dbMember.profile_photo);
+    
+    // Update the first_name to use the preferred display name
+    member.first_name = getDisplayName(dbMember);
+    
   }
+  
   member.children?.forEach(child => updateFamilyTreeData(membersFromDB, child));
   member.previousSpouses?.forEach(spouse => {
     updateFamilyTreeData(membersFromDB, spouse);
@@ -238,20 +258,14 @@ const FamilyTree = () => {
       setIsAdmin(true);
     }
 
-    const fetchMembers = async () => {
-      try {
-        const membersFromDB = await getAllFamilyMembers();
-        setFamilyMembers(membersFromDB);
-        
-        const formattedMembers: PartialFamilyMember[] = membersFromDB.map(member => ({
-          family_member_id: member.family_member_id,
-          first_name: member.first_name || "Unknown",
-          last_name: member.last_name || "",
-          profile_photo: member.profile_photo || "",
-        }));
-        
-        // Update static tree data
-        updateFamilyTreeData(formattedMembers, familyTreeData as FamilyMemberProps);
+        const fetchMembers = async () => {
+          try {
+            const membersFromDB = await getAllFamilyMembers();
+            setFamilyMembers(membersFromDB);
+            
+            
+            // Update static tree data with full member data (including preferences)
+            updateFamilyTreeData(membersFromDB, familyTreeData as FamilyMemberProps);
         
         // Set default root person (look for Cynthia first, otherwise use first member)
         if (membersFromDB.length > 0) {
@@ -347,7 +361,7 @@ const FamilyTree = () => {
             >
               {familyMembers.map((member) => (
                 <option key={member.family_member_id} value={member.family_member_id}>
-                  {member.first_name} {member.last_name}
+                  {getDisplayName(member)} {member.last_name}
                 </option>
               ))}
             </select>

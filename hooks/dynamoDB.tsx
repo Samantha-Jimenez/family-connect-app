@@ -72,6 +72,8 @@ export interface FamilyMember {
   family_member_id: string;
   first_name: string;
   last_name: string;
+  middle_name: string;
+  nick_name: string;
   email: string;
   username: string;
   bio: string;
@@ -83,6 +85,9 @@ export interface FamilyMember {
   current_city: string;
   current_state: string;
   death_date: string;
+  use_first_name: boolean;
+  use_middle_name: boolean;
+  use_nick_name: boolean;
   social_media?: {
     platform: string;
     url: string;
@@ -200,7 +205,10 @@ export const saveUserToDB = async (
   current_city?: string,
   current_state?: string,
   show_zodiac?: boolean,
-  social_media?: { platform: string; url: string }[]
+  social_media?: { platform: string; url: string }[],
+  use_first_name?: boolean,
+  use_middle_name?: boolean,
+  use_nick_name?: boolean
 ) => {
   try {
     const userAttributes = await fetchUserAttributes();
@@ -234,7 +242,10 @@ export const saveUserToDB = async (
       profile_photo: { S: profile_photo || '' },
       current_city: { S: current_city || '' },
       current_state: { S: current_state || '' },
-      show_zodiac: { BOOL: show_zodiac ?? false }
+      show_zodiac: { BOOL: show_zodiac ?? false },
+      use_first_name: { BOOL: use_first_name ?? true },
+      use_middle_name: { BOOL: use_middle_name ?? false },
+      use_nick_name: { BOOL: use_nick_name ?? false }
     };
 
     // Add social media data if provided
@@ -283,6 +294,9 @@ interface GetUserDataReturn {
   death_date: string;
   show_zodiac: boolean;
   social_media: { platform: string; url: string }[];
+  use_first_name: boolean;
+  use_middle_name: boolean;
+  use_nick_name: boolean;
 }
 
 export const getUserData = async (userId: string): Promise<GetUserDataReturn | null> => {
@@ -328,6 +342,9 @@ export const getUserData = async (userId: string): Promise<GetUserDataReturn | n
         platform: item.M?.platform?.S || '',
         url: item.M?.url?.S || ''
       })) || [],
+      use_first_name: data.Item.use_first_name?.BOOL ?? true,
+      use_middle_name: data.Item.use_middle_name?.BOOL ?? false,
+      use_nick_name: data.Item.use_nick_name?.BOOL ?? false,
     };
   } catch (error) {
     console.error("❌ Error fetching user data:", error);
@@ -507,6 +524,8 @@ export const getAllFamilyMembers = async (): Promise<FamilyMember[]> => {
       family_member_id: item.family_member_id?.S || '',
       first_name: item.first_name?.S || '',
       last_name: item.last_name?.S || '',
+      middle_name: item.middle_name?.S || '',
+      nick_name: item.nick_name?.S || '',
       email: item.email?.S || '',
       username: item.username?.S || '',
       bio: item.bio?.S || '',
@@ -518,6 +537,9 @@ export const getAllFamilyMembers = async (): Promise<FamilyMember[]> => {
       current_city: item.current_city?.S || '',
       current_state: item.current_state?.S || '',
       death_date: item.death_date?.S || '',
+      use_first_name: item.use_first_name?.BOOL ?? true,
+      use_middle_name: item.use_middle_name?.BOOL ?? false,
+      use_nick_name: item.use_nick_name?.BOOL ?? false,
     }));
   } catch (error) {
     console.error("❌ Error fetching family members:", error);
@@ -546,6 +568,8 @@ export const getFamilyMembersWithoutEmail = async (): Promise<FamilyMember[]> =>
       family_member_id: item.family_member_id?.S || '',
       first_name: item.first_name?.S || '',
       last_name: item.last_name?.S || '',
+      middle_name: item.middle_name?.S || '',
+      nick_name: item.nick_name?.S || '',
       email: item.email?.S || '',
       username: item.username?.S || '',
       bio: item.bio?.S || '',
@@ -557,6 +581,9 @@ export const getFamilyMembersWithoutEmail = async (): Promise<FamilyMember[]> =>
       current_city: item.current_city?.S || '',
       current_state: item.current_state?.S || '',
       death_date: item.death_date?.S || '',
+      use_first_name: item.use_first_name?.BOOL ?? true,
+      use_middle_name: item.use_middle_name?.BOOL ?? false,
+      use_nick_name: item.use_nick_name?.BOOL ?? false,
     }));
   } catch (error) {
     console.error("❌ Error fetching family members without email:", error);

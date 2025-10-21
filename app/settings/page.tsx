@@ -30,6 +30,9 @@ interface UserData {
   current_state?: string;
   show_zodiac?: boolean;
   social_media?: { platform: string; url: string }[];
+  use_first_name?: boolean;
+  use_middle_name?: boolean;
+  use_nick_name?: boolean;
 }
 
 const US_STATES = [
@@ -91,6 +94,9 @@ const Settings = () => {
           current_state: data.current_state || undefined,
           show_zodiac: data.show_zodiac ?? false,
           social_media: data.social_media || [],
+          use_first_name: data.use_first_name ?? true,
+          use_middle_name: data.use_middle_name ?? false,
+          use_nick_name: data.use_nick_name ?? false,
         });
         setSocialMediaEntries(data.social_media || []);
       } else {
@@ -111,6 +117,9 @@ const Settings = () => {
           current_state: undefined,
           show_zodiac: false,
           social_media: [],
+          use_first_name: true,
+          use_middle_name: false,
+          use_nick_name: false,
         });
         setSocialMediaEntries([]);
       }
@@ -240,7 +249,11 @@ const Settings = () => {
         '', // Remove profile photo
         userData?.current_city || '',
         userData?.current_state || '',
-        userData?.show_zodiac ?? false
+        userData?.show_zodiac ?? false,
+        userData?.social_media || [],
+        userData?.use_first_name ?? true,
+        userData?.use_middle_name ?? false,
+        userData?.use_nick_name ?? false
       );
       setRemoveProfilePhoto(false);
       setUserData(prev => prev ? { ...prev, profile_photo: undefined } : null);
@@ -317,7 +330,11 @@ const Settings = () => {
           result.key,
           userData?.current_city || '',
           userData?.current_state || '',
-          userData?.show_zodiac ?? false
+          userData?.show_zodiac ?? false,
+          userData?.social_media || [],
+          userData?.use_first_name ?? true,
+          userData?.use_middle_name ?? false,
+          userData?.use_nick_name ?? false
         );
 
         // Complete the progress
@@ -379,6 +396,9 @@ const Settings = () => {
       const current_city = formData.get('floating_current_city') as string || userData?.current_city || '';
       const current_state = formData.get('floating_current_state') as string || userData?.current_state || '';
       const email = authEmail || '';
+      const use_first_name = userData?.use_first_name ?? true;
+      const use_middle_name = userData?.use_middle_name ?? false;
+      const use_nick_name = userData?.use_nick_name ?? false;
 
       // Include new social media entry if both platform and URL are filled
       let finalSocialMediaEntries = [...socialMediaEntries];
@@ -408,7 +428,10 @@ const Settings = () => {
         current_city,
         current_state,
         userData?.show_zodiac ?? false,
-        finalSocialMediaEntries
+        finalSocialMediaEntries,
+        use_first_name,
+        use_middle_name,
+        use_nick_name
       );
 
       // Update local state
@@ -429,7 +452,10 @@ const Settings = () => {
         current_city,
         current_state,
         show_zodiac: prev.show_zodiac ?? false,
-        social_media: finalSocialMediaEntries
+        social_media: finalSocialMediaEntries,
+        use_first_name,
+        use_middle_name,
+        use_nick_name
       } : null);
 
       // Update social media entries and clear the new entry form
@@ -550,7 +576,7 @@ const Settings = () => {
               <label htmlFor="floating_last_name" className="peer-focus:font-medium absolute text-sm text-gray-400 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Last name</label>
             </div>
           </div>
-          <div className="grid md:grid-cols-2 md:gap-6">
+          <div className="grid md:grid-cols-[1fr_1fr_max-content] md:gap-6">
             <div className="relative z-0 w-full mb-5 group">
               <input type="text" value={userData?.middle_name || ''} name="floating_middle_name" id="floating_middle_name" onChange={handleInputChange} className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " />
               <label htmlFor="floating_middle_name" className="peer-focus:font-medium absolute text-sm text-gray-400 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Middle name</label>
@@ -559,6 +585,88 @@ const Settings = () => {
               <input type="text" value={userData?.nick_name || ''} name="floating_nick_name" id="floating_nick_name" onChange={handleInputChange} className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " />
               <label htmlFor="floating_nick_name" className="peer-focus:font-medium absolute text-sm text-gray-400 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Nick name</label>
             </div>
+
+
+          
+          
+             {/* Name Display Preferences */}
+             <div className="mb-6">
+               <h3 className="text-lg font-medium text-gray-900 mb-4">Primary Name Display</h3>
+               <div className="grid md:grid-cols-3 gap-4">
+                 <div className="flex items-center">
+                   <input
+                     type="radio"
+                     id="use_first_name"
+                     name="primary_name"
+                     value="first_name"
+                     checked={userData?.use_first_name ?? true}
+                     onChange={(e) => {
+                       if (userData) {
+                         setUserData({
+                           ...userData,
+                           use_first_name: true,
+                           use_middle_name: false,
+                           use_nick_name: false
+                         });
+                       }
+                     }}
+                     className="radio radio-success w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-lime focus:ring-2"
+                   />
+                   <label htmlFor="use_first_name" className="ml-2 text-sm text-gray-900">
+                     Use first name
+                   </label>
+                 </div>
+                 <div className="flex items-center">
+                   <input
+                     type="radio"
+                     id="use_middle_name"
+                     name="primary_name"
+                     value="middle_name"
+                     checked={userData?.use_middle_name ?? false}
+                     disabled={!userData?.middle_name || userData.middle_name.trim() === ''}
+                     onChange={(e) => {
+                       if (userData) {
+                         setUserData({
+                           ...userData,
+                           use_first_name: false,
+                           use_middle_name: true,
+                           use_nick_name: false
+                         });
+                       }
+                     }}
+                     className="radio radio-success w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-lime focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                   />
+                   <label htmlFor="use_middle_name" className={`ml-2 text-sm text-gray-900 ${!userData?.middle_name || userData.middle_name.trim() === '' ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                     Use middle name
+                   </label>
+                 </div>
+                 
+                 <div className="flex items-center">
+                   <input
+                     type="radio"
+                     id="use_nick_name"
+                     name="primary_name"
+                     value="nick_name"
+                     checked={userData?.use_nick_name ?? false}
+                     disabled={!userData?.nick_name || userData.nick_name.trim() === ''}
+                     onChange={(e) => {
+                       if (userData) {
+                         setUserData({
+                           ...userData,
+                           use_first_name: false,
+                           use_middle_name: false,
+                           use_nick_name: true
+                         });
+                       }
+                     }}
+                     className="radio radio-success w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-lime focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                   />
+                   <label htmlFor="use_nick_name" className={`ml-2 text-sm text-gray-900 ${!userData?.nick_name || userData.nick_name.trim() === '' ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                     Use nick name
+                   </label>
+                 </div>
+               </div>
+             </div>
           </div>
           <div className="grid md:grid-cols-2 md:gap-6">
             <div className="relative z-0 w-full mb-5 group">
