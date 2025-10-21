@@ -187,6 +187,8 @@ export const RELATIONSHIP_RULES: Record<RelationshipType, {
 export const saveUserToDB = async (
   first_name: string, 
   last_name: string, 
+  middle_name: string,
+  nick_name: string,
   email: string, 
   username: string, 
   bio: string, 
@@ -220,6 +222,8 @@ export const saveUserToDB = async (
       family_member_id: { S: userId },
       first_name: { S: first_name },
       last_name: { S: last_name },
+      middle_name: { S: middle_name },
+      nick_name: { S: nick_name },
       email: { S: userEmail },
       username: { S: username },
       bio: { S: bio },
@@ -258,7 +262,30 @@ export const saveUserToDB = async (
   }
 };
 
-export const getUserData = async (userId: string) => {
+interface GetUserDataReturn {
+  first_name: string;
+  last_name: string;
+  middle_name: string;
+  nick_name: string;
+  email: string;
+  username: string;
+  bio: string;
+  phone_number: string;
+  birthday: string;
+  birth_city: string;
+  birth_state: string;
+  profile_photo?: string;
+  current_city?: string;
+  current_state?: string;
+  city: string;
+  state: string;
+  cta_visible?: boolean;
+  death_date: string;
+  show_zodiac: boolean;
+  social_media: { platform: string; url: string }[];
+}
+
+export const getUserData = async (userId: string): Promise<GetUserDataReturn | null> => {
   try {
     if (!userId) {
       throw new Error("❌ userId is required.");
@@ -280,6 +307,8 @@ export const getUserData = async (userId: string) => {
     return {
       first_name: data.Item.first_name?.S || '',
       last_name: data.Item.last_name?.S || '',
+      middle_name: data.Item.middle_name?.S || '',
+      nick_name: data.Item.nick_name?.S || '',
       email: data.Item.email?.S || '',
       username: data.Item.username?.S || '',
       bio: data.Item.bio?.S || '',

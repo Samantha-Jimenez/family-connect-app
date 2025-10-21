@@ -10,6 +10,8 @@ import { size } from "@/app/icon";
 interface UserData {
   first_name: string;
   last_name: string;
+  middle_name: string;
+  nick_name: string;
   email: string;
   username: string;
   bio: string;
@@ -92,6 +94,8 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
           setUserData({
             first_name: data.first_name?.S || '',
             last_name: data.last_name?.S || '',
+            middle_name: data.middle_name?.S || '',
+            nick_name: data.nick_name?.S || '',
             email: data.email?.S || '',
             username: data.username?.S || '',
             bio: data.bio?.S || '',
@@ -181,7 +185,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
 
           <div className="md:pl-4 xl:pl-8 md:col-span-2 mb-2">
             <h1 className="text-4xl text-black">
-              {userData?.first_name || ''} {userData?.last_name || ''}
+              {userData?.first_name || ''} "{userData?.nick_name || ''}" {userData?.middle_name || ''} {userData?.last_name || ''}
             </h1>
           </div>
 

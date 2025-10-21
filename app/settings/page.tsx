@@ -16,6 +16,8 @@ import Select from 'react-select';
 interface UserData {
   first_name: string;
   last_name: string;
+  middle_name: string;
+  nick_name: string;
   email: string;
   username: string;
   bio: string;
@@ -75,6 +77,8 @@ const Settings = () => {
         setUserData({
           first_name: data.first_name || '',
           last_name: data.last_name || '',
+          middle_name: data.middle_name || '',
+          nick_name: data.nick_name || '',
           email: authEmail || '',
           username: authUsername || '',
           bio: data.bio || '',
@@ -93,6 +97,8 @@ const Settings = () => {
         setUserData({
           first_name: '',
           last_name: '',
+          middle_name: '',
+          nick_name: '',
           email: authEmail || '',
           username: authUsername || '',
           bio: '',
@@ -222,6 +228,8 @@ const Settings = () => {
       await saveUserToDB(
         userData?.first_name || '',
         userData?.last_name || '',
+        userData?.middle_name || '',
+        userData?.nick_name || '',
         userData?.email || '',
         userData?.username || '',
         userData?.bio || '',
@@ -297,6 +305,8 @@ const Settings = () => {
         await saveUserToDB(
           userData?.first_name || '',
           userData?.last_name || '',
+          userData?.middle_name || '',
+          userData?.nick_name || '',
           userData?.email || '',
           userData?.username || '',
           userData?.bio || '',
@@ -358,6 +368,8 @@ const Settings = () => {
       const formData = new FormData(e.currentTarget);
       const first_name = formData.get('floating_first_name') as string || userData?.first_name || '';
       const last_name = formData.get('floating_last_name') as string || userData?.last_name || '';
+      const middle_name = formData.get('floating_middle_name') as string || userData?.middle_name || '';
+      const nick_name = formData.get('floating_nick_name') as string || userData?.nick_name || '';
       const username = formData.get('floating_username') as string || userData?.username || '';
       const bio = formData.get('floating_bio') as string || userData?.bio || '';
       const phone_number = formData.get('floating_phone') as string || userData?.phone_number || '';
@@ -383,6 +395,8 @@ const Settings = () => {
       await saveUserToDB(
         first_name, 
         last_name, 
+        middle_name,
+        nick_name,
         email, 
         username, 
         bio, 
@@ -402,6 +416,8 @@ const Settings = () => {
         ...prev,
         first_name,
         last_name,
+        middle_name,
+        nick_name,
         email,
         username,
         bio,
@@ -532,6 +548,16 @@ const Settings = () => {
             <div className="relative z-0 w-full mb-5 group">
               <input type="text" value={userData?.last_name || ''} name="floating_last_name" id="floating_last_name" onChange={handleInputChange} className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " required />
               <label htmlFor="floating_last_name" className="peer-focus:font-medium absolute text-sm text-gray-400 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Last name</label>
+            </div>
+          </div>
+          <div className="grid md:grid-cols-2 md:gap-6">
+            <div className="relative z-0 w-full mb-5 group">
+              <input type="text" value={userData?.middle_name || ''} name="floating_middle_name" id="floating_middle_name" onChange={handleInputChange} className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " />
+              <label htmlFor="floating_middle_name" className="peer-focus:font-medium absolute text-sm text-gray-400 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Middle name</label>
+            </div>
+            <div className="relative z-0 w-full mb-5 group">
+              <input type="text" value={userData?.nick_name || ''} name="floating_nick_name" id="floating_nick_name" onChange={handleInputChange} className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " />
+              <label htmlFor="floating_nick_name" className="peer-focus:font-medium absolute text-sm text-gray-400 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Nick name</label>
             </div>
           </div>
           <div className="grid md:grid-cols-2 md:gap-6">
