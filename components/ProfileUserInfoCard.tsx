@@ -234,12 +234,13 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                     //   style={{ animationDelay: `${index * 0.1}s` }}
                     // >
                       <span 
-                        className="text-palm-green bg-tea-green/30 px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-tea-green/60 transition-colors"
+                        className="text-palm-green bg-tea-green/30 px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-tea-green/60 transition-colors opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]"
                         onClick={() => {
                           setSelectedRole({ type, relatedNames, relatedIds: targetIds });
                           setShowRoleModal(true);
                         }}
                         key={type}
+                        style={{ animationDelay: `${index * 0.1}s` }}
                       >
                         {type.charAt(0).toUpperCase() + type.slice(1)}
                       </span>
@@ -332,8 +333,9 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                           href={link.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200 text-gray-700 hover:text-gray-900"
+                          className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200 text-gray-700 hover:text-gray-900 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]"
                           title={`${link.platform.charAt(0).toUpperCase() + link.platform.slice(1)} - ${link.url}`}
+                          style={{ animationDelay: `${index * 0.1}s` }}
                         >
                           <IconComponent className="w-5 h-5" />
                         </a>

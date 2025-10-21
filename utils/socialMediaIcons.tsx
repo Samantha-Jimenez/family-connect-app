@@ -1,4 +1,5 @@
 import React from 'react';
+import { Icon } from '@iconify/react';
 
 interface SocialMediaIconProps {
   className?: string;
@@ -6,39 +7,39 @@ interface SocialMediaIconProps {
 }
 
 export const FacebookIcon: React.FC<SocialMediaIconProps> = ({ className = "w-6 h-6", size }) => (
-  <span className={`icon-[ri--facebook-line] ${className}`} style={{ fontSize: size || 24 }} ></span>
+  <Icon icon="ri:facebook-line" className={className} style={{ fontSize: size || 24 }} />
 );
 
 export const InstagramIcon: React.FC<SocialMediaIconProps> = ({ className = "w-6 h-6", size }) => (
-  <span className={`icon-[ri--instagram-line] ${className}`} style={{ fontSize: size || 24 }} />
+  <Icon icon="ri:instagram-line" className={className} style={{ fontSize: size || 24 }} />
 );
 
 export const TwitterIcon: React.FC<SocialMediaIconProps> = ({ className = "w-6 h-6", size }) => (
-  <span className={`icon-[ri--twitter-x-line] ${className}`} style={{ fontSize: size || 24 }} ></span>
+  <Icon icon="ri:twitter-x-line" className={className} style={{ fontSize: size || 24 }} />
 );
 
 export const LinkedInIcon: React.FC<SocialMediaIconProps> = ({ className = "w-6 h-6", size }) => (
-  <span className={`icon-[ri--linkedin-line] ${className}`} style={{ fontSize: size || 24 }} ></span>
+  <Icon icon="ri:linkedin-line" className={className} style={{ fontSize: size || 24 }} />
 );
 
 export const TikTokIcon: React.FC<SocialMediaIconProps> = ({ className = "w-6 h-6", size }) => (
-  <span className={`icon-[ri--tiktok-fill] ${className}`} style={{ fontSize: size || 24 }} ></span>
+  <Icon icon="ri:tiktok-fill" className={className} style={{ fontSize: size || 24 }} />
 );
 
 export const YouTubeIcon: React.FC<SocialMediaIconProps> = ({ className = "w-6 h-6", size }) => (
-  <span className={`icon-[ri--youtube-line] ${className}`} style={{ fontSize: size || 24 }} ></span>
+  <Icon icon="ri:youtube-line" className={className} style={{ fontSize: size || 24 }} />
 );
 
 export const GoodReadsIcon: React.FC<SocialMediaIconProps> = ({ className = "w-6 h-6", size }) => (
-    <span className={`icon-[simple-icons--goodreads] ${className}`} style={{ fontSize: size || 24 }} ></span>
+  <Icon icon="simple-icons:goodreads" className={className} style={{ fontSize: size || 24 }} />
 );
 
 export const StravaIcon: React.FC<SocialMediaIconProps> = ({ className = "w-6 h-6", size }) => (
-  <span className={`icon-[simple-icons--strava] ${className}`} style={{ fontSize: size || 24 }} ></span>
+  <Icon icon="simple-icons:strava" className={className} style={{ fontSize: size || 24 }} />
 );
 
 export const GenericIcon: React.FC<SocialMediaIconProps> = ({ className = "w-6 h-6", size }) => (
-    <span className={`icon-[ri--link] ${className}`} style={{ fontSize: size || 24 }} />
+  <Icon icon="ri:link" className={className} style={{ fontSize: size || 24 }} />
 );
 
 // Social media platform mapping
