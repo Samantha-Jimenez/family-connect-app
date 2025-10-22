@@ -7,7 +7,7 @@ import LoadSpinner from '@/components/LoadSpinner';
 import { Range, getTrackBackground } from 'react-range';
 import { FamilyMemberProps } from '../familytree/page'; // Adjust the import path as necessary
 import { familyTreeData } from '../familytree/familyTreeData'; // Import familyTreeData
-import { FamilyMember, getAllFamilyMembers, getAllPhotosByTagged, PhotoData, TaggedPerson, getUserData } from '@/hooks/dynamoDB'; // Import the functions
+import { FamilyMember, getAllFamilyMembers, getAllPhotosByTagged, PhotoData, TaggedPerson, getUserData, getUserNameById } from '@/hooks/dynamoDB'; // Import the functions
 import { getCurrentUser } from 'aws-amplify/auth'; // Import your auth function
 import PhotoModal from '@/components/PhotoModal';
 import Select from 'react-select';
@@ -769,9 +769,9 @@ const Photos = () => {
 
   const fetchUploaderName = async (userId: string) => {
     try {
-      const userDetails = await getUserData(userId);
-      if (userDetails) {
-        setUploaderName(`${userDetails.first_name} ${userDetails.last_name}`);
+      const userName = await getUserNameById(userId);
+      if (userName) {
+        setUploaderName(`${userName.firstName} ${userName.lastName}`);
       } else {
         setUploaderName('Unknown User');
       }

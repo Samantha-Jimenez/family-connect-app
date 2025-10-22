@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { DynamoDBClient, ScanCommand } from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient, ScanCommand, GetItemCommand } from '@aws-sdk/client-dynamodb';
 import { S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
@@ -19,6 +19,46 @@ const s3Client = new S3Client({
     secretAccessKey: process.env.NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY!,
   },
 });
+
+// Helper function to get preferred name for a user
+async function getPreferredName(userId: string): Promise<string> {
+  try {
+    const params = {
+      TableName: 'Family',
+      Key: {
+        family_member_id: { S: userId }
+      }
+    };
+
+    const data = await dynamoDB.send(new GetItemCommand(params));
+
+    if (!data.Item) {
+      return 'Unknown User';
+    }
+
+    // Get all name fields and preferences
+    const first_name = data.Item.first_name?.S || '';
+    const last_name = data.Item.last_name?.S || '';
+    const middle_name = data.Item.middle_name?.S || '';
+    const nick_name = data.Item.nick_name?.S || '';
+    const use_first_name = data.Item.use_first_name?.BOOL ?? true;
+    const use_middle_name = data.Item.use_middle_name?.BOOL ?? false;
+    const use_nick_name = data.Item.use_nick_name?.BOOL ?? false;
+
+    // Determine preferred first name based on user settings
+    let preferredFirstName = first_name;
+    if (use_nick_name && nick_name) {
+      preferredFirstName = nick_name;
+    } else if (use_middle_name && middle_name) {
+      preferredFirstName = middle_name;
+    }
+
+    return `${preferredFirstName} ${last_name}`;
+  } catch (error) {
+    console.error('Error fetching preferred name for user:', userId, error);
+    return 'Unknown User';
+  }
+}
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -67,9 +107,13 @@ export async function GET(request: Request) {
             description: (item.description?.S || '').trim(),
             date_taken: item.date_taken?.S || '',
             people_tagged: item.people_tagged?.L 
-              ? item.people_tagged.L.map((person: any) => ({
-                  id: person.M.id.S.trim(),
-                  name: person.M.name.S.trim()
+              ? await Promise.all(item.people_tagged.L.map(async (person: any) => {
+                  const userId = person.M.id.S.trim();
+                  const preferredName = await getPreferredName(userId);
+                  return {
+                    id: userId,
+                    name: preferredName
+                  };
                 }))
               : [],
           },

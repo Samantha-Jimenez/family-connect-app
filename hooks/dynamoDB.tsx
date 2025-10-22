@@ -905,7 +905,7 @@ export const getAllPhotosByTagged = async (taggedUserIds: string[]): Promise<Pho
       return [];
     }
 
-    return response.Items.map(item => ({
+    return await Promise.all(response.Items.map(async (item) => ({
       photo_id: item.photo_id?.S || '',
       s3_key: item.s3_key?.S || '',
       uploaded_by: item.uploaded_by?.S || '',
@@ -921,13 +921,17 @@ export const getAllPhotosByTagged = async (taggedUserIds: string[]): Promise<Pho
         },
         description: item.description?.S || '',
         date_taken: item.date_taken?.S || '',
-        people_tagged: item.people_tagged?.L ? item.people_tagged.L.map(tagged => ({
-          id: tagged.M?.id.S || '',
-          name: tagged.M?.name.S || ''
+        people_tagged: item.people_tagged?.L ? await Promise.all(item.people_tagged.L.map(async (tagged) => {
+          const userId = tagged.M?.id.S || '';
+          const userName = await getUserNameById(userId);
+          return {
+            id: userId,
+            name: userName ? `${userName.firstName} ${userName.lastName}` : 'Unknown User'
+          };
         })) : [],
       },
       lastModified: item.lastModified?.S || ''
-    }));
+    })));
   } catch (error) {
     console.error("❌ Error fetching photos by tagged users:", error);
     return [];
@@ -1010,9 +1014,13 @@ export const getPhotosByAlbum = async (albumId: string) => {
             },
             description: item.description?.S || '',
             date_taken: item.date_taken?.S || '',
-            people_tagged: item.people_tagged?.L ? item.people_tagged.L.map(tagged => ({
-              id: tagged.M?.id.S || '',
-              name: tagged.M?.name.S || ''
+            people_tagged: item.people_tagged?.L ? await Promise.all(item.people_tagged.L.map(async (tagged) => {
+              const userId = tagged.M?.id.S || '';
+              const userName = await getUserNameById(userId);
+              return {
+                id: userId,
+                name: userName ? `${userName.firstName} ${userName.lastName}` : 'Unknown User'
+              };
             })) : [],
           },
           lastModified: item.lastModified?.S || ''
@@ -1185,9 +1193,13 @@ export const getFavoritedPhotosByUser = async (userId: string): Promise<PhotoDat
             },
             description: item.description?.S || '',
             date_taken: item.date_taken?.S || '',
-            people_tagged: item.people_tagged?.L ? item.people_tagged.L.map(tagged => ({
-              id: tagged.M?.id.S || '',
-              name: tagged.M?.name.S || ''
+            people_tagged: item.people_tagged?.L ? await Promise.all(item.people_tagged.L.map(async (tagged) => {
+              const userId = tagged.M?.id.S || '';
+              const userName = await getUserNameById(userId);
+              return {
+                id: userId,
+                name: userName ? `${userName.firstName} ${userName.lastName}` : 'Unknown User'
+              };
             })) : [],
           },
           lastModified: item.lastModified?.S || ''
@@ -1243,12 +1255,16 @@ export const getCommentsForPhoto = async (photoId: string): Promise<{ text: stri
       return [];
     }
 
-    return data.Item.comments.L.map((comment: any) => ({
-      userId: comment.M?.userId?.S || '',
-      text: comment.M?.text?.S || '',
-      author: comment.M?.author?.S || 'Unknown',
-      timestamp: comment.M?.timestamp?.S || '',
-      profilePhoto: comment.M?.profilePhoto?.S || ''
+    return await Promise.all(data.Item.comments.L.map(async (comment: any) => {
+      const userId = comment.M?.userId?.S || '';
+      const userName = await getUserNameById(userId);
+      return {
+        userId: userId,
+        text: comment.M?.text?.S || '',
+        author: userName ? `${userName.firstName} ${userName.lastName}` : 'Unknown',
+        timestamp: comment.M?.timestamp?.S || '',
+        profilePhoto: comment.M?.profilePhoto?.S || ''
+      };
     }));
   } catch (error) {
     console.error("❌ Error fetching comments for photo:", error);
@@ -1271,9 +1287,26 @@ export const getUserNameById = async (userId: string): Promise<{ firstName: stri
       return null;
     }
 
+    // Get all name fields and preferences
+    const first_name = data.Item.first_name?.S || '';
+    const last_name = data.Item.last_name?.S || '';
+    const middle_name = data.Item.middle_name?.S || '';
+    const nick_name = data.Item.nick_name?.S || '';
+    const use_first_name = data.Item.use_first_name?.BOOL ?? true;
+    const use_middle_name = data.Item.use_middle_name?.BOOL ?? false;
+    const use_nick_name = data.Item.use_nick_name?.BOOL ?? false;
+
+    // Determine preferred first name based on user settings
+    let preferredFirstName = first_name;
+    if (use_nick_name && nick_name) {
+      preferredFirstName = nick_name;
+    } else if (use_middle_name && middle_name) {
+      preferredFirstName = middle_name;
+    }
+
     return {
-      firstName: data.Item.first_name?.S || '',
-      lastName: data.Item.last_name?.S || ''
+      firstName: preferredFirstName,
+      lastName: last_name
     };
   } catch (error) {
     console.error("❌ Error fetching user name by ID:", error);
@@ -1602,9 +1635,13 @@ export const getUserPhotos = async (userId: string): Promise<PhotoData[]> => {
             },
             description: item.description?.S || '',
             date_taken: item.date_taken?.S || '',
-            people_tagged: item.people_tagged?.L ? item.people_tagged.L.map(tagged => ({
-              id: tagged.M?.id.S || '',
-              name: tagged.M?.name.S || ''
+            people_tagged: item.people_tagged?.L ? await Promise.all(item.people_tagged.L.map(async (tagged) => {
+              const userId = tagged.M?.id.S || '';
+              const userName = await getUserNameById(userId);
+              return {
+                id: userId,
+                name: userName ? `${userName.firstName} ${userName.lastName}` : 'Unknown User'
+              };
             })) : [],
           },
           lastModified: item.lastModified?.S || ''

@@ -146,10 +146,20 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     const loadFamilyMembers = async () => {
       try {
         const members = await getAllFamilyMembers();
-        setFamilyMembers(members.map(member => ({
-          id: member.family_member_id,
-          name: `${member.first_name} ${member.last_name}`
-        })));
+        setFamilyMembers(members.map(member => {
+          // Determine preferred first name based on user settings
+          let preferredFirstName = member.first_name;
+          if (member.use_nick_name && member.nick_name) {
+            preferredFirstName = member.nick_name;
+          } else if (member.use_middle_name && member.middle_name) {
+            preferredFirstName = member.middle_name;
+          }
+          
+          return {
+            id: member.family_member_id,
+            name: `${preferredFirstName} ${member.last_name}`
+          };
+        }));
       } catch (error) {
         console.error('Error loading family members:', error);
       }

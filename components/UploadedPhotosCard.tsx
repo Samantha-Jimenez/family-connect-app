@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import PhotoModal from '@/components/PhotoModal';
-import { getUserData, PhotoData } from '@/hooks/dynamoDB';
+import { getUserData, PhotoData, getUserNameById } from '@/hooks/dynamoDB';
 import LoadSpinner from '@/components/LoadSpinner';
 
 export default function UploadedPhotosCard({ userId }: { userId: string }) {
@@ -57,9 +57,9 @@ export default function UploadedPhotosCard({ userId }: { userId: string }) {
 
   const fetchUploaderName = async (userId: string) => {
     try {
-      const userDetails = await getUserData(userId);
-      if (userDetails) {
-        setUploaderName(`${userDetails.first_name} ${userDetails.last_name}`);
+      const userName = await getUserNameById(userId);
+      if (userName) {
+        setUploaderName(`${userName.firstName} ${userName.lastName}`);
       } else {
         setUploaderName('Unknown User');
       }

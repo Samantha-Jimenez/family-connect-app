@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { createAlbum, addPhotoToAlbum, getUserAlbums, getPhotosByAlbum, deleteAlbumById, getUserPhotos, updateAlbum, removePhotoFromAlbum, getUserData } from '../hooks/dynamoDB';
+import { createAlbum, addPhotoToAlbum, getUserAlbums, getPhotosByAlbum, deleteAlbumById, getUserPhotos, updateAlbum, removePhotoFromAlbum, getUserData, getUserNameById } from '../hooks/dynamoDB';
 import Image from 'next/image';
 import Link from 'next/link';
 import { PhotoData, AlbumData } from '../hooks/dynamoDB';
@@ -270,9 +270,9 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
 
   const fetchPhotoUploaderName = async (uploaderId: string) => {
     try {
-      const userDetails = await getUserData(uploaderId);
-      if (userDetails) {
-        setPhotoUploaderName(`${userDetails.first_name} ${userDetails.last_name}`);
+      const userName = await getUserNameById(uploaderId);
+      if (userName) {
+        setPhotoUploaderName(`${userName.firstName} ${userName.lastName}`);
       } else {
         setPhotoUploaderName('Unknown User');
       }

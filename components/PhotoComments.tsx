@@ -81,9 +81,6 @@ const PhotoComments = ({ comments, editingCommentIndex, setEditingCommentIndex, 
                                         </div>
                                         <div className="chat-header text-gray-600 font-light">
                                             {comment.author}
-                                            {/* <time className="text-xs opacity-50 text-black">
-                                                {new Date(comment.timestamp).toLocaleString()}
-                                            </time> */}
                                         </div>
                                         <div className="chat-bubble bg-gray-200 text-gray-800 text-sm px-2 py-0.5 min-h-3 font-light !max-w-[calc(100vw-140px)] md:!max-w-full break-all whitespace-normal overflow-hidden">
                                             {comment.text}

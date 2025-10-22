@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { getCurrentUser } from 'aws-amplify/auth';
 import Image from 'next/image';
-import { getUserData, PhotoData, TaggedPerson } from '@/hooks/dynamoDB';
+import { getUserData, PhotoData, TaggedPerson, getUserNameById } from '@/hooks/dynamoDB';
 import PhotoModal from '@/components/PhotoModal';
 import LoadSpinner from '@/components/LoadSpinner';
 
@@ -55,9 +55,9 @@ export default function TaggedPhotosCard({ userId }: { userId: string }) {
 
   const fetchUploaderName = async (userId: string) => {
     try {
-      const userDetails = await getUserData(userId);
-      if (userDetails) {
-        setUploaderName(`${userDetails.first_name} ${userDetails.last_name}`);
+      const userName = await getUserNameById(userId);
+      if (userName) {
+        setUploaderName(`${userName.firstName} ${userName.lastName}`);
       } else {
         setUploaderName('Unknown User');
       }
