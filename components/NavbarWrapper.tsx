@@ -8,12 +8,14 @@ import { useState, useEffect } from 'react';
 import { getFamilyMembersWithoutEmail, FamilyMember, updateFamilyMember } from '@/hooks/dynamoDB';
 import { useUser } from '@/context/UserContext';
 import Select from 'react-select';
+import ProjectOverviewModal from './ProjectOverviewModal';
 
 export default function NavbarWrapper({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuthenticator();
   const { userData } = useUser();
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [selectedFamilyMember, setSelectedFamilyMember] = useState<{ value: string, label: string } | null>(null);
+  const [isProjectOverviewOpen, setIsProjectOverviewOpen] = useState(false);
 
   useEffect(() => {
     async function fetchFamilyMembers() {
@@ -41,7 +43,8 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
               <br/> Don't have an account yet? Create one and join the family online.
             </h3>
             <h3 className="font-light mt-8 text-slate-500">
-              Aren't a family member? <a href="/demo-login" className="text-lighter-brown hover:text-highlight-brown font-medium hover:underline ml-1">View a demo here.</a>
+              Aren't a family member? Don't worry, an app overview page is on its way!
+              {/* <button onClick={() => setIsProjectOverviewOpen(true)} className="text-lighter-brown hover:text-highlight-brown font-medium hover:underline ml-1">View project overview.</button> */}
             </h3>
           </div>
 
@@ -123,6 +126,12 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
             </Authenticator>
           </div>
         </div>
+        
+        {/* Project Overview Modal */}
+        <ProjectOverviewModal 
+          isOpen={isProjectOverviewOpen} 
+          onClose={() => setIsProjectOverviewOpen(false)} 
+        />
       </div>
     );
   }
