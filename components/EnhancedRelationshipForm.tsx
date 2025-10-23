@@ -85,6 +85,7 @@ export default function EnhancedRelationshipForm({ onRelationshipCreated, showTo
           const validation = await validateRelationship(selectedPersonA, selectedPersonB, selectedRelationshipType);
           setValidationResult(validation);
         } catch (error) {
+          console.error('Validation error:', error);
           setValidationResult({ valid: false, error: 'Error validating relationship' });
         } finally {
           setValidating(false);
@@ -94,7 +95,12 @@ export default function EnhancedRelationshipForm({ onRelationshipCreated, showTo
       }
     };
 
-    validateCurrentRelationship();
+    // Add debounce to prevent too many validation calls
+    const timeoutId = setTimeout(() => {
+      validateCurrentRelationship();
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
   }, [selectedPersonA, selectedPersonB, selectedRelationshipType]);
 
   const handleSubmit = async (e: React.FormEvent) => {

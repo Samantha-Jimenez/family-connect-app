@@ -669,11 +669,21 @@ export const validateRelationship = async (
       };
     }
 
-    // Check for circular parent-child relationships
+    // Check for circular parent-child relationships with timeout
     if (relationshipType === 'parent') {
-      const isAncestor = await checkIfAncestor(personB, personA);
-      if (isAncestor) {
-        return { valid: false, error: "This would create a circular parent-child relationship" };
+      try {
+        const validationPromise = checkIfAncestor(personB, personA, new Set());
+        const timeoutPromise = new Promise<boolean>((_, reject) => 
+          setTimeout(() => reject(new Error('Validation timeout')), 5000)
+        );
+        
+        const isAncestor = await Promise.race([validationPromise, timeoutPromise]);
+        if (isAncestor) {
+          return { valid: false, error: "This would create a circular parent-child relationship" };
+        }
+      } catch (error) {
+        console.warn("⚠️ Relationship validation timeout or error:", error);
+        // Continue with validation even if ancestry check fails
       }
     }
 
@@ -685,8 +695,20 @@ export const validateRelationship = async (
 };
 
 // Function to check if one person is an ancestor of another
-const checkIfAncestor = async (ancestorId: string, descendantId: string): Promise<boolean> => {
+const checkIfAncestor = async (
+  ancestorId: string, 
+  descendantId: string, 
+  visited: Set<string> = new Set(),
+  depth: number = 0,
+  maxDepth: number = 10
+): Promise<boolean> => {
   try {
+    // Prevent infinite loops by tracking visited nodes and limiting depth
+    if (visited.has(descendantId) || depth > maxDepth) {
+      return false;
+    }
+    visited.add(descendantId);
+    
     const relationships = await getFamilyRelationships(descendantId);
     
     for (const rel of relationships) {
@@ -695,8 +717,8 @@ const checkIfAncestor = async (ancestorId: string, descendantId: string): Promis
         if (parentId === ancestorId) {
           return true;
         }
-        // Recursively check if the parent is an ancestor
-        if (await checkIfAncestor(ancestorId, parentId)) {
+        // Recursively check if the parent is an ancestor, passing the visited set and incrementing depth
+        if (await checkIfAncestor(ancestorId, parentId, new Set(visited), depth + 1, maxDepth)) {
           return true;
         }
       }
