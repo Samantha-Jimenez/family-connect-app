@@ -177,11 +177,17 @@ export default function EnhancedRelationshipForm({ onRelationshipCreated, showTo
               required
             >
               <option value="">Select a family member</option>
-              {familyMembers.map((member) => (
-                <option key={member.family_member_id} value={member.family_member_id}>
-                  {member.first_name} {member.last_name}
-                </option>
-              ))}
+              {familyMembers
+                .sort((a, b) => {
+                  const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
+                  const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
+                  return nameA.localeCompare(nameB);
+                })
+                .map((member) => (
+                  <option key={member.family_member_id} value={member.family_member_id}>
+                    {member.first_name} {member.last_name}
+                  </option>
+                ))}
             </select>
           </div>
 
@@ -198,6 +204,11 @@ export default function EnhancedRelationshipForm({ onRelationshipCreated, showTo
               <option value="">Select a family member</option>
               {familyMembers
                 .filter(member => member.family_member_id !== selectedPersonA)
+                .sort((a, b) => {
+                  const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
+                  const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
+                  return nameA.localeCompare(nameB);
+                })
                 .map((member) => (
                   <option key={member.family_member_id} value={member.family_member_id}>
                     {member.first_name} {member.last_name}
