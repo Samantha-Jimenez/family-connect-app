@@ -35,6 +35,15 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState<{ type: string; relatedNames: string[]; relatedIds: string[] } | null>(null);
 
+  // Helper function to format relationship type for display
+  const formatRelationshipType = (type: string): string => {
+    return type
+      .replace(/_/g, ' ')
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
   // Helper function to get inverse relationship type
   const getInverseRelationshipType = (type: string): string => {
     switch (type) {
@@ -202,13 +211,13 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
             <h2 className="text-xl text-black">Family Role</h2>
             <div className="flex flex-wrap gap-2 mb-2">
               {(() => {
-                // 1. Filter relationships for this user
+                // 1. Filter relationships for this user (user can be either person_a or person_b)
                 const userRelationships = relationships.filter(
-                  (relationship) => relationship.person_a_id === userId
+                  (relationship) => relationship.person_a_id === userId || relationship.person_b_id === userId
                 );
 
                 // 2. Group by relationship_type
-                const grouped: { [type: string]: string[] } = {};
+                const grouped: { [type: string]: Set<string> } = {};
                 userRelationships.forEach((relationship) => {
                   // Determine which person is the related person (not the current user)
                   const relatedPersonId = relationship.person_a_id === userId ? relationship.person_b_id : relationship.person_a_id;
@@ -219,13 +228,14 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                     : getInverseRelationshipType(relationship.relationship_type);
                   
                   if (!grouped[relationshipTypeFromUserPerspective]) {
-                    grouped[relationshipTypeFromUserPerspective] = [];
+                    grouped[relationshipTypeFromUserPerspective] = new Set();
                   }
-                  grouped[relationshipTypeFromUserPerspective].push(relatedPersonId);
+                  grouped[relationshipTypeFromUserPerspective].add(relatedPersonId);
                 });
 
                 // 3. Render each relationship type once, with all names in tooltip (vertical)
-                return Object.entries(grouped).map(([type, targetIds], index) => {
+                return Object.entries(grouped).map(([type, targetIdsSet], index) => {
+                  const targetIds = Array.from(targetIdsSet);
                   const relatedNames = targetIds
                     .map((id) => targetUserNames[id])
                     .filter(Boolean);
@@ -246,7 +256,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                         key={type}
                         style={{ animationDelay: `${index * 0.1}s` }}
                       >
-                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                        {formatRelationshipType(type)}
                       </span>
                     // </div>
                   );

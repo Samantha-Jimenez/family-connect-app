@@ -19,6 +19,14 @@ const FamilyRoleModal: React.FC<FamilyRoleModalProps> = ({
   relatedUserNames,
   relatedUserIds,
 }) => {
+  // Helper function to format relationship type for display
+  const formatRelationshipType = (type: string): string => {
+    return type
+      .replace(/_/g, ' ')
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
@@ -48,7 +56,7 @@ const FamilyRoleModal: React.FC<FamilyRoleModalProps> = ({
           <p className="mb-4">
             <span className="font-semibold">{userName}</span> is a{' '}
             <span className="font-semibold text-yellow-700 dark:text-yellow-500">
-              {relationshipType.charAt(0).toUpperCase() + relationshipType.slice(1)}
+              {formatRelationshipType(relationshipType)}
             </span>{' '}
             to:
           </p>

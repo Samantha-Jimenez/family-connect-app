@@ -156,7 +156,11 @@ export default function EnhancedRelationshipForm({ onRelationshipCreated, showTo
   };
 
   const formatRelationshipType = (type: RelationshipType): string => {
-    return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return type
+      .replace(/_/g, ' ')
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
   };
 
   return (
