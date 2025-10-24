@@ -43,6 +43,7 @@ export const familyTreeData = {
         { 
           first_name: "FaTina", 
           last_name: "Meade",
+          spouse: { "first_name": "Joe", "last_name": "Muñoz" },
           children: [
             { first_name: "Tristan", last_name: "Muñoz" },
             { first_name: "Brenna", last_name: "Muñoz" },
@@ -180,6 +181,7 @@ export const familyTreeData = {
     {
       first_name: "Mario",
       last_name: "Meade",
+      spouse: { "first_name": "Loretta", "last_name": "Meade" },
       children: [
         { first_name: "Jahson", 
           last_name: "Meade",
