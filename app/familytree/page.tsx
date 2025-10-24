@@ -270,7 +270,6 @@ const MultiSpouseLayout = ({
               
               {/* Children row */}
               <div className={`flex justify-center items-start relative ${parentGroup.children.length > 1 ? 'space-x-8' : ''} ${member.first_name === 'Raleigh' ? 'right-[6rem]' : ''}`}>
-              {/* <div className={`absolute w-2 h-2 bg-gray-500 rounded-full bottom-[69%] ${member.first_name === 'Raleigh' ? 'right-[6rem]' : 'left-1/2 -translate-x-1/2'}`} /> */}
 
                 {/* horizontal line behind all children */}
                 {parentGroup.children.length > 1 && (

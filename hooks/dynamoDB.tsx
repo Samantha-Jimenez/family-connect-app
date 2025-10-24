@@ -596,6 +596,8 @@ export const updateFamilyMember = async (
   data: {
     firstName: string;
     lastName: string;
+    middleName?: string;
+    nickName?: string;
     email: string;
     username: string;
     bio: string;
@@ -616,10 +618,12 @@ export const updateFamilyMember = async (
         family_member_id: { S: familyMemberId },
       },
       UpdateExpression:
-        "SET first_name = :firstName, last_name = :lastName, email = :email, username = :username, bio = :bio, phone_number = :phoneNumber, birthday = :birthday, birth_city = :birth_city, birth_state = :birth_state, profile_photo = :profile_photo, current_city = :current_city, current_state = :current_state, death_date = :death_date",
+        "SET first_name = :firstName, last_name = :lastName, middle_name = :middleName, nick_name = :nickName, email = :email, username = :username, bio = :bio, phone_number = :phoneNumber, birthday = :birthday, birth_city = :birth_city, birth_state = :birth_state, profile_photo = :profile_photo, current_city = :current_city, current_state = :current_state, death_date = :death_date",
       ExpressionAttributeValues: {
         ":firstName": { S: data.firstName },
         ":lastName": { S: data.lastName },
+        ":middleName": { S: data.middleName || '' },
+        ":nickName": { S: data.nickName || '' },
         ":email": { S: data.email },
         ":username": { S: data.username },
         ":bio": { S: data.bio },
@@ -887,7 +891,23 @@ export const getUserDataById = async (memberId: string) => {
   }
 };
 
-export const addFamilyMember = async (memberData: { firstName: string, lastName: string, email: string, profile_photo: string }) => {
+export const addFamilyMember = async (memberData: { 
+  firstName: string, 
+  lastName: string, 
+  middleName?: string,
+  nickName?: string,
+  email: string, 
+  username?: string,
+  bio?: string,
+  phoneNumber?: string,
+  birthday?: string,
+  birth_city?: string,
+  birth_state?: string,
+  profile_photo: string,
+  current_city?: string,
+  current_state?: string,
+  death_date?: string
+}) => {
   try {
     const params = {
       TableName: TABLES.FAMILY,
@@ -895,8 +915,22 @@ export const addFamilyMember = async (memberData: { firstName: string, lastName:
         family_member_id: { S: uuidv4() },
         first_name: { S: memberData.firstName },
         last_name: { S: memberData.lastName },
+        middle_name: { S: memberData.middleName || '' },
+        nick_name: { S: memberData.nickName || '' },
         email: { S: memberData.email },
-        profile_photo: { S: memberData.profile_photo }
+        username: { S: memberData.username || '' },
+        bio: { S: memberData.bio || '' },
+        phone_number: { S: memberData.phoneNumber || '' },
+        birthday: { S: memberData.birthday || '' },
+        birth_city: { S: memberData.birth_city || '' },
+        birth_state: { S: memberData.birth_state || '' },
+        profile_photo: { S: memberData.profile_photo },
+        current_city: { S: memberData.current_city || '' },
+        current_state: { S: memberData.current_state || '' },
+        death_date: { S: memberData.death_date || '' },
+        use_first_name: { BOOL: true },
+        use_middle_name: { BOOL: false },
+        use_nick_name: { BOOL: false }
       }
     };
 

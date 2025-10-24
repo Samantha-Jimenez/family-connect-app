@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { getFamilyMembersWithoutEmail, FamilyMember, updateFamilyMember } from '@/hooks/dynamoDB';
 import { useUser } from '@/context/UserContext';
 import Select from 'react-select';
+import Image from 'next/image';
 import ProjectOverviewModal from './ProjectOverviewModal';
 
 export default function NavbarWrapper({ children }: { children: React.ReactNode }) {
@@ -36,9 +37,20 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
         <div className="grid lg:grid-cols-2 items-center max-w-6xl max-lg:max-w-[30rem] w-full justify-center">
           <div className="px-6 py-16 lg:pt-0">
             <h1 className="text-5xl leading-[57px] text-slate-900 font-bold text-british-racing-green">
-              Family Connect App
+              <Image 
+                src="/OurRootline.png" 
+                alt="Our Rootline" 
+                width={400}
+                height={200}
+                className="w-full h-auto max-w-lg"
+                priority
+                quality={100}
+                style={{
+                  imageRendering: 'crisp-edges'
+                }}
+              />
             </h1>
-            <h3 className="font-light mt-12 text-slate-500 leading-relaxed">
+            <h3 className="font-light mt-8 text-slate-500 leading-relaxed">
               This is our shared space to celebrate memories, explore our family tree, and stay connected. Sign in to view and share photos, find birthdays, and discover our roots. 
               <br/> Don't have an account yet? Create one and join the family online.
             </h3>

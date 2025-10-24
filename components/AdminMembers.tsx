@@ -7,6 +7,8 @@ import { getFullImageUrl } from '@/utils/imageUtils';
 export type AdminFormData = {
   firstName: string;
   lastName: string;
+  middleName: string;
+  nickName: string;
   email: string;
   username: string;
   bio: string;
@@ -50,6 +52,8 @@ const AdminMembers = ({ familyMembers, handleAddFamilyMember, formData, handleIn
                 <tr>
                   <th className="px-4 py-2 text-left text-gray-700">First Name</th>
                   <th className="px-4 py-2 text-left text-gray-700">Last Name</th>
+                  <th className="px-4 py-2 text-left text-gray-700">Middle Name</th>
+                  <th className="px-4 py-2 text-left text-gray-700">Nick Name</th>
                   <th className="px-4 py-2 text-left text-gray-700">Email</th>
                   <th className="px-4 py-2 text-left text-gray-700">Username</th>
                   <th className="px-4 py-2 text-left text-gray-700">Actions</th>
@@ -68,6 +72,8 @@ const AdminMembers = ({ familyMembers, handleAddFamilyMember, formData, handleIn
                           setEditFormData({
                             firstName: member.first_name,
                             lastName: member.last_name,
+                            middleName: member.middle_name || '',
+                            nickName: member.nick_name || '',
                             email: member.email,
                             username: member.username,
                             bio: member.bio,
@@ -85,6 +91,8 @@ const AdminMembers = ({ familyMembers, handleAddFamilyMember, formData, handleIn
                     >
                       <td className="border-t px-4 py-2 text-gray-800">{member.first_name}</td>
                       <td className="border-t px-4 py-2 text-gray-800">{member.last_name}</td>
+                      <td className="border-t px-4 py-2 text-gray-800">{member.middle_name || '-'}</td>
+                      <td className="border-t px-4 py-2 text-gray-800">{member.nick_name || '-'}</td>
                       <td className="border-t px-4 py-2 text-gray-800">{member.email}</td>
                       <td className="border-t px-4 py-2 text-gray-800">{member.username}</td>
                       <td className="border-t px-4 py-2 text-gray-800">
@@ -95,9 +103,9 @@ const AdminMembers = ({ familyMembers, handleAddFamilyMember, formData, handleIn
                     </tr>
                     {editingMemberId === member.family_member_id && (
                       <tr>
-                        <td colSpan={5}>
+                        <td colSpan={7}>
                           <form onSubmit={handleUpdateMember} className="p-4 bg-gray-100 rounded-lg">
-                            <div className="grid md:grid-cols-2 md:gap-6">
+                            <div className="grid md:grid-cols-4 md:gap-6">
                               <div className="relative z-0 w-full mb-5 group">
                                 <input
                                   type="text"
@@ -123,6 +131,30 @@ const AdminMembers = ({ familyMembers, handleAddFamilyMember, formData, handleIn
                                   required
                                 />
                                 <label htmlFor="edit_last_name" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Last name</label>
+                              </div>
+                              <div className="relative z-0 w-full mb-5 group">
+                                <input
+                                  type="text"
+                                  name="middleName"
+                                  id="edit_middle_name"
+                                  value={editFormData.middleName}
+                                  onChange={handleEditInputChange}
+                                  className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                                  placeholder=" "
+                                />
+                                <label htmlFor="edit_middle_name" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Middle name</label>
+                              </div>
+                              <div className="relative z-0 w-full mb-5 group">
+                                <input
+                                  type="text"
+                                  name="nickName"
+                                  id="edit_nick_name"
+                                  value={editFormData.nickName}
+                                  onChange={handleEditInputChange}
+                                  className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                                  placeholder=" "
+                                />
+                                <label htmlFor="edit_nick_name" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Nick name</label>
                               </div>
                             </div>
                             <div className="grid md:grid-cols-2 md:gap-6">

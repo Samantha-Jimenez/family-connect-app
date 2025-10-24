@@ -12,6 +12,8 @@ import EnhancedMemberRelationships from '@/components/EnhancedMemberRelationship
 const initialFormData = {
   firstName: '',
   lastName: '',
+  middleName: '',
+  nickName: '',
   email: '',
   username: '',
   bio: '',
