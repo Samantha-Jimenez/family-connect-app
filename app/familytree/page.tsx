@@ -114,14 +114,14 @@ const CoupleBlock = ({
     // <div className="relative flex flex-col items-center">
     <div className="flex flex-col items-center opacity-0 animate-[fadeIn_0.6s_ease-in_forwards] w-[10rem]">
       {/* Top row: either A alone, or A—spouse */}
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center">
         <PersonCard member={a} />
 
         {hasSpouse && (
           <>
             {/* Horizontal connector between partners */}
             <div className="relative flex items-center">
-              <div className="w-4 h-0.5 bg-gray-400" />
+              <div className="w-8 h-0.5 bg-gray-400" />
               {/* marriage knot (centered) */}
               <div className="absolute left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-500 rounded-full" />
             </div>
@@ -182,6 +182,141 @@ const CoupleBlock = ({
   );
 };
 
+/**
+ * MultiSpouseLayout:
+ * Renders a family member with multiple spouses/partners underneath them,
+ * with children connected to their specific parent.
+ */
+const MultiSpouseLayout = ({
+  member,
+  expandedChildIndex,
+  onToggleChild,
+}: {
+  member: FamilyMemberProps;
+  expandedChildIndex: number | null;
+  onToggleChild: (index: number) => void;
+}) => {
+  // Collect all spouses/partners (current + previous)
+  const allSpouses = [
+    ...(member.spouse ? [member.spouse] : []),
+    ...(member.previousSpouses || [])
+  ];
+
+  // Group children by their parent
+  const childrenByParent: Array<{
+    spouse: FamilyMemberProps | undefined;
+    children: FamilyMemberProps[];
+  }> = allSpouses.map(spouse => ({
+    spouse,
+    children: spouse.children || []
+  }));
+
+  // Add children from the main member (if any)
+  if (member.children && member.children.length > 0) {
+    childrenByParent.unshift({
+      spouse: undefined, // No spouse for main member's direct children
+      children: member.children
+    });
+  }
+
+  return (
+    <div className="flex flex-col items-center opacity-0 animate-[fadeIn_0.6s_ease-in_forwards]">
+      {/* Main family member */}
+      <div className="mb-4">
+        <PersonCard member={member} />
+      </div>
+
+      {/* Vertical line down from main member */}
+      <div className="w-0.5 bg-gray-400 h-8 mt-1" />
+      <div className="absolute left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-500 rounded-full bottom-[69%]" />
+
+      {/* Spouses/Partners row */}
+      {allSpouses.length > 0 && (
+         <div className="flex items-start space-x-8">
+           {allSpouses.reverse().map((spouse, index) => {
+             // Check if this spouse has children
+             // For current spouse: check if main member has children
+             // For previous spouses: check if they have children on their object
+             const hasChildren = (spouse === member.spouse && member.children && member.children.length > 0) ||
+                                (spouse.children && spouse.children.length > 0);
+             
+             return (
+               <div key={index} className="flex flex-col items-center">
+                 <PersonCard member={spouse} />
+                 {/* Small connector line from spouse to children */}
+                 {hasChildren && (
+                   <div className="w-0.5 bg-gray-300 h-4" />
+                 )}
+               </div>
+             );
+           })}
+        </div>
+      )}
+
+      {/* Children row */}
+      <div className="flex justify-center items-start relative">
+        {/* Children grouped by parent */}
+        {childrenByParent.reverse().map((parentGroup, parentIndex) => {
+          if (parentGroup.children.length === 0) return null;
+
+          return (
+            <div key={parentIndex} className="flex flex-col items-center mb-6">
+              {/* Parent label (if not main member) */}
+              {/* {parentGroup.spouse && (
+                <div className="text-xs text-gray-500 mb-2">
+                  Children with {parentGroup.spouse.first_name}
+                </div>
+              )} */}
+              
+              {/* Children row */}
+              <div className={`flex justify-center items-start relative ${parentGroup.children.length > 1 ? 'space-x-8' : ''} ${member.first_name === 'Raleigh' ? 'right-[6rem]' : ''}`}>
+              {/* <div className={`absolute w-2 h-2 bg-gray-500 rounded-full bottom-[69%] ${member.first_name === 'Raleigh' ? 'right-[6rem]' : 'left-1/2 -translate-x-1/2'}`} /> */}
+
+                {/* horizontal line behind all children */}
+                {parentGroup.children.length > 1 && (
+                  <div className="absolute left-[95px] right-[63px] top-0 h-0.5 bg-gray-300" />
+                )}
+                
+                {parentGroup.children.map((child, childIndex) => (
+                  <div
+                    key={childIndex}
+                    className={`relative flex flex-col items-center min-h-[170px] ${child.spouse ? "w-[304px]" : "w-[128px]"} animate-[fadeIn_0.3s_ease-in_forwards] opacity-0`}
+                    style={{ animationDelay: `${(parentIndex * parentGroup.children.length + childIndex) * 0.06 + 0.2}s` }}
+                  >
+                    {/* vertical connector from the horizontal line to each child card */}
+                    {parentGroup.children.length > 1 && (
+                      <div 
+                        className="w-0.5 h-8 bg-gray-300" 
+                        style={{
+                          position: "relative",
+                          right: child.spouse ? "29%" : undefined,
+                        }}
+                      />
+                    )}
+                    <FamilyMember 
+                      member={child} 
+                      isExpanded={expandedChildIndex === childIndex}
+                    />
+                    {/* Expand/Collapse button - positioned absolutely to stay in place */}
+                    {child.children && child.children.length > 0 && (
+                      <button
+                        className="absolute top-[148px] text-xs text-green-600 font-extralight hover:text-dark-spring-green hover:font-light hover:text-sm transition-all duration-200 ease-in-out hover:scale-110 active:scale-95"
+                        onClick={() => onToggleChild(childIndex)}
+                      >
+                        {expandedChildIndex === childIndex ? "Collapse" : "Expand"}
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 const FamilyMember = ({
   member,
   expandedChildIndex: controlledExpandedChildIndex,
@@ -200,6 +335,21 @@ const FamilyMember = ({
   const handleToggleChild = (index: number) => {
     setExpandedChildIndex(expandedChildIndex === index ? null : index);
   };
+
+  // Check if this member has multiple spouses/partners
+  const hasMultipleSpouses = (member.spouse && member.previousSpouses && member.previousSpouses.length > 0) ||
+                            (member.previousSpouses && member.previousSpouses.length > 1);
+
+  // If member has multiple spouses/partners, use the new MultiSpouseLayout
+  if (hasMultipleSpouses && isExpanded) {
+    return (
+      <MultiSpouseLayout
+        member={member}
+        expandedChildIndex={expandedChildIndex}
+        onToggleChild={handleToggleChild}
+      />
+    );
+  }
 
   // Primary union (member + spouse)
   const primaryUnionChildren = (member.children || []).slice();
