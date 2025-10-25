@@ -54,7 +54,7 @@ export const familyTreeData = {
         { first_name: "Clifton", 
           last_name: "Meade",
           children: [
-            { first_name: "Bella", last_name: "" },
+            { first_name: "Bella", last_name: "Meade" },
           ]
         }
       ],
@@ -104,8 +104,8 @@ export const familyTreeData = {
       ],
     },
     {
-      first_name: "Frances",
-      last_name: "",
+      first_name: "Lyndia",
+      last_name: "Meade-Jonas",
       children: [
         { first_name: "Ronald", 
           last_name: "Oglesby",
@@ -166,7 +166,7 @@ export const familyTreeData = {
           ]
         },
         { first_name: "Justin", 
-          last_name: "",
+          last_name: "Pinder",
           children: [
             { first_name: "Baby", last_name: "Boy" },
             { first_name: "Baby", last_name: "Boy" }
