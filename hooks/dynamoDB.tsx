@@ -659,11 +659,12 @@ export const validateRelationship = async (
       return { valid: false, error: "A person cannot have a relationship with themselves" };
     }
 
-    // Check for existing relationships
+    // Check for existing relationships of the same type
     const existingRelationships = await getFamilyRelationships(personA);
     const duplicateRelationship = existingRelationships.find(rel => 
-      (rel.person_a_id === personA && rel.person_b_id === personB) ||
-      (rel.person_a_id === personB && rel.person_b_id === personA)
+      ((rel.person_a_id === personA && rel.person_b_id === personB) ||
+       (rel.person_a_id === personB && rel.person_b_id === personA)) &&
+      rel.relationship_type === relationshipType
     );
 
     if (duplicateRelationship) {
@@ -852,17 +853,15 @@ export const getFamilyRelationships = async (familyMemberId: string): Promise<Fa
   }
 };
 
-// Function to remove a relationship
+// Function to remove a relationship by relationship_id
 export const removeFamilyRelationship = async (
-  sourceId: string,
-  targetId: string
+  relationshipId: string
 ) => {
   try {
     const params = {
       TableName: TABLES.RELATIONSHIPS,
       Key: {
-        source_id: { S: sourceId },
-        target_id: { S: targetId }
+        relationship_id: { S: relationshipId }
       }
     };
 

@@ -32,6 +32,14 @@ const RELATIONSHIP_CATEGORIES = {
   'Other': ['guardian', 'ward', 'godparent', 'godchild']
 };
 
+// Gender-specific relationship mappings for better clarity
+const GENDER_SPECIFIC_RELATIONSHIPS = {
+  'aunt': ['niece', 'nephew'],
+  'uncle': ['niece', 'nephew'],
+  'niece': ['aunt', 'uncle'],
+  'nephew': ['aunt', 'uncle']
+};
+
 export default function EnhancedRelationshipForm({ onRelationshipCreated, showToast }: EnhancedRelationshipFormProps) {
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [selectedPersonA, setSelectedPersonA] = useState<string>('');
@@ -45,6 +53,7 @@ export default function EnhancedRelationshipForm({ onRelationshipCreated, showTo
   const [loading, setLoading] = useState(false);
   const [validating, setValidating] = useState(false);
   const [validationResult, setValidationResult] = useState<{ valid: boolean; error?: string } | null>(null);
+  const [genderSpecificRelationship, setGenderSpecificRelationship] = useState<string>('');
 
   useEffect(() => {
     const fetchFamilyMembers = async () => {
@@ -103,6 +112,11 @@ export default function EnhancedRelationshipForm({ onRelationshipCreated, showTo
     return () => clearTimeout(timeoutId);
   }, [selectedPersonA, selectedPersonB, selectedRelationshipType]);
 
+  // Clear gender-specific relationship when relationship type changes
+  useEffect(() => {
+    setGenderSpecificRelationship('');
+  }, [selectedRelationshipType]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -116,14 +130,53 @@ export default function EnhancedRelationshipForm({ onRelationshipCreated, showTo
       return;
     }
 
+    // Check if gender-specific relationship is required but not selected
+    if (needsGenderSpecificOptions(selectedRelationshipType) && !genderSpecificRelationship) {
+      showToast?.('Please specify the gender-specific relationship', 'error');
+      return;
+    }
+
     setLoading(true);
     try {
-      await addFamilyRelationship(selectedPersonA, selectedPersonB, selectedRelationshipType, {
-        relationshipSubtype: relationshipSubtype || undefined,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
-        notes: notes || undefined,
+      console.log('Form submission debug:', {
+        selectedPersonA,
+        selectedPersonB,
+        selectedRelationshipType,
+        genderSpecificRelationship,
+        needsGenderSpecific: needsGenderSpecificOptions(selectedRelationshipType)
       });
+
+      // For gender-specific relationships, create both directions with appropriate types
+      if (needsGenderSpecificOptions(selectedRelationshipType)) {
+        console.log('Creating gender-specific relationships:', {
+          relationshipA: `${selectedPersonA} -> ${selectedPersonB}: ${selectedRelationshipType}`,
+          relationshipB: `${selectedPersonB} -> ${selectedPersonA}: ${genderSpecificRelationship}`
+        });
+
+        // Create relationship A -> B with the selected type
+        await addFamilyRelationship(selectedPersonA, selectedPersonB, selectedRelationshipType, {
+          relationshipSubtype: relationshipSubtype || undefined,
+          startDate: startDate || undefined,
+          endDate: endDate || undefined,
+          notes: notes || undefined,
+        });
+
+        // Create relationship B -> A with the gender-specific type
+        await addFamilyRelationship(selectedPersonB, selectedPersonA, genderSpecificRelationship as RelationshipType, {
+          relationshipSubtype: relationshipSubtype || undefined,
+          startDate: startDate || undefined,
+          endDate: endDate || undefined,
+          notes: notes || undefined,
+        });
+      } else {
+        // For regular relationships, create the relationship normally
+        await addFamilyRelationship(selectedPersonA, selectedPersonB, selectedRelationshipType, {
+          relationshipSubtype: relationshipSubtype || undefined,
+          startDate: startDate || undefined,
+          endDate: endDate || undefined,
+          notes: notes || undefined,
+        });
+      }
 
       showToast?.('Relationship created successfully!', 'success');
       
@@ -135,6 +188,7 @@ export default function EnhancedRelationshipForm({ onRelationshipCreated, showTo
       setStartDate('');
       setEndDate('');
       setNotes('');
+      setGenderSpecificRelationship('');
       setValidationResult(null);
       
       onRelationshipCreated?.();
@@ -161,6 +215,16 @@ export default function EnhancedRelationshipForm({ onRelationshipCreated, showTo
       .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(' ');
+  };
+
+  // Check if the selected relationship type needs gender-specific options
+  const needsGenderSpecificOptions = (relationshipType: RelationshipType): boolean => {
+    return ['aunt', 'uncle', 'niece', 'nephew'].includes(relationshipType);
+  };
+
+  // Get the available gender-specific options for a relationship type
+  const getGenderSpecificOptions = (relationshipType: RelationshipType): string[] => {
+    return GENDER_SPECIFIC_RELATIONSHIPS[relationshipType as keyof typeof GENDER_SPECIFIC_RELATIONSHIPS] || [];
   };
 
   return (
@@ -277,6 +341,40 @@ export default function EnhancedRelationshipForm({ onRelationshipCreated, showTo
             ))}
           </div>
         </div>
+
+        {/* Gender-Specific Relationship Selection */}
+        {needsGenderSpecificOptions(selectedRelationshipType) && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <h3 className="text-lg font-semibold mb-3 text-yellow-800">
+              Specify Gender-Specific Relationship
+            </h3>
+            <p className="text-sm text-yellow-700 mb-3">
+              Since you selected "{formatRelationshipType(selectedRelationshipType)}", please specify the gender-specific relationship for the other person.
+            </p>
+            <div className="space-y-2">
+              {getGenderSpecificOptions(selectedRelationshipType).map((option) => (
+                <label key={option} className="flex items-center">
+                  <input
+                    type="radio"
+                    name="genderSpecificRelationship"
+                    value={option}
+                    checked={genderSpecificRelationship === option}
+                    onChange={(e) => {
+                      console.log('Gender-specific relationship selected:', e.target.value);
+                      setGenderSpecificRelationship(e.target.value);
+                    }}
+                    className="mr-2"
+                    required
+                  />
+                  <span className="text-sm">{formatRelationshipType(option as RelationshipType)}</span>
+                </label>
+              ))}
+            </div>
+            <div className="mt-2 text-xs text-gray-600">
+              Debug: Selected relationship type: {selectedRelationshipType}, Gender-specific: {genderSpecificRelationship}
+            </div>
+          </div>
+        )}
 
         {/* Relationship Subtype */}
         <div>

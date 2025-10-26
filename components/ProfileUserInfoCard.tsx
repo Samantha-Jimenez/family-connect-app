@@ -222,10 +222,31 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                   // Determine which person is the related person (not the current user)
                   const relatedPersonId = relationship.person_a_id === userId ? relationship.person_b_id : relationship.person_a_id;
                   
-                  // Determine the relationship type from the user's perspective
-                  const relationshipTypeFromUserPerspective = relationship.person_a_id === userId 
-                    ? relationship.relationship_type 
-                    : getInverseRelationshipType(relationship.relationship_type);
+                  // Use the actual relationship type from the user's perspective
+                  // If the user is person_a, use the relationship_type directly
+                  // If the user is person_b, we need to find the reverse relationship
+                  let relationshipTypeFromUserPerspective: string;
+                  
+                  if (relationship.person_a_id === userId) {
+                    // User is person_a, so use the relationship type directly
+                    relationshipTypeFromUserPerspective = relationship.relationship_type;
+                  } else {
+                    // User is person_b, so we need to find the reverse relationship
+                    // Look for a relationship where the user is person_a and the other person is person_b
+                    const reverseRelationship = userRelationships.find(rel => 
+                      rel.person_a_id === userId && 
+                      rel.person_b_id === relationship.person_a_id &&
+                      rel.relationship_id !== relationship.relationship_id
+                    );
+                    
+                    if (reverseRelationship) {
+                      // Use the actual reverse relationship type
+                      relationshipTypeFromUserPerspective = reverseRelationship.relationship_type;
+                    } else {
+                      // Fallback to hardcoded inverse (for backward compatibility)
+                      relationshipTypeFromUserPerspective = getInverseRelationshipType(relationship.relationship_type);
+                    }
+                  }
                   
                   if (!grouped[relationshipTypeFromUserPerspective]) {
                     grouped[relationshipTypeFromUserPerspective] = new Set();

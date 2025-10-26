@@ -76,7 +76,7 @@ export default function EnhancedMemberRelationships({
 
   const handleRemoveRelationship = async (relationship: FamilyRelationship) => {
     try {
-      await removeFamilyRelationship(relationship.person_a_id, relationship.person_b_id);
+      await removeFamilyRelationship(relationship.relationship_id);
       showToast?.('Relationship removed successfully', 'success');
       onRelationshipRemoved?.();
       
