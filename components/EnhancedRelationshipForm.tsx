@@ -37,7 +37,9 @@ const GENDER_SPECIFIC_RELATIONSHIPS = {
   'aunt': ['niece', 'nephew'],
   'uncle': ['niece', 'nephew'],
   'niece': ['aunt', 'uncle'],
-  'nephew': ['aunt', 'uncle']
+  'nephew': ['aunt', 'uncle'],
+  'sister_in_law': ['brother_in_law', 'sister_in_law'],
+  'brother_in_law': ['sister_in_law', 'brother_in_law']
 };
 
 export default function EnhancedRelationshipForm({ onRelationshipCreated, showToast }: EnhancedRelationshipFormProps) {
@@ -219,7 +221,7 @@ export default function EnhancedRelationshipForm({ onRelationshipCreated, showTo
 
   // Check if the selected relationship type needs gender-specific options
   const needsGenderSpecificOptions = (relationshipType: RelationshipType): boolean => {
-    return ['aunt', 'uncle', 'niece', 'nephew'].includes(relationshipType);
+    return ['aunt', 'uncle', 'niece', 'nephew', 'sister_in_law', 'brother_in_law'].includes(relationshipType);
   };
 
   // Get the available gender-specific options for a relationship type
