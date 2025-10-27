@@ -52,6 +52,21 @@ const AdminPage = () => {
   const [editIsUploading, setEditIsUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('members');
   const [relationshipRefreshKey, setRelationshipRefreshKey] = useState<number>(Date.now());
+  const [sortField, setSortField] = useState<keyof FamilyMember | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  const sortedFamilyMembers = React.useMemo(() => {
+    if (!sortField) return familyMembers;
+    
+    return [...familyMembers].sort((a, b) => {
+      const aValue = a[sortField] || '';
+      const bValue = b[sortField] || '';
+      
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [familyMembers, sortField, sortDirection]);
 
   useEffect(() => {
     if (user && user.userId === "f16b1510-0001-705f-8680-28689883e706") {
@@ -262,6 +277,15 @@ const AdminPage = () => {
     setSelectedImage(null);
   };
 
+  const handleSort = (field: keyof FamilyMember) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
   return (
     <div className="min-h-screen p-6 bg-gray-50">
       <h1 className="text-4xl font-bold text-center mb-6 text-gray-800">Admin Page</h1>
@@ -287,7 +311,7 @@ const AdminPage = () => {
           </a>
         </div>
         <div className="mt-4">
-          {activeTab === 'members' && <AdminMembers familyMembers={familyMembers} handleAddFamilyMember={handleAddFamilyMember} formData={formData} handleInputChange={handleInputChange} imagePreview={imagePreview} handleImageChange={handleImageChange} isUploading={isUploading} uploadProgress={uploadProgress} handleClearImage={handleClearImage} editingMemberId={editingMemberId} setEditingMemberId={setEditingMemberId} editFormData={editFormData} setEditFormData={setEditFormData} handleEditInputChange={handleEditInputChange} handleUpdateMember={handleUpdateMember} handleEditImageChange={handleEditImageChange} editImagePreview={editImagePreview} editIsUploading={editIsUploading} editUploadProgress={editUploadProgress} />}
+          {activeTab === 'members' && <AdminMembers familyMembers={sortedFamilyMembers} handleAddFamilyMember={handleAddFamilyMember} formData={formData} handleInputChange={handleInputChange} imagePreview={imagePreview} handleImageChange={handleImageChange} isUploading={isUploading} uploadProgress={uploadProgress} handleClearImage={handleClearImage} editingMemberId={editingMemberId} setEditingMemberId={setEditingMemberId} editFormData={editFormData} setEditFormData={setEditFormData} handleEditInputChange={handleEditInputChange} handleUpdateMember={handleUpdateMember} handleEditImageChange={handleEditImageChange} editImagePreview={editImagePreview} editIsUploading={editIsUploading} editUploadProgress={editUploadProgress} sortField={sortField} sortDirection={sortDirection} handleSort={handleSort} />}
           {activeTab === 'relationships' && <AdminRelationships familyMembers={familyMembers} handleCreateRelationship={handleCreateRelationship} selectedSourceMemberId={selectedSourceMemberId} setSelectedSourceMemberId={setSelectedSourceMemberId} selectedTargetMemberId={selectedTargetMemberId} setSelectedTargetMemberId={setSelectedTargetMemberId} relationshipType={relationshipType} setRelationshipType={setRelationshipType} />}
           {activeTab === 'enhanced-relationships' && (
             <div className="space-y-8">

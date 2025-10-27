@@ -30,7 +30,30 @@ const US_STATES = [
   'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
 ];
 
-const AdminMembers = ({ familyMembers, handleAddFamilyMember, formData, handleInputChange, imagePreview, handleImageChange, isUploading, uploadProgress, handleClearImage, editingMemberId, setEditingMemberId, editFormData, setEditFormData, handleEditInputChange, handleUpdateMember, handleEditImageChange, editImagePreview, editIsUploading, editUploadProgress }: { familyMembers: FamilyMember[], handleAddFamilyMember: (e: React.FormEvent<HTMLFormElement>) => void, formData: AdminFormData, handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void, imagePreview: string | null, handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void, isUploading: boolean, uploadProgress: number, handleClearImage: () => void, editingMemberId: string | null, setEditingMemberId: (id: string | null) => void, editFormData: AdminFormData, setEditFormData: (formData: AdminFormData) => void, handleEditInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void, handleUpdateMember: (e: React.FormEvent<HTMLFormElement>) => void, handleEditImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void, editImagePreview: string | null, editIsUploading: boolean, editUploadProgress: number }) => {
+const AdminMembers = ({ familyMembers, handleAddFamilyMember, formData, handleInputChange, imagePreview, handleImageChange, isUploading, uploadProgress, handleClearImage, editingMemberId, setEditingMemberId, editFormData, setEditFormData, handleEditInputChange, handleUpdateMember, handleEditImageChange, editImagePreview, editIsUploading, editUploadProgress, sortField, sortDirection, handleSort }: { familyMembers: FamilyMember[], handleAddFamilyMember: (e: React.FormEvent<HTMLFormElement>) => void, formData: AdminFormData, handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void, imagePreview: string | null, handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void, isUploading: boolean, uploadProgress: number, handleClearImage: () => void, editingMemberId: string | null, setEditingMemberId: (id: string | null) => void, editFormData: AdminFormData, setEditFormData: (formData: AdminFormData) => void, handleEditInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void, handleUpdateMember: (e: React.FormEvent<HTMLFormElement>) => void, handleEditImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void, editImagePreview: string | null, editIsUploading: boolean, editUploadProgress: number, sortField: keyof FamilyMember | null, sortDirection: 'asc' | 'desc', handleSort: (field: keyof FamilyMember) => void }) => {
+  
+  const renderSortableHeader = (field: keyof FamilyMember, label: string) => {
+    const isActive = sortField === field;
+    return (
+      <th 
+        className="px-4 py-2 text-left text-gray-700 cursor-pointer hover:bg-gray-300 select-none"
+        onClick={() => handleSort(field)}
+      >
+        <div className="flex items-center gap-1">
+          <span>{label}</span>
+          {isActive && (
+            <span className="text-sm">
+              {sortDirection === 'asc' ? '↑' : '↓'}
+            </span>
+          )}
+          {!isActive && (
+            <span className="text-sm text-gray-400">↕</span>
+          )}
+        </div>
+      </th>
+    );
+  };
+
   return (
     <div>
         <AdminCreateFamilyMemberForm
@@ -50,12 +73,12 @@ const AdminMembers = ({ familyMembers, handleAddFamilyMember, formData, handleIn
             <table className="table w-full bg-white shadow-md rounded-lg">
               <thead className="bg-gray-200">
                 <tr>
-                  <th className="px-4 py-2 text-left text-gray-700">First Name</th>
-                  <th className="px-4 py-2 text-left text-gray-700">Last Name</th>
-                  <th className="px-4 py-2 text-left text-gray-700">Middle Name</th>
-                  <th className="px-4 py-2 text-left text-gray-700">Nick Name</th>
-                  <th className="px-4 py-2 text-left text-gray-700">Email</th>
-                  <th className="px-4 py-2 text-left text-gray-700">Username</th>
+                  {renderSortableHeader('first_name', 'First Name')}
+                  {renderSortableHeader('last_name', 'Last Name')}
+                  {renderSortableHeader('middle_name', 'Middle Name')}
+                  {renderSortableHeader('nick_name', 'Nick Name')}
+                  {renderSortableHeader('email', 'Email')}
+                  {renderSortableHeader('username', 'Username')}
                   <th className="px-4 py-2 text-left text-gray-700">Actions</th>
                 </tr>
               </thead>
