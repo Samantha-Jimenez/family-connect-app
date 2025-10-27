@@ -87,10 +87,10 @@ export const familyTreeData = {
           first_name: "Lisa", 
           last_name: "Meade",
           children: [
-            { first_name: "Taleyah", last_name: "" },
-            { first_name: "Tiara", last_name: "" },
-            { first_name: "Treyvon", last_name: "" },
-            { first_name: "Tayden", last_name: "" }
+            { first_name: "Taleyah", last_name: "Meade" },
+            { first_name: "Treyvon", last_name: "Meade" },
+            { first_name: "Tiara", last_name: "Meade" },
+            { first_name: "Tayden", last_name: "Meade" }
           ]
         }, 
         { first_name: "Maurice", 
