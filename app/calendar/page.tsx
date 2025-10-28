@@ -51,7 +51,7 @@ interface CalendarEvent {
 }
 
 export default function Calendar() {
-  const { events, setEvents, rsvpEvent } = useCalendar();
+  const { events, setEvents, rsvpEvent, refreshEvents } = useCalendar();
   const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
@@ -275,7 +275,17 @@ export default function Calendar() {
         headerToolbar={{
           left: 'prev,next today',
           center: 'title',
-          right: 'timeGridWeek,dayGridMonth,multiMonthYear,listYear'
+          right: 'refreshEvents timeGridWeek,dayGridMonth,multiMonthYear,listYear'
+        }}
+        customButtons={{
+          refreshEvents: {
+            text: '🔄 Refresh',
+            click: () => {
+              refreshEvents();
+              // Also refresh the page to ensure all events are regenerated
+              window.location.reload();
+            }
+          }
         }}
         initialView="dayGridMonth"
         views={{
