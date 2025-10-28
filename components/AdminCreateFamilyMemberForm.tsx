@@ -163,7 +163,7 @@ const AdminCreateFamilyMemberForm = ({ handleAddFamilyMember, formData, handleIn
               <label htmlFor="admin_bio" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Bio</label>
             </div>
             <div className="relative z-0 w-full mb-5 group md:row-span-1 md:col-span-1 md:col-start-3">
-              <div className="flex items-center">
+              <div className="flex items-center gap-2">
                 <input
                   type="date"
                   name="birthday"
@@ -173,6 +173,38 @@ const AdminCreateFamilyMemberForm = ({ handleAddFamilyMember, formData, handleIn
                   className="block py-2.5 px-0 w-full text-sm bg-transparent border-0 border-b-2 border-gray-300 appearance-none text-black focus:outline-none focus:ring-0 focus:border-blue-600 peer"
                   placeholder=" "
                 />
+                <label className="flex items-center gap-1 text-xs text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={!!(formData.birthday && formData.birthday.startsWith('1000-'))}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        // If birthday exists, replace year with 1000, otherwise set to 1000-01-01
+                        const currentDate = formData.birthday || '1000-01-01';
+                        const [, month, day] = currentDate.split('-');
+                        handleInputChange({
+                          target: {
+                            name: 'birthday',
+                            value: `1000-${month || '01'}-${day || '01'}`
+                          }
+                        } as any);
+                      } else {
+                        // If unchecking, set to current year or keep existing year
+                        const currentDate = formData.birthday || new Date().toISOString().split('T')[0];
+                        const [, month, day] = currentDate.split('-');
+                        const currentYear = new Date().getFullYear();
+                        handleInputChange({
+                          target: {
+                            name: 'birthday',
+                            value: `${currentYear}-${month || '01'}-${day || '01'}`
+                          }
+                        } as any);
+                      }
+                    }}
+                    className="checkbox checkbox-xs"
+                  />
+                  <span>Year unknown</span>
+                </label>
                 {formData.birthday && (
                   <button
                     type="button"

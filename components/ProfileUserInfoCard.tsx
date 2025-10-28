@@ -87,6 +87,16 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
       return '';
     }
     const [year, month, day] = dateString.split('-').map(num => parseInt(num));
+    
+    // Handle unknown year (1000 placeholder)
+    if (year === 1000) {
+      const date = new Date(2000, month - 1, day); // Use 2000 as a dummy year for formatting
+      return date.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric'
+      });
+    }
+    
     const date = new Date(year, month - 1, day);
     return date.toLocaleDateString('en-US', {
       month: 'long',

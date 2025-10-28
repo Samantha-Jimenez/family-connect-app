@@ -235,15 +235,49 @@ const AdminMembers = ({ familyMembers, handleAddFamilyMember, formData, handleIn
                             </div>
                             <div className="grid md:grid-cols-2 md:gap-6">
                               <div className="relative z-0 w-full mb-5 group">
-                                <input
-                                  type="date"
-                                  name="birthday"
-                                  id="edit_birthday"
-                                  value={editFormData.birthday}
-                                  onChange={handleEditInputChange}
-                                  className="block py-2.5 px-0 w-full text-sm bg-transparent border-0 border-b-2 border-gray-300 appearance-none text-black focus:outline-none focus:ring-0 focus:border-blue-600 peer"
-                                  placeholder=" "
-                                />
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="date"
+                                    name="birthday"
+                                    id="edit_birthday"
+                                    value={editFormData.birthday}
+                                    onChange={handleEditInputChange}
+                                    className="block py-2.5 px-0 w-full text-sm bg-transparent border-0 border-b-2 border-gray-300 appearance-none text-black focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                                    placeholder=" "
+                                  />
+                                  <label className="flex items-center gap-1 text-xs text-gray-600">
+                                    <input
+                                      type="checkbox"
+                                      checked={!!(editFormData.birthday && editFormData.birthday.startsWith('1000-'))}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          // If birthday exists, replace year with 1000, otherwise set to 1000-01-01
+                                          const currentDate = editFormData.birthday || '1000-01-01';
+                                          const [, month, day] = currentDate.split('-');
+                                          handleEditInputChange({
+                                            target: {
+                                              name: 'birthday',
+                                              value: `1000-${month || '01'}-${day || '01'}`
+                                            }
+                                          } as any);
+                                        } else {
+                                          // If unchecking, set to current year or keep existing year
+                                          const currentDate = editFormData.birthday || new Date().toISOString().split('T')[0];
+                                          const [, month, day] = currentDate.split('-');
+                                          const currentYear = new Date().getFullYear();
+                                          handleEditInputChange({
+                                            target: {
+                                              name: 'birthday',
+                                              value: `${currentYear}-${month || '01'}-${day || '01'}`
+                                            }
+                                          } as any);
+                                        }
+                                      }}
+                                      className="checkbox checkbox-xs"
+                                    />
+                                    <span>Year unknown</span>
+                                  </label>
+                                </div>
                                 <label htmlFor="edit_birthday" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Birthday (MM/DD/YYYY)</label>
                               </div>
                               <div className="relative z-0 w-full mb-5 group">

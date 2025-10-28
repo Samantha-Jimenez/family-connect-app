@@ -75,20 +75,22 @@ export default function Calendar() {
             const dateStr = member.birthday.split('T')[0]; // Get YYYY-MM-DD part
             const [year, month, day] = dateStr.split('-').map(Number);
             
-            if (year && month && day) {
+            if (month && day) {
               // Create birthday events for the next 5 years
               const currentYear = new Date().getFullYear();
               for (let yearOffset = 0; yearOffset < 5; yearOffset++) {
                 // Format date directly as YYYY-MM-DD to avoid timezone conversion
                 const eventDateStr = `${currentYear + yearOffset}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 
+                const title = `${member.first_name} ${member.last_name}'s Birthday 🎂`;
+                
                 generatedEvents.push({
                   id: `birthday-${member.family_member_id}-${currentYear + yearOffset}`,
-                  title: `${member.first_name} ${member.last_name}'s Birthday 🎂`,
+                  title: title,
                   start: eventDateStr,
                   allDay: true,
-                  backgroundColor: '#F4C47A',
-                  borderColor: '#EA9010',
+                  backgroundColor: '#E8D4B8',
+                  borderColor: '#D2A267',
                   textColor: '#000000',
                   extendedProps: {
                     category: 'birthday',
@@ -214,9 +216,9 @@ export default function Calendar() {
       userId,
       description,
       // Apply default green colors for user-created events
-      backgroundColor: '#5CAB68', // Green background
-      borderColor: '#16a34a',    // Darker green border
-      textColor: '#ffffff',       // White text
+      backgroundColor: '#C8D5B9', // Green background
+      borderColor: '#2E6E49',    // Darker green border
+      textColor: '#000000',       // Black text
       extendedProps: {
         category: 'appointment' as const // Default category for user-created events
       }
