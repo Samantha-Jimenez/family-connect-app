@@ -718,13 +718,17 @@ const checkIfAncestor = async (
     
     for (const rel of relationships) {
       if (rel.relationship_type === 'parent') {
-        const parentId = rel.person_a_id === descendantId ? rel.person_b_id : rel.person_a_id;
-        if (parentId === ancestorId) {
-          return true;
-        }
-        // Recursively check if the parent is an ancestor, passing the visited set and incrementing depth
-        if (await checkIfAncestor(ancestorId, parentId, new Set(visited), depth + 1, maxDepth)) {
-          return true;
+        // For parent relationships, person_a_id is the parent, person_b_id is the child
+        // We're looking for parents of the descendantId, so person_b_id should equal descendantId
+        if (rel.person_b_id === descendantId) {
+          const parentId = rel.person_a_id;
+          if (parentId === ancestorId) {
+            return true;
+          }
+          // Recursively check if the parent is an ancestor, passing the visited set and incrementing depth
+          if (await checkIfAncestor(ancestorId, parentId, visited, depth + 1, maxDepth)) {
+            return true;
+          }
         }
       }
     }
