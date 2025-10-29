@@ -68,7 +68,7 @@ export const familyTreeData = {
           last_name: "Meade",
           spouse: { "first_name": "Ashley", "last_name": "Meade" },
           children: [
-            { first_name: "Bailey", last_name: "Meade" },
+            { first_name: "Baileigh", last_name: "Meade" },
             { first_name: "Elijah", last_name: "Meade" }
           ],
           previousSpouses: [
@@ -131,12 +131,12 @@ export const familyTreeData = {
           ]
         },
         { first_name: "Aristalia", 
-          last_name: "",
+          last_name: "Meade",
           children: [
             { first_name: "Josiah", 
-              last_name: "Boy",
+              last_name: "Meade-Dudley",
               children: [
-                { first_name: "Baby", last_name: "?" },
+                { first_name: "Baby", last_name: "Girl" },
               ]
             },
             { first_name: "Baby", last_name: "Girl" },
