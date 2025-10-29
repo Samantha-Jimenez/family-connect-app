@@ -26,6 +26,7 @@ const RELATIONSHIP_CATEGORIES = {
   'Spousal': ['spouse', 'ex_spouse', 'partner'],
   'Extended Family': ['grandparent', 'grandchild', 'great_grandparent', 'great_grandchild'],
   'Aunts & Uncles': ['aunt', 'uncle', 'niece', 'nephew'],
+  'Grand Aunts & Uncles': ['grand_aunt', 'grand_uncle', 'grand_niece', 'grand_nephew'],
   'Cousins': ['cousin', 'second_cousin', 'cousin_once_removed'],
   'Step Family': ['step_parent', 'step_child', 'step_sibling'],
   'In-Laws': ['parent_in_law', 'child_in_law', 'sibling_in_law', 'son_in_law', 'daughter_in_law', 'father_in_law', 'mother_in_law', 'brother_in_law', 'sister_in_law'],
@@ -38,8 +39,15 @@ const GENDER_SPECIFIC_RELATIONSHIPS = {
   'uncle': ['niece', 'nephew'],
   'niece': ['aunt', 'uncle'],
   'nephew': ['aunt', 'uncle'],
+  'grand_aunt': ['grand_niece', 'grand_nephew'],
+  'grand_uncle': ['grand_niece', 'grand_nephew'],
+  'grand_niece': ['grand_aunt', 'grand_uncle'],
+  'grand_nephew': ['grand_aunt', 'grand_uncle'],
   'sister_in_law': ['brother_in_law', 'sister_in_law'],
-  'brother_in_law': ['sister_in_law', 'brother_in_law']
+  'brother_in_law': ['sister_in_law', 'brother_in_law'],
+  'parent_in_law': ['daughter_in_law', 'son_in_law'],
+  'father_in_law': ['daughter_in_law', 'son_in_law'],
+  'mother_in_law': ['daughter_in_law', 'son_in_law']
 };
 
 export default function EnhancedRelationshipForm({ onRelationshipCreated, showToast }: EnhancedRelationshipFormProps) {
@@ -221,7 +229,7 @@ export default function EnhancedRelationshipForm({ onRelationshipCreated, showTo
 
   // Check if the selected relationship type needs gender-specific options
   const needsGenderSpecificOptions = (relationshipType: RelationshipType): boolean => {
-    return ['aunt', 'uncle', 'niece', 'nephew', 'sister_in_law', 'brother_in_law'].includes(relationshipType);
+    return ['aunt', 'uncle', 'niece', 'nephew', 'grand_aunt', 'grand_uncle', 'grand_niece', 'grand_nephew', 'sister_in_law', 'brother_in_law', 'parent_in_law', 'father_in_law', 'mother_in_law'].includes(relationshipType);
   };
 
   // Get the available gender-specific options for a relationship type

@@ -103,6 +103,7 @@ export type RelationshipType =
   // Extended family
   | 'grandparent' | 'grandchild' | 'great_grandparent' | 'great_grandchild'
   | 'aunt' | 'uncle' | 'niece' | 'nephew'
+  | 'grand_aunt' | 'grand_uncle' | 'grand_niece' | 'grand_nephew'
   | 'cousin' | 'second_cousin' | 'cousin_once_removed'
   // Step relationships
   | 'step_parent' | 'step_child' | 'step_sibling'
@@ -161,6 +162,10 @@ export const RELATIONSHIP_RULES: Record<RelationshipType, {
   uncle: { inverse: 'nephew', bidirectional: false, autoCreateInverse: false },
   niece: { inverse: 'aunt', bidirectional: false, autoCreateInverse: false },
   nephew: { inverse: 'uncle', bidirectional: false, autoCreateInverse: false },
+  grand_aunt: { inverse: 'grand_niece', bidirectional: false, autoCreateInverse: false },
+  grand_uncle: { inverse: 'grand_nephew', bidirectional: false, autoCreateInverse: false },
+  grand_niece: { inverse: 'grand_aunt', bidirectional: false, autoCreateInverse: false },
+  grand_nephew: { inverse: 'grand_uncle', bidirectional: false, autoCreateInverse: false },
   cousin: { inverse: 'cousin', bidirectional: true, autoCreateInverse: true },
   second_cousin: { inverse: 'second_cousin', bidirectional: true, autoCreateInverse: true },
   cousin_once_removed: { inverse: 'cousin_once_removed', bidirectional: true, autoCreateInverse: true },
