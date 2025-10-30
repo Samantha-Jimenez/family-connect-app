@@ -46,6 +46,14 @@ const AdminCreateRelationshipForm = ({ familyMembers, handleCreateRelationship, 
               <option value="cousin">Cousin</option>
               <option value="great_grandparent">Great Grandparent</option>
               <option value="great_grandchild">Great Grandchild</option>
+              <option value="grand_aunt">Grand Aunt</option>
+              <option value="grand_uncle">Grand Uncle</option>
+              <option value="grand_niece">Grand Niece</option>
+              <option value="grand_nephew">Grand Nephew</option>
+              <option value="great_grand_aunt">Great Grand Aunt</option>
+              <option value="great_grand_uncle">Great Grand Uncle</option>
+              <option value="great_grand_niece">Great Grand Niece</option>
+              <option value="great_grand_nephew">Great Grand Nephew</option>
               {/* Add more options if needed */}
             </select>
             <label className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6 whitespace-nowrap">
