@@ -30,7 +30,7 @@ const initialFormData = {
 
 type FormDataKey = keyof typeof initialFormData;
 
-type Tab = 'members' | 'relationships' | 'enhanced-relationships';
+type Tab = 'members' | 'relationships' | 'enhanced-relationships' | 'relationship-check';
 
 const AdminPage = () => {
   const { user } = useAuthenticator();
