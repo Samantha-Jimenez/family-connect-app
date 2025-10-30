@@ -8,6 +8,7 @@ import AdminMembers from '@/components/AdminMembers';
 import AdminRelationships from '@/components/AdminRelationships';
 import EnhancedRelationshipForm from '@/components/EnhancedRelationshipForm';
 import EnhancedMemberRelationships from '@/components/EnhancedMemberRelationships';
+import AdminRelationshipCheck from '@/components/AdminRelationshipCheck';
 
 const initialFormData = {
   firstName: '',
@@ -309,6 +310,12 @@ const AdminPage = () => {
           >
             Enhanced Relationships
           </a>
+          <a 
+            className={`tab tab-lg text-sm poppins-light ${activeTab === 'relationship-check' ? 'tab-active bg-yellow-800/80 rounded-lg text-white hover:text-white' : ''}`}
+            onClick={() => setActiveTab('relationship-check')}
+          >
+            Relationship Check
+          </a>
         </div>
         <div className="mt-4">
           {activeTab === 'members' && <AdminMembers familyMembers={sortedFamilyMembers} handleAddFamilyMember={handleAddFamilyMember} formData={formData} handleInputChange={handleInputChange} imagePreview={imagePreview} handleImageChange={handleImageChange} isUploading={isUploading} uploadProgress={uploadProgress} handleClearImage={handleClearImage} editingMemberId={editingMemberId} setEditingMemberId={setEditingMemberId} editFormData={editFormData} setEditFormData={setEditFormData} handleEditInputChange={handleEditInputChange} handleUpdateMember={handleUpdateMember} handleEditImageChange={handleEditImageChange} editImagePreview={editImagePreview} editIsUploading={editIsUploading} editUploadProgress={editUploadProgress} sortField={sortField} sortDirection={sortDirection} handleSort={handleSort} />}
@@ -344,6 +351,7 @@ const AdminPage = () => {
               </div>
             </div>
           )}
+          {activeTab === 'relationship-check' && <AdminRelationshipCheck />}
         </div>
       </div>
 
