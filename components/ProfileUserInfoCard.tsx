@@ -25,6 +25,9 @@ interface UserData {
   death_date?: string;
   show_zodiac?: boolean;
   social_media?: { platform: string; url: string }[];
+  use_first_name?: boolean;
+  use_middle_name?: boolean;
+  use_nick_name?: boolean;
 }
 
 export default function ProfileUserInfoCard({ userId }: { userId: string }) {
@@ -34,6 +37,20 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
   const [targetUserNames, setTargetUserNames] = useState<{ [userId: string]: string }>({});
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState<{ type: string; relatedNames: string[]; relatedIds: string[] } | null>(null);
+
+  // Helper function to get preferred name
+  const getPreferredName = (userData: UserData | null): string => {
+    if (!userData) return '';
+    
+    // Check preference flags and use the preferred name
+    if (userData.use_nick_name && userData.nick_name && userData.nick_name.trim() !== '') {
+      return userData.nick_name;
+    } else if (userData.use_middle_name && userData.middle_name && userData.middle_name.trim() !== '') {
+      return userData.middle_name;
+    } else {
+      return userData.first_name || '';
+    }
+  };
 
   // Helper function to format relationship type for display
   const formatRelationshipType = (type: string): string => {
@@ -131,6 +148,9 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
               platform: item.M?.platform?.S || '',
               url: item.M?.url?.S || ''
             })) || [],
+            use_first_name: data.use_first_name?.BOOL ?? true,
+            use_middle_name: data.use_middle_name?.BOOL ?? false,
+            use_nick_name: data.use_nick_name?.BOOL ?? false,
           });
 
           if (data.profile_photo?.S) {
@@ -219,7 +239,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
             ) : ""}
 
             <h2 className="text-xl text-black">Family Role</h2>
-            <p className="text-gray-500 text-xs mb-1">{userData?.first_name} is a(n) ...</p>
+            <p className="text-gray-500 text-xs mb-1">{getPreferredName(userData)} is a(n) ...</p>
             <div className="flex flex-wrap gap-2 mb-2">
               {(() => {
                 // 1. Filter relationships for this user (user can be either person_a or person_b)
