@@ -219,6 +219,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
             ) : ""}
 
             <h2 className="text-xl text-black">Family Role</h2>
+            <p className="text-gray-500 text-xs mb-1">{userData?.first_name} is a(n) ...</p>
             <div className="flex flex-wrap gap-2 mb-2">
               {(() => {
                 // 1. Filter relationships for this user (user can be either person_a or person_b)
