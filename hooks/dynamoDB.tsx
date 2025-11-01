@@ -113,6 +113,7 @@ export type RelationshipType =
   | 'son_in_law' | 'daughter_in_law'
   | 'father_in_law' | 'mother_in_law'
   | 'brother_in_law' | 'sister_in_law'
+  | 'uncle_in_law' | 'aunt_in_law' | 'niece_in_law' | 'nephew_in_law'
   // Other relationships
   | 'guardian' | 'ward' | 'godparent' | 'godchild';
 
@@ -190,6 +191,10 @@ export const RELATIONSHIP_RULES: Record<RelationshipType, {
   mother_in_law: { inverse: 'daughter_in_law', bidirectional: false, autoCreateInverse: false },
   brother_in_law: { inverse: 'sister_in_law', bidirectional: false, autoCreateInverse: false },
   sister_in_law: { inverse: 'brother_in_law', bidirectional: false, autoCreateInverse: false },
+  uncle_in_law: { inverse: 'niece_in_law', bidirectional: false, autoCreateInverse: false },
+  aunt_in_law: { inverse: 'nephew_in_law', bidirectional: false, autoCreateInverse: false },
+  niece_in_law: { inverse: 'uncle_in_law', bidirectional: false, autoCreateInverse: false },
+  nephew_in_law: { inverse: 'aunt_in_law', bidirectional: false, autoCreateInverse: false },
   
   // Other relationships
   guardian: { inverse: 'ward', bidirectional: true, autoCreateInverse: true },

@@ -75,6 +75,10 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
       case 'niece': return 'aunt';
       case 'nephew': return 'uncle';
       case 'cousin': return 'cousin';
+      case 'uncle_in_law': return 'niece_in_law';
+      case 'aunt_in_law': return 'nephew_in_law';
+      case 'niece_in_law': return 'uncle_in_law';
+      case 'nephew_in_law': return 'aunt_in_law';
       default: return type;
     }
   };
