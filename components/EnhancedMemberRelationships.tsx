@@ -114,6 +114,7 @@ export default function EnhancedMemberRelationships({
       case 'aunt': return '👩';
       case 'uncle': return '👨';
       case 'cousin': return '👥';
+      case 'cousin_in_law': return '👥';
       case 'uncle_in_law': return '👨';
       case 'aunt_in_law': return '👩';
       case 'niece_in_law': return '👧';
@@ -136,7 +137,8 @@ export default function EnhancedMemberRelationships({
       case 'aunt_in_law':
       case 'niece_in_law':
       case 'nephew_in_law': return 'bg-yellow-100 text-yellow-800';
-      case 'cousin': return 'bg-orange-100 text-orange-800';
+      case 'cousin':
+      case 'cousin_in_law': return 'bg-orange-100 text-orange-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };

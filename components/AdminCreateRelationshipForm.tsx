@@ -58,6 +58,7 @@ const AdminCreateRelationshipForm = ({ familyMembers, handleCreateRelationship, 
               <option value="aunt_in_law">Aunt In Law</option>
               <option value="niece_in_law">Niece In Law</option>
               <option value="nephew_in_law">Nephew In Law</option>
+              <option value="cousin_in_law">Cousin In Law</option>
               {/* Add more options if needed */}
             </select>
             <label className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6 whitespace-nowrap">

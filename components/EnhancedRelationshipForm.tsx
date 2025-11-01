@@ -30,7 +30,7 @@ const RELATIONSHIP_CATEGORIES = {
   'Great Grand Aunts & Uncles': ['great_grand_aunt', 'great_grand_uncle', 'great_grand_niece', 'great_grand_nephew'],
   'Cousins': ['cousin', 'second_cousin', 'cousin_once_removed'],
   'Step Family': ['step_parent', 'step_child', 'step_sibling'],
-  'In-Laws': ['parent_in_law', 'child_in_law', 'sibling_in_law', 'son_in_law', 'daughter_in_law', 'father_in_law', 'mother_in_law', 'brother_in_law', 'sister_in_law', 'uncle_in_law', 'aunt_in_law', 'niece_in_law', 'nephew_in_law'],
+  'In-Laws': ['parent_in_law', 'child_in_law', 'sibling_in_law', 'son_in_law', 'daughter_in_law', 'father_in_law', 'mother_in_law', 'brother_in_law', 'sister_in_law', 'uncle_in_law', 'aunt_in_law', 'niece_in_law', 'nephew_in_law', 'cousin_in_law'],
   'Other': ['guardian', 'ward', 'godparent', 'godchild']
 };
 
