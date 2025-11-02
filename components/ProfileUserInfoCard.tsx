@@ -233,14 +233,14 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
           </div>
 
           <div className="md:pl-4 xl:pl-8">
-            {userData?.username ? (
+            {/* {userData?.username ? (
               <>
                 <h2 className="text-xl text-black">Username</h2>
                 <p className="text-gray-500 mb-2">
                   {userData?.username}
                 </p>
               </>
-            ) : ""}
+            ) : ""} */}
 
             <h2 className="text-xl text-black">Family Role</h2>
             <p className="text-gray-500 text-xs mb-1">{getPreferredName(userData)} is a(n) ...</p>
