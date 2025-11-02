@@ -52,6 +52,7 @@ const SOCIAL_MEDIA_PLATFORMS = [
   { value: 'youtube', label: 'YouTube' },
   { value: 'goodreads', label: 'GoodReads' },
   { value: 'strava', label: 'Strava' },
+  { value: 'letterboxd', label: 'Letterboxd' },
   { value: 'other', label: 'Other' }
 ];
 

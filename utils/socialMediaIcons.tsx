@@ -42,6 +42,9 @@ export const GenericIcon: React.FC<SocialMediaIconProps> = ({ className = "w-6 h
   <Icon icon="ri:link" className={className} style={{ fontSize: size || 24 }} />
 );
 
+export const LetterboxdIcon: React.FC<SocialMediaIconProps> = ({ className = "w-6 h-6", size }) => (
+  <Icon icon="simple-icons:letterboxd" className={className} style={{ fontSize: size || 24 }} />
+);
 // Social media platform mapping
 export const SOCIAL_MEDIA_ICONS = {
   facebook: FacebookIcon,
@@ -52,6 +55,7 @@ export const SOCIAL_MEDIA_ICONS = {
   youtube: YouTubeIcon,
   goodreads: GoodReadsIcon,
   strava: StravaIcon,
+  letterboxd: LetterboxdIcon,
   other: GenericIcon,
 } as const;
 
