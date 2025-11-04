@@ -84,6 +84,62 @@ const formatPhotoCount = (filtered: number, total: number) => {
   return `Showing ${filtered} of ${total} photos`;
 };
 
+// Helper function to format active filters for display
+const formatActiveFilters = (
+  selectedCountry: LocationOption[],
+  selectedState: LocationOption[],
+  selectedCity: LocationOption[],
+  selectedNeighborhood: LocationOption[],
+  selectedPeople: TaggedPerson[],
+  currentDateRange: [number, number],
+  dateRange: DateRange
+): { locationFilters: string[]; otherFilters: string[] } => {
+  const locationFilters: string[] = [];
+  const otherFilters: string[] = [];
+
+  // Build hierarchical location filter string
+  const locationParts: string[] = [];
+  
+  if (selectedCountry.length > 0) {
+    locationParts.push(selectedCountry.map(c => c.label).join(', '));
+  }
+  
+  if (selectedState.length > 0) {
+    locationParts.push(selectedState.map(s => s.label).join(', '));
+  }
+  
+  if (selectedCity.length > 0) {
+    locationParts.push(selectedCity.map(c => c.label).join(', '));
+  }
+  
+  if (selectedNeighborhood.length > 0) {
+    locationParts.push(selectedNeighborhood.map(n => n.label).join(', '));
+  }
+  
+  // Add tagged family members after neighborhoods
+  if (selectedPeople.length > 0) {
+    locationParts.push(selectedPeople.map(p => p.name).join(', '));
+  }
+  
+  // Join location parts with " > " separator
+  if (locationParts.length > 0) {
+    locationFilters.push(locationParts.join(' > '));
+  }
+
+  // Check if date range is not at default position
+  const isDateSliderAtDefault = currentDateRange[0] === dateRange.min && 
+                                 currentDateRange[1] === dateRange.max;
+  if (!isDateSliderAtDefault && dateRange.min !== dateRange.max) {
+    const formatLabel = (timestamp: number) => {
+      const date = new Date(timestamp);
+      return `${date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`;
+    };
+    otherFilters.push(`Date: ${formatLabel(currentDateRange[0])} - ${formatLabel(currentDateRange[1])}`);
+  }
+
+  return { locationFilters, otherFilters };
+};
+
 // Add this new component function
 const PhotoCount = ({ filtered, total }: { filtered: number, total: number }) => {
   return (
@@ -694,6 +750,12 @@ const Photos = () => {
     [familyMembers]
   );
 
+  // Memoize active filters to avoid recalculating on every render
+  const activeFilters = useMemo(() => 
+    formatActiveFilters(selectedCountry, selectedState, selectedCity, selectedNeighborhood, selectedPeople, currentDateRange, dateRange),
+    [selectedCountry, selectedState, selectedCity, selectedNeighborhood, selectedPeople, currentDateRange, dateRange]
+  );
+
   const resetFilters = () => {
     // Reset all filter selections
     setSelectedCountry([]);
@@ -1054,7 +1116,46 @@ const Photos = () => {
         {renderDateRangeSlider()}
 
         <div className="mb-4 text-sm text-gray-500 poppins-light opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.9s' }}>
-          {formatPhotoCount(filteredImages.length, images.length)}
+          <div className="flex flex-col">
+            {/* First row: Location filters on left, Photo count on right (desktop) */}
+            <div className="flex justify-between items-center flex-wrap">
+              {activeFilters.locationFilters.length > 0 ? (
+                <div className="flex flex-wrap items-center mr-3">
+                  {activeFilters.locationFilters.map((filter, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center pt-1 rounded-md text-gray-500 text-sm poppins-extralight"
+                    >
+                      {filter}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <div></div>
+              )}
+              {/* Photo count on right (desktop only) */}
+              <div className="poppins-extralight hidden md:block">
+                {formatPhotoCount(filteredImages.length, images.length)}
+              </div>
+            </div>
+            {/* Second row: Date filters on left only */}
+            {activeFilters.otherFilters.length > 0 && (
+              <div className="flex flex-wrap items-center">
+                {activeFilters.otherFilters.map((filter, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center pb-1 rounded-md text-gray-500 text-sm poppins-extralight"
+                  >
+                    {filter}
+                  </span>
+                ))}
+              </div>
+            )}
+            {/* Third row: Photo count (mobile only) */}
+            <div className="poppins-extralight md:hidden">
+              {formatPhotoCount(filteredImages.length, images.length)}
+            </div>
+          </div>
         </div>
 
         <div id="default-carousel" className="relative w-full opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" data-carousel="slide" style={{ animationDelay: '1.0s' }}>
