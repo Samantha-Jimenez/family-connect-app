@@ -397,18 +397,24 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                   <div className="flex flex-wrap gap-3">
                     {userData.social_media.map((link, index) => {
                       const IconComponent = getSocialMediaIcon(link.platform);
+                      const platformName = link.platform.charAt(0).toUpperCase() + link.platform.slice(1);
                       return (
-                        <a
+                        <div
                           key={index}
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200 text-gray-700 hover:text-gray-900 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]"
-                          title={`${link.platform.charAt(0).toUpperCase() + link.platform.slice(1)} - ${link.url}`}
+                          className="tooltip tooltip-bottom opacity-0 animate-[fadeIn_0.4s_ease-in_forwards] tooltip-desktop-only !z-10 after:!z-20 before:!z-20 hover:!z-20 "
+                          data-tip={platformName}
                           style={{ animationDelay: `${index * 0.1}s` }}
                         >
-                          <IconComponent className="w-5 h-5" />
-                        </a>
+                          <a
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200 text-gray-700 hover:text-gray-900"
+                            title={platformName}
+                          >
+                            <IconComponent className="w-5 h-5" />
+                          </a>
+                        </div>
                       );
                     })}
                   </div>
