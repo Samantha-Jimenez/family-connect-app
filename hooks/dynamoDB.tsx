@@ -223,6 +223,7 @@ export const saveUserToDB = async (
   current_state?: string,
   show_zodiac?: boolean,
   social_media?: { platform: string; url: string }[],
+  pets?: { name: string; birthday: string; death_date?: string; image?: string }[],
   use_first_name?: boolean,
   use_middle_name?: boolean,
   use_nick_name?: boolean
@@ -277,6 +278,20 @@ export const saveUserToDB = async (
       };
     }
 
+    // Add pets data if provided
+    if (pets && pets.length > 0) {
+      item.pets = {
+        L: pets.map(pet => ({
+          M: {
+            name: { S: pet.name },
+            birthday: { S: pet.birthday },
+            death_date: { S: pet.death_date || '' },
+            image: { S: pet.image || '' }
+          }
+        }))
+      };
+    }
+
     const params = {
       TableName: TABLES.FAMILY,
       Item: item,
@@ -311,6 +326,7 @@ interface GetUserDataReturn {
   death_date: string;
   show_zodiac: boolean;
   social_media: { platform: string; url: string }[];
+  pets: { name: string; birthday: string; death_date?: string; image?: string }[];
   use_first_name: boolean;
   use_middle_name: boolean;
   use_nick_name: boolean;
@@ -358,6 +374,12 @@ export const getUserData = async (userId: string): Promise<GetUserDataReturn | n
       social_media: data.Item.social_media?.L?.map((item: any) => ({
         platform: item.M?.platform?.S || '',
         url: item.M?.url?.S || ''
+      })) || [],
+      pets: data.Item.pets?.L?.map((item: any) => ({
+        name: item.M?.name?.S || '',
+        birthday: item.M?.birthday?.S || '',
+        death_date: item.M?.death_date?.S || undefined,
+        image: item.M?.image?.S || undefined
       })) || [],
       use_first_name: data.Item.use_first_name?.BOOL ?? true,
       use_middle_name: data.Item.use_middle_name?.BOOL ?? false,

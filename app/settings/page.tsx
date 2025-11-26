@@ -13,6 +13,13 @@ import { useUser } from '@/context/UserContext';
 import LoadSpinner from '@/components/LoadSpinner';
 import Select from 'react-select';
 
+interface Pet {
+  name: string;
+  birthday: string;
+  death_date?: string;
+  image?: string;
+}
+
 interface UserData {
   first_name: string;
   last_name: string;
@@ -30,6 +37,7 @@ interface UserData {
   current_state?: string;
   show_zodiac?: boolean;
   social_media?: { platform: string; url: string }[];
+  pets?: Pet[];
   use_first_name?: boolean;
   use_middle_name?: boolean;
   use_nick_name?: boolean;
@@ -74,6 +82,19 @@ const Settings = () => {
   const [socialMediaEntries, setSocialMediaEntries] = useState<{ platform: string; url: string }[]>([]);
   const [newSocialMedia, setNewSocialMedia] = useState({ platform: '', url: '' });
   const [isSocialMediaOpen, setIsSocialMediaOpen] = useState(false);
+  const [petsEntries, setPetsEntries] = useState<Pet[]>([]);
+  const [newPet, setNewPet] = useState<Pet>({ name: '', birthday: '', death_date: '', image: undefined });
+  const [newPetBirthday, setNewPetBirthday] = useState({ year: '', month: '', day: '' });
+  const [newPetDeathDate, setNewPetDeathDate] = useState({ year: '', month: '', day: '' });
+  const [isPetsOpen, setIsPetsOpen] = useState(false);
+  const [petImageFiles, setPetImageFiles] = useState<Map<number, File>>(new Map());
+  const [petImagePreviews, setPetImagePreviews] = useState<Map<number, string>>(new Map());
+  const [uploadingPetIndex, setUploadingPetIndex] = useState<number | null>(null);
+  const petFileInputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
+  const [editingPetIndex, setEditingPetIndex] = useState<number | null>(null);
+  const [editingPet, setEditingPet] = useState<Pet | null>(null);
+  const [editingPetBirthday, setEditingPetBirthday] = useState({ year: '', month: '', day: '' });
+  const [editingPetDeathDate, setEditingPetDeathDate] = useState({ year: '', month: '', day: '' });
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -96,11 +117,13 @@ const Settings = () => {
           current_state: data.current_state || undefined,
           show_zodiac: data.show_zodiac ?? false,
           social_media: data.social_media || [],
+          pets: data.pets || [],
           use_first_name: data.use_first_name ?? true,
           use_middle_name: data.use_middle_name ?? false,
           use_nick_name: data.use_nick_name ?? false,
         });
         setSocialMediaEntries(data.social_media || []);
+        setPetsEntries(data.pets || []);
       } else {
         setUserData({
           first_name: '',
@@ -119,11 +142,13 @@ const Settings = () => {
           current_state: undefined,
           show_zodiac: false,
           social_media: [],
+          pets: [],
           use_first_name: true,
           use_middle_name: false,
           use_nick_name: false,
         });
         setSocialMediaEntries([]);
+        setPetsEntries([]);
       }
     };
 
@@ -262,6 +287,7 @@ const Settings = () => {
         userData?.current_state || '',
         userData?.show_zodiac ?? false,
         userData?.social_media || [],
+        userData?.pets || [],
         userData?.use_first_name ?? true,
         userData?.use_middle_name ?? false,
         userData?.use_nick_name ?? false
@@ -343,6 +369,7 @@ const Settings = () => {
           userData?.current_state || '',
           userData?.show_zodiac ?? false,
           userData?.social_media || [],
+          userData?.pets || [],
           userData?.use_first_name ?? true,
           userData?.use_middle_name ?? false,
           userData?.use_nick_name ?? false
@@ -384,6 +411,178 @@ const Settings = () => {
     setSocialMediaEntries(prev => prev.filter((_, i) => i !== index));
   };
 
+  const formatBirthdayString = (year: string, month: string, day: string): string => {
+    if (!year || !month) return '';
+    const monthPadded = month.padStart(2, '0');
+    if (day) {
+      const dayPadded = day.padStart(2, '0');
+      return `${year}-${monthPadded}-${dayPadded}`;
+    }
+    return `${year}-${monthPadded}`;
+  };
+
+  const parseBirthdayString = (birthday: string): { year: string; month: string; day: string } => {
+    if (!birthday) return { year: '', month: '', day: '' };
+    const parts = birthday.split('-');
+    return {
+      year: parts[0] || '',
+      month: parts[1] || '',
+      day: parts[2] || ''
+    };
+  };
+
+  const formatBirthdayDisplay = (birthday: string): string => {
+    if (!birthday) return 'Not set';
+    const parsed = parseBirthdayString(birthday);
+    if (!parsed.year || !parsed.month) return birthday;
+    
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                       'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthIndex = parseInt(parsed.month) - 1;
+    const monthName = monthIndex >= 0 && monthIndex < 12 ? monthNames[monthIndex] : parsed.month;
+    
+    if (parsed.day) {
+      return `${monthName} ${parsed.day}, ${parsed.year}`;
+    }
+    return `${monthName} ${parsed.year}`;
+  };
+
+  const handleEditPet = (index: number) => {
+    const pet = petsEntries[index];
+    setEditingPetIndex(index);
+    setEditingPet({ ...pet });
+    const parsedBirthday = parseBirthdayString(pet.birthday);
+    setEditingPetBirthday({ year: parsedBirthday.year, month: parsedBirthday.month, day: parsedBirthday.day });
+    const parsedDeathDate = parseBirthdayString(pet.death_date || '');
+    setEditingPetDeathDate({ year: parsedDeathDate.year, month: parsedDeathDate.month, day: parsedDeathDate.day });
+  };
+
+  const handleCancelEditPet = () => {
+    const indexToClean = editingPetIndex;
+    setEditingPetIndex(null);
+    setEditingPet(null);
+    setEditingPetBirthday({ year: '', month: '', day: '' });
+    setEditingPetDeathDate({ year: '', month: '', day: '' });
+    // Clean up any image files/previews for the edited pet
+    if (indexToClean !== null) {
+      setPetImageFiles(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(indexToClean);
+        return newMap;
+      });
+      setPetImagePreviews(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(indexToClean);
+        return newMap;
+      });
+    }
+  };
+
+  const handleRemovePet = (index: number) => {
+    setPetsEntries(prev => prev.filter((_, i) => i !== index));
+    // Clean up image files and previews
+    setPetImageFiles(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(index);
+      return newMap;
+    });
+    setPetImagePreviews(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(index);
+      return newMap;
+    });
+    // If we're editing this pet, cancel edit mode
+    if (editingPetIndex === index) {
+      handleCancelEditPet();
+    }
+  };
+
+  const handlePetImageChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setPetImageFiles(prev => {
+        const newMap = new Map(prev);
+        newMap.set(index, file);
+        return newMap;
+      });
+      setPetImagePreviews(prev => {
+        const newMap = new Map(prev);
+        newMap.set(index, URL.createObjectURL(file));
+        return newMap;
+      });
+    }
+  };
+
+  const handleNewPetImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setNewPet(prev => ({ ...prev, image: URL.createObjectURL(file) }));
+      // Store the file temporarily - we'll upload it when adding the pet
+      const tempIndex = -1; // Use -1 for new pet
+      setPetImageFiles(prev => {
+        const newMap = new Map(prev);
+        newMap.set(tempIndex, file);
+        return newMap;
+      });
+    }
+  };
+
+  const uploadPetImage = async (file: File): Promise<string> => {
+    try {
+      setIsUploading(true);
+      setUploadProgress(0);
+      
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const uploadWithProgress = new Promise<{ key: string }>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        
+        xhr.upload.addEventListener('progress', (event) => {
+          if (event.lengthComputable) {
+            const progress = (event.loaded / event.total) * 90;
+            setUploadProgress(Math.round(progress));
+          }
+        });
+
+        xhr.addEventListener('load', () => {
+          if (xhr.status === 200) {
+            try {
+              const response = JSON.parse(xhr.responseText);
+              resolve(response);
+            } catch (error) {
+              reject(new Error('Invalid response format'));
+            }
+          } else {
+            reject(new Error(`Upload failed with status: ${xhr.status}`));
+          }
+        });
+
+        xhr.addEventListener('error', () => {
+          reject(new Error('Upload failed'));
+        });
+
+        xhr.open('POST', '/api/upload');
+        xhr.send(formData);
+      });
+
+      const result = await uploadWithProgress;
+      
+      if (!result.key) {
+        throw new Error('Upload response missing key');
+      }
+
+      setUploadProgress(100);
+      setIsUploading(false);
+      return result.key;
+    } catch (error) {
+      console.error('Error uploading pet image:', error);
+      setIsUploading(false);
+      setUploadProgress(0);
+      throw error;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
@@ -423,6 +622,122 @@ const Settings = () => {
         finalSocialMediaEntries.push({ ...newSocialMedia, url: formattedUrl });
       }
 
+      // Handle pets - upload images for new pets and update existing ones
+      let finalPetsEntries = [...petsEntries];
+      
+      // Handle new pet if name and at least year/month are filled
+      const birthdayString = formatBirthdayString(newPetBirthday.year, newPetBirthday.month, newPetBirthday.day);
+      if (newPet.name && newPetBirthday.year && newPetBirthday.month) {
+        let petImageKey = newPet.image;
+        
+        // Upload image if there's a new file
+        const newPetFile = petImageFiles.get(-1);
+        if (newPetFile) {
+          try {
+            petImageKey = await uploadPetImage(newPetFile);
+            // Clean up the temp file reference
+            setPetImageFiles(prev => {
+              const newMap = new Map(prev);
+              newMap.delete(-1);
+              return newMap;
+            });
+          } catch (error) {
+            console.error('Error uploading new pet image:', error);
+            showToast('Failed to upload pet image. Please try again.', 'error');
+            return;
+          }
+        }
+        
+        const deathDateString = formatBirthdayString(newPetDeathDate.year, newPetDeathDate.month, newPetDeathDate.day);
+        
+        finalPetsEntries.push({
+          name: newPet.name,
+          birthday: birthdayString,
+          death_date: deathDateString || undefined,
+          image: petImageKey || undefined
+        });
+      }
+
+      // Handle edited pets - update the pet at editingPetIndex if it exists
+      if (editingPetIndex !== null && editingPet) {
+        const birthdayString = formatBirthdayString(editingPetBirthday.year, editingPetBirthday.month, editingPetBirthday.day);
+        if (editingPetBirthday.year && editingPetBirthday.month) {
+          let petImageKey = editingPet.image;
+          
+          // Upload image if there's a new file
+          const editPetFile = petImageFiles.get(editingPetIndex);
+          if (editPetFile) {
+            try {
+              petImageKey = await uploadPetImage(editPetFile);
+              // Clean up the file reference
+              setPetImageFiles(prev => {
+                const newMap = new Map(prev);
+                newMap.delete(editingPetIndex);
+                return newMap;
+              });
+              setPetImagePreviews(prev => {
+                const newMap = new Map(prev);
+                newMap.delete(editingPetIndex);
+                return newMap;
+              });
+            } catch (error) {
+              console.error('Error uploading edited pet image:', error);
+              showToast('Failed to upload pet image. Please try again.', 'error');
+              return;
+            }
+          }
+          
+          const deathDateString = formatBirthdayString(editingPetDeathDate.year, editingPetDeathDate.month, editingPetDeathDate.day);
+          
+          // Update the pet in the array
+          finalPetsEntries[editingPetIndex] = {
+            name: editingPet.name,
+            birthday: birthdayString,
+            death_date: deathDateString || undefined,
+            image: petImageKey || undefined
+          };
+        }
+      }
+
+      // Handle image updates for existing pets (non-edited ones)
+      const updatedPets = await Promise.all(
+        finalPetsEntries.map(async (pet, index) => {
+          // Skip if this is the pet being edited (already handled above)
+          if (index === editingPetIndex) {
+            return pet;
+          }
+          
+          const imageFile = petImageFiles.get(index);
+          if (imageFile) {
+            try {
+              const imageKey = await uploadPetImage(imageFile);
+              // Clean up the file reference
+              setPetImageFiles(prev => {
+                const newMap = new Map(prev);
+                newMap.delete(index);
+                return newMap;
+              });
+              setPetImagePreviews(prev => {
+                const newMap = new Map(prev);
+                newMap.delete(index);
+                return newMap;
+              });
+              return { ...pet, image: imageKey };
+            } catch (error) {
+              console.error(`Error uploading image for pet ${index}:`, error);
+              return pet; // Keep original pet if upload fails
+            }
+          }
+          return pet;
+        })
+      );
+      
+      // Clear edit mode after saving
+      setEditingPetIndex(null);
+      setEditingPet(null);
+      setEditingPetBirthday({ year: '', month: '', day: '' });
+      setEditingPetDeathDate({ year: '', month: '', day: '' });
+
       await saveUserToDB(
         first_name, 
         last_name, 
@@ -440,6 +755,7 @@ const Settings = () => {
         current_state,
         userData?.show_zodiac ?? false,
         finalSocialMediaEntries,
+        updatedPets,
         use_first_name,
         use_middle_name,
         use_nick_name
@@ -464,6 +780,7 @@ const Settings = () => {
         current_state,
         show_zodiac: prev.show_zodiac ?? false,
         social_media: finalSocialMediaEntries,
+        pets: updatedPets,
         use_first_name,
         use_middle_name,
         use_nick_name
@@ -472,6 +789,18 @@ const Settings = () => {
       // Update social media entries and clear the new entry form
       setSocialMediaEntries(finalSocialMediaEntries);
       setNewSocialMedia({ platform: '', url: '' });
+      
+      // Update pets entries and clear the new pet form
+      setPetsEntries(updatedPets);
+      setNewPet({ name: '', birthday: '', death_date: '', image: undefined });
+      setNewPetBirthday({ year: '', month: '', day: '' });
+      setNewPetDeathDate({ year: '', month: '', day: '' });
+      // Clear the new pet image file reference
+      setPetImageFiles(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(-1);
+        return newMap;
+      });
 
       // Refresh the user data in context
       await refreshUserData();
@@ -946,6 +1275,447 @@ const Settings = () => {
                       <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
                         URL
                       </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Pets Section */}
+          <div className="border border-gray-200 rounded-lg mb-5">
+            {/* Accordion Header */}
+            <button
+              type="button"
+              onClick={() => setIsPetsOpen(!isPetsOpen)}
+              className="w-full px-2 py-3 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between"
+            >
+              <h3 className="text-md font-medium text-gray-900">Pets</h3>
+              <svg
+                className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${
+                  isPetsOpen ? 'transform rotate-180' : ''
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {/* Accordion Content */}
+            {isPetsOpen && (
+              <div className="p-4 border-t border-gray-200">
+                <div className="bg-gray-50 rounded-lg mb-4">
+                  {/* Existing Pet Entries */}
+                  {petsEntries.length > 0 ? (
+                    petsEntries.map((pet, index) => (
+                      <div key={index} className="mb-4 p-3 rounded-lg hover:bg-gray-200 border border-gray-300">
+                        {editingPetIndex === index ? (
+                          /* Edit Mode */
+                          <div className="space-y-4">
+                            <div className="flex items-start gap-4">
+                              {/* Pet Image */}
+                              <div className="flex-shrink-0">
+                                {petImagePreviews.get(index) ? (
+                                  <div className="w-20 h-20 rounded-lg overflow-hidden">
+                                    <Image 
+                                      src={petImagePreviews.get(index)!}
+                                      alt={editingPet?.name || 'Pet'}
+                                      width={80}
+                                      height={80}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                ) : editingPet?.image ? (
+                                  <div className="w-20 h-20 rounded-lg overflow-hidden">
+                                    <Image 
+                                      src={getFullImageUrl(editingPet.image)}
+                                      alt={editingPet.name}
+                                      width={80}
+                                      height={80}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="w-20 h-20 rounded-lg bg-gray-200 flex items-center justify-center">
+                                    <span className="icon-[mdi--paw] text-3xl text-gray-400" />
+                                  </div>
+                                )}
+                                <input
+                                  ref={(el) => {
+                                    if (el) {
+                                      petFileInputRefs.current.set(index, el);
+                                    }
+                                  }}
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => handlePetImageChange(index, e)}
+                                  className="mt-2 file-input file-input-bordered file-input-xs w-full text-xs"
+                                  disabled={isUploading}
+                                />
+                              </div>
+                              
+                              {/* Editable Pet Info */}
+                              <div className="flex-1 space-y-3">
+                                <div className="relative z-0 w-full group">
+                                  <input
+                                    type="text"
+                                    value={editingPet?.name || ''}
+                                    onChange={(e) => setEditingPet(prev => prev ? { ...prev, name: e.target.value } : null)}
+                                    className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                                    placeholder=" "
+                                  />
+                                  <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
+                                    Pet Name
+                                  </label>
+                                </div>
+                                
+                                <div className="grid grid-cols-3 gap-2">
+                                  <div className="relative z-0 w-full group">
+                                    <input
+                                      type="number"
+                                      value={editingPetBirthday.year}
+                                      onChange={(e) => setEditingPetBirthday(prev => ({ ...prev, year: e.target.value }))}
+                                      className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                                      placeholder=" "
+                                      min="1900"
+                                      max="2100"
+                                    />
+                                    <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
+                                      Year
+                                    </label>
+                                  </div>
+                                  <div className="relative z-0 w-full group">
+                                    <select
+                                      value={editingPetBirthday.month}
+                                      onChange={(e) => setEditingPetBirthday(prev => ({ ...prev, month: e.target.value }))}
+                                      className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                                    >
+                                      <option value="">Month</option>
+                                      <option value="01">January</option>
+                                      <option value="02">February</option>
+                                      <option value="03">March</option>
+                                      <option value="04">April</option>
+                                      <option value="05">May</option>
+                                      <option value="06">June</option>
+                                      <option value="07">July</option>
+                                      <option value="08">August</option>
+                                      <option value="09">September</option>
+                                      <option value="10">October</option>
+                                      <option value="11">November</option>
+                                      <option value="12">December</option>
+                                    </select>
+                                    <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
+                                      Month
+                                    </label>
+                                  </div>
+                                  <div className="relative z-0 w-full group">
+                                    <input
+                                      type="number"
+                                      value={editingPetBirthday.day}
+                                      onChange={(e) => setEditingPetBirthday(prev => ({ ...prev, day: e.target.value }))}
+                                      className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                                      placeholder=" "
+                                      min="1"
+                                      max="31"
+                                    />
+                                    <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
+                                      Day (Optional)
+                                    </label>
+                                  </div>
+                                </div>
+                                
+                                <div className="grid grid-cols-3 gap-2">
+                                  <div className="relative z-0 w-full group">
+                                    <input
+                                      type="number"
+                                      value={editingPetDeathDate.year}
+                                      onChange={(e) => setEditingPetDeathDate(prev => ({ ...prev, year: e.target.value }))}
+                                      className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                                      placeholder=" "
+                                      min="1900"
+                                      max="2100"
+                                    />
+                                    <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
+                                      Year
+                                    </label>
+                                  </div>
+                                  <div className="relative z-0 w-full group">
+                                    <select
+                                      value={editingPetDeathDate.month}
+                                      onChange={(e) => setEditingPetDeathDate(prev => ({ ...prev, month: e.target.value }))}
+                                      className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                                    >
+                                      <option value="">Month</option>
+                                      <option value="01">January</option>
+                                      <option value="02">February</option>
+                                      <option value="03">March</option>
+                                      <option value="04">April</option>
+                                      <option value="05">May</option>
+                                      <option value="06">June</option>
+                                      <option value="07">July</option>
+                                      <option value="08">August</option>
+                                      <option value="09">September</option>
+                                      <option value="10">October</option>
+                                      <option value="11">November</option>
+                                      <option value="12">December</option>
+                                    </select>
+                                    <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
+                                      Month
+                                    </label>
+                                  </div>
+                                  <div className="relative z-0 w-full group">
+                                    <input
+                                      type="number"
+                                      value={editingPetDeathDate.day}
+                                      onChange={(e) => setEditingPetDeathDate(prev => ({ ...prev, day: e.target.value }))}
+                                      className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                                      placeholder=" "
+                                      min="1"
+                                      max="31"
+                                    />
+                                    <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
+                                      Day (Optional)
+                                    </label>
+                                  </div>
+                                </div>
+                                <div className="text-xs text-gray-500 mt-1">Death Date (Optional)</div>
+                              </div>
+                            </div>
+                            
+                            {/* Edit Action Buttons */}
+                            <div className="flex gap-2 justify-end">
+                              <button
+                                type="button"
+                                onClick={handleCancelEditPet}
+                                className="px-3 py-1.5 text-sm text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="submit"
+                                className="px-3 py-1.5 text-sm text-white bg-plantain-green hover:bg-dark-spring-green rounded-lg"
+                              >
+                                Save Changes
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          /* Display Mode */
+                          <div className="flex items-start gap-4">
+                            {/* Pet Image */}
+                            <div className="flex-shrink-0">
+                              {petImagePreviews.get(index) ? (
+                                <div className="w-20 h-20 rounded-lg overflow-hidden">
+                                  <Image 
+                                    src={petImagePreviews.get(index)!}
+                                    alt={pet.name}
+                                    width={80}
+                                    height={80}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              ) : pet.image ? (
+                                <div className="w-20 h-20 rounded-lg overflow-hidden">
+                                  <Image 
+                                    src={getFullImageUrl(pet.image)}
+                                    alt={pet.name}
+                                    width={80}
+                                    height={80}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="w-20 h-20 rounded-lg bg-gray-200 flex items-center justify-center">
+                                  <span className="icon-[mdi--paw] text-3xl text-gray-400" />
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Pet Info */}
+                            <div className="flex-1">
+                              <div className="mb-2">
+                                <span className="text-sm font-medium text-gray-700">{pet.name}</span>
+                              </div>
+                            <div className="text-xs text-gray-600 space-y-1">
+                              <p>Birthday: {formatBirthdayDisplay(pet.birthday)}</p>
+                              {pet.death_date && <p>Death Date: {formatBirthdayDisplay(pet.death_date)}</p>}
+                            </div>
+                            </div>
+                            
+                            {/* Action Buttons */}
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleEditPet(index)}
+                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRemovePet(index)}
+                                className="text-red-600 hover:text-red-800 text-sm font-medium"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500 py-2">No pets added yet.</p>
+                  )}
+                </div>
+                
+                {/* Add New Pet */}
+                <div className="">
+                  <h4 className="text-md font-medium text-gray-900 mb-3">Add Pet</h4>
+                  <div className="space-y-4">
+                    <div className="relative z-0 w-full group">
+                      <input
+                        type="text"
+                        value={newPet.name}
+                        onChange={(e) => setNewPet(prev => ({ ...prev, name: e.target.value }))}
+                        className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                        placeholder=" "
+                      />
+                      <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
+                        Pet Name
+                      </label>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                        <div className="relative z-0 w-full group">
+                          <input
+                            type="number"
+                            value={newPetBirthday.year}
+                            onChange={(e) => setNewPetBirthday(prev => ({ ...prev, year: e.target.value }))}
+                            className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                            placeholder=" "
+                            min="1900"
+                            max="2100"
+                          />
+                          <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
+                            Year
+                          </label>
+                        </div>
+                        <div className="relative z-0 w-full group">
+                          <select
+                            value={newPetBirthday.month}
+                            onChange={(e) => setNewPetBirthday(prev => ({ ...prev, month: e.target.value }))}
+                            className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                          >
+                            <option value="">Month</option>
+                            <option value="01">January</option>
+                            <option value="02">February</option>
+                            <option value="03">March</option>
+                            <option value="04">April</option>
+                            <option value="05">May</option>
+                            <option value="06">June</option>
+                            <option value="07">July</option>
+                            <option value="08">August</option>
+                            <option value="09">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                          </select>
+                          <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
+                            Month
+                          </label>
+                        </div>
+                        <div className="relative z-0 w-full group">
+                          <input
+                            type="number"
+                            value={newPetBirthday.day}
+                            onChange={(e) => setNewPetBirthday(prev => ({ ...prev, day: e.target.value }))}
+                            className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                            placeholder=" "
+                            min="1"
+                            max="31"
+                          />
+                          <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
+                            Day (Optional)
+                          </label>
+                        </div>
+                      </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="relative z-0 w-full group">
+                        <input
+                          type="number"
+                          value={newPetDeathDate.year}
+                          onChange={(e) => setNewPetDeathDate(prev => ({ ...prev, year: e.target.value }))}
+                          className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                          placeholder=" "
+                          min="1900"
+                          max="2100"
+                        />
+                        <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
+                          Year
+                        </label>
+                      </div>
+                      <div className="relative z-0 w-full group">
+                        <select
+                          value={newPetDeathDate.month}
+                          onChange={(e) => setNewPetDeathDate(prev => ({ ...prev, month: e.target.value }))}
+                          className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                        >
+                          <option value="">Month</option>
+                          <option value="01">January</option>
+                          <option value="02">February</option>
+                          <option value="03">March</option>
+                          <option value="04">April</option>
+                          <option value="05">May</option>
+                          <option value="06">June</option>
+                          <option value="07">July</option>
+                          <option value="08">August</option>
+                          <option value="09">September</option>
+                          <option value="10">October</option>
+                          <option value="11">November</option>
+                          <option value="12">December</option>
+                        </select>
+                        <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
+                          Month
+                        </label>
+                      </div>
+                      <div className="relative z-0 w-full group">
+                        <input
+                          type="number"
+                          value={newPetDeathDate.day}
+                          onChange={(e) => setNewPetDeathDate(prev => ({ ...prev, day: e.target.value }))}
+                          className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                          placeholder=" "
+                          min="1"
+                          max="31"
+                        />
+                        <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
+                          Day (Optional)
+                        </label>
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">Death Date (Optional)</div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="relative z-0 w-full group">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleNewPetImageChange}
+                          className="file-input file-input-bordered file-input-sm w-full text-base"
+                          disabled={isUploading}
+                        />
+                        {newPet.image && (
+                          <div className="mt-2 w-20 h-20 rounded-lg overflow-hidden">
+                            <Image 
+                              src={newPet.image}
+                              alt="Pet preview"
+                              width={80}
+                              height={80}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

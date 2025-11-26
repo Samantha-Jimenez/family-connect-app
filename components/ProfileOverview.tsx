@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import RSVP from './RSVP';
+import PetsCard from '@/components/PetsCard';
 import { getFamilyRelationships, getAllFamilyMembers, FamilyRelationship } from '@/hooks/dynamoDB';
 import Link from 'next/link';
 import LoadSpinner from '@/components/LoadSpinner';
@@ -77,7 +78,8 @@ const ProfileOverview = ({ userId }: { userId: string }) => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <RSVP userId={userId}/>
+      {/* <RSVP userId={userId}/> */}
+      <PetsCard userId={userId}/>
 
       {/* ADD MORE COMPONENTS HERE */}
       <div className="card bg-yellow-300/5 text-black shadow-lg p-6 col-span-1 col-start-1 md:col-start-2 h-min">
