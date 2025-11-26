@@ -73,6 +73,7 @@ const Settings = () => {
   const [removeProfilePhoto, setRemoveProfilePhoto] = useState(false);
   const [socialMediaEntries, setSocialMediaEntries] = useState<{ platform: string; url: string }[]>([]);
   const [newSocialMedia, setNewSocialMedia] = useState({ platform: '', url: '' });
+  const [isSocialMediaOpen, setIsSocialMediaOpen] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -845,82 +846,111 @@ const Settings = () => {
           </div>
           
           {/* Social Media Section */}
-          <div className="">
-            <div className="p-2 bg-gray-50 rounded-lg">
-            {/* Existing Social Media Entries */}
-            {socialMediaEntries.map((entry, index) => (
-              <div key={index} className="flex items-center gap-4 mb-4 rounded-lg p-2 group-hover:bg-gray-200">
-                <div className="flex-1">
-                  <span className="text-sm font-medium text-gray-700 capitalize">
-                    {SOCIAL_MEDIA_PLATFORMS.find(p => p.value === entry.platform)?.label || entry.platform}
-                  </span>
-                  <p className="text-sm text-gray-600 break-all">{entry.url}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveSocialMedia(index)}
-                  className="text-red-600 hover:text-red-800 text-sm font-medium group"
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
-            </div>
+          <div className="border border-gray-200 rounded-lg mb-5">
+            {/* Accordion Header */}
+            <button
+              type="button"
+              onClick={() => setIsSocialMediaOpen(!isSocialMediaOpen)}
+              className="w-full px-2 py-3 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between"
+            >
+              <h3 className="text-md font-medium text-gray-900">Social Media Links</h3>
+              <svg
+                className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${
+                  isSocialMediaOpen ? 'transform rotate-180' : ''
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
             
-            {/* Add New Social Media */}
-            <div className="">
-              <h4 className="text-md font-medium text-gray-900 mb-3">Add Social Media</h4>
-              <div className="grid md:grid-cols-2 gap-4 mb-5">
-                <div className="relative z-0 w-full group self-end">
-                  <Select
-                    value={SOCIAL_MEDIA_PLATFORMS.find(option => option.value === newSocialMedia.platform) || null}
-                    onChange={(selectedOption) => 
-                      setNewSocialMedia(prev => ({ ...prev, platform: selectedOption?.value || '' }))
-                    }
-                    options={SOCIAL_MEDIA_PLATFORMS}
-                    placeholder="Select platform"
-                    className="text-sm"
-                    styles={{
-                      control: (provided) => ({
-                        ...provided,
-                        borderBottom: '2px solid #d1d5db',
-                        borderTop: 'none',
-                        borderLeft: 'none',
-                        borderRight: 'none',
-                        borderRadius: '0',
-                        boxShadow: 'none',
-                        '&:hover': {
-                          borderBottom: '2px solid #3b82f6',
-                        },
-                        '&:focus': {
-                          borderBottom: '2px solid #3b82f6',
-                        },
-                      }),
-                      placeholder: (provided) => ({
-                        ...provided,
-                        color: '#9ca3af',
-                        fontSize: '14px',
-                      }),
-                    }}
-                  />
-                  <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-2 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
-                    Platform
-                  </label>
+            {/* Accordion Content */}
+            {isSocialMediaOpen && (
+              <div className="p-4 border-t border-gray-200">
+                <div className="bg-gray-50 rounded-lg mb-4">
+                  {/* Existing Social Media Entries */}
+                  {socialMediaEntries.length > 0 ? (
+                    socialMediaEntries.map((entry, index) => (
+                      <div key={index} className="flex items-center gap-4 mb-2 p-2 rounded-lg hover:bg-gray-200">
+                        <div className="flex-1">
+                          <span className="text-sm font-medium text-gray-700 capitalize">
+                            {SOCIAL_MEDIA_PLATFORMS.find(p => p.value === entry.platform)?.label || entry.platform}
+                          </span>
+                          <p className="text-sm text-gray-600 break-all">{entry.url}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSocialMedia(index)}
+                          className="text-red-600 hover:text-red-800 text-sm font-medium group"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500 py-2">No social media links added yet.</p>
+                  )}
                 </div>
-                <div className="relative z-0 w-full group">
-                  <input
-                    type="text"
-                    value={newSocialMedia.url}
-                    onChange={(e) => setNewSocialMedia(prev => ({ ...prev, url: e.target.value }))}
-                    className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
-                    placeholder=" "
-                  />
-                  <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
-                    URL
-                  </label>
+                
+                {/* Add New Social Media */}
+                <div className="">
+                  <h4 className="text-md font-medium text-gray-900 mb-3">Add Social Media</h4>
+                  <div className="grid md:grid-cols-2 gap-4 mb-5">
+                    <div className="relative z-0 w-full group self-end">
+                      <Select
+                        value={SOCIAL_MEDIA_PLATFORMS.find(option => option.value === newSocialMedia.platform) || null}
+                        onChange={(selectedOption) => 
+                          setNewSocialMedia(prev => ({ ...prev, platform: selectedOption?.value || '' }))
+                        }
+                        options={SOCIAL_MEDIA_PLATFORMS}
+                        placeholder="Select platform"
+                        className="text-sm"
+                        menuPlacement="top"
+                        styles={{
+                          control: (provided) => ({
+                            ...provided,
+                            borderBottom: '2px solid #d1d5db',
+                            borderTop: 'none',
+                            borderLeft: 'none',
+                            borderRight: 'none',
+                            borderRadius: '0',
+                            boxShadow: 'none',
+                            '&:hover': {
+                              borderBottom: '2px solid #3b82f6',
+                            },
+                            '&:focus': {
+                              borderBottom: '2px solid #3b82f6',
+                            },
+                          }),
+                          placeholder: (provided) => ({
+                            ...provided,
+                            color: '#9ca3af',
+                            fontSize: '14px',
+                          }),
+                        }}
+                      />
+                      <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-2 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
+                        Platform
+                      </label>
+                    </div>
+                    <div className="relative z-0 w-full group">
+                      <input
+                        type="text"
+                        value={newSocialMedia.url}
+                        onChange={(e) => setNewSocialMedia(prev => ({ ...prev, url: e.target.value }))}
+                        className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                        placeholder=" "
+                      />
+                      <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
+                        URL
+                      </label>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
           
           <div className="flex gap-2">
