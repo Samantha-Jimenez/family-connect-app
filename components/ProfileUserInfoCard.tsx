@@ -1,9 +1,10 @@
 "use client";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { getUserDataById, getFamilyRelationships, FamilyRelationship } from "@/hooks/dynamoDB";
+import { getUserDataById, getFamilyRelationships, FamilyRelationship, getFamilyMembersWithHobby } from "@/hooks/dynamoDB";
 import { getFullImageUrl } from '@/utils/imageUtils';
 import FamilyRoleModal from './FamilyRoleModal';
+import HobbyMembersModal from './HobbyMembersModal';
 import { getSocialMediaIcon } from '@/utils/socialMediaIcons';
 import { size } from "@/app/icon";
 
@@ -25,6 +26,7 @@ interface UserData {
   death_date?: string;
   show_zodiac?: boolean;
   social_media?: { platform: string; url: string }[];
+  hobbies?: string[];
   use_first_name?: boolean;
   use_middle_name?: boolean;
   use_nick_name?: boolean;
@@ -37,6 +39,9 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
   const [targetUserNames, setTargetUserNames] = useState<{ [userId: string]: string }>({});
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState<{ type: string; relatedNames: string[]; relatedIds: string[] } | null>(null);
+  const [showHobbyModal, setShowHobbyModal] = useState(false);
+  const [selectedHobby, setSelectedHobby] = useState<string | null>(null);
+  const [hobbyMembers, setHobbyMembers] = useState<Array<{ id: string; name: string; profile_photo?: string }>>([]);
 
   // Helper function to get preferred name
   const getPreferredName = (userData: UserData | null): string => {
@@ -152,6 +157,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
               platform: item.M?.platform?.S || '',
               url: item.M?.url?.S || ''
             })) || [],
+            hobbies: data.hobbies?.L?.map((item: any) => item.S || '') || [],
             use_first_name: data.use_first_name?.BOOL ?? true,
             use_middle_name: data.use_middle_name?.BOOL ?? false,
             use_nick_name: data.use_nick_name?.BOOL ?? false,
@@ -435,6 +441,28 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
               <div className="h-10"></div>
             )}
           </div>
+
+          {/* Hobbies Section */}
+          {userData?.hobbies && userData.hobbies.length > 0 && (
+            <div className="md:pl-4 md:col-span-3 mt-4">
+              <div className="flex flex-wrap gap-2">
+                {userData.hobbies.map((hobby, index) => (
+                  <button
+                    key={index}
+                    onClick={async () => {
+                      setSelectedHobby(hobby);
+                      const members = await getFamilyMembersWithHobby(hobby);
+                      setHobbyMembers(members);
+                      setShowHobbyModal(true);
+                    }}
+                    className="text-giants-orange bg-carrot-orange/20 px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-carrot-orange/30 transition-colors opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]"
+                  >
+                    <span>{hobby}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -450,6 +478,20 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
           relationshipType={selectedRole.type}
           relatedUserNames={selectedRole.relatedNames}
           relatedUserIds={selectedRole.relatedIds}
+        />
+      )}
+
+      {/* Hobby Members Modal */}
+      {showHobbyModal && selectedHobby && (
+        <HobbyMembersModal
+          isOpen={showHobbyModal}
+          onClose={() => {
+            setShowHobbyModal(false);
+            setSelectedHobby(null);
+            setHobbyMembers([]);
+          }}
+          hobby={selectedHobby}
+          members={hobbyMembers}
         />
       )}
     </div>

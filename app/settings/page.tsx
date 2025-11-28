@@ -1,10 +1,10 @@
 "use client"
 import React, { useState, useEffect, useRef } from 'react';
-import { saveUserToDB, getUserData } from '@/hooks/dynamoDB';
+import { saveUserToDB, getUserData, getAllHobbies } from '@/hooks/dynamoDB';
 import { useAuth } from '@/context/AuthContext';
 import AuthGuard from '@/components/AuthGuard';
 import { useAuthenticator } from '@aws-amplify/ui-react';
-import { fetchUserAttributes } from '@aws-amplify/auth';
+import { fetchUserAttributes } from 'aws-amplify/auth';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { getFullImageUrl } from '@/utils/imageUtils';
@@ -38,6 +38,7 @@ interface UserData {
   show_zodiac?: boolean;
   social_media?: { platform: string; url: string }[];
   pets?: Pet[];
+  hobbies?: string[];
   use_first_name?: boolean;
   use_middle_name?: boolean;
   use_nick_name?: boolean;
@@ -96,6 +97,10 @@ const Settings = () => {
   const [editingPetBirthday, setEditingPetBirthday] = useState({ year: '', month: '', day: '' });
   const [editingPetDeathDate, setEditingPetDeathDate] = useState({ year: '', month: '', day: '' });
   const [removePetImage, setRemovePetImage] = useState<Set<number>>(new Set());
+  const [hobbiesEntries, setHobbiesEntries] = useState<string[]>([]);
+  const [newHobby, setNewHobby] = useState('');
+  const [availableHobbies, setAvailableHobbies] = useState<string[]>([]);
+  const [isHobbiesOpen, setIsHobbiesOpen] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -119,12 +124,14 @@ const Settings = () => {
           show_zodiac: data.show_zodiac ?? false,
           social_media: data.social_media || [],
           pets: data.pets || [],
+          hobbies: data.hobbies || [],
           use_first_name: data.use_first_name ?? true,
           use_middle_name: data.use_middle_name ?? false,
           use_nick_name: data.use_nick_name ?? false,
         });
         setSocialMediaEntries(data.social_media || []);
         setPetsEntries(data.pets || []);
+        setHobbiesEntries(data.hobbies || []);
       } else {
         setUserData({
           first_name: '',
@@ -144,16 +151,25 @@ const Settings = () => {
           show_zodiac: false,
           social_media: [],
           pets: [],
+          hobbies: [],
           use_first_name: true,
           use_middle_name: false,
           use_nick_name: false,
         });
         setSocialMediaEntries([]);
         setPetsEntries([]);
+        setHobbiesEntries([]);
       }
     };
 
     fetchUserData();
+    
+    // Fetch all available hobbies
+    const fetchAllHobbies = async () => {
+      const hobbies = await getAllHobbies();
+      setAvailableHobbies(hobbies);
+    };
+    fetchAllHobbies();
   }, [user, authEmail, authUsername]);
 
   // Auto-resize textarea when content changes
@@ -289,6 +305,7 @@ const Settings = () => {
         userData?.show_zodiac ?? false,
         userData?.social_media || [],
         userData?.pets || [],
+        userData?.hobbies || [],
         userData?.use_first_name ?? true,
         userData?.use_middle_name ?? false,
         userData?.use_nick_name ?? false
@@ -371,6 +388,7 @@ const Settings = () => {
           userData?.show_zodiac ?? false,
           userData?.social_media || [],
           userData?.pets || [],
+          userData?.hobbies || [],
           userData?.use_first_name ?? true,
           userData?.use_middle_name ?? false,
           userData?.use_nick_name ?? false
@@ -410,6 +428,22 @@ const Settings = () => {
 
   const handleRemoveSocialMedia = (index: number) => {
     setSocialMediaEntries(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleRemoveHobby = (index: number) => {
+    setHobbiesEntries(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddHobby = (hobbyValue?: string) => {
+    const hobbyToAdd = (hobbyValue || newHobby).trim();
+    if (hobbyToAdd && !hobbiesEntries.includes(hobbyToAdd)) {
+      setHobbiesEntries(prev => [...prev, hobbyToAdd]);
+      setNewHobby('');
+      // Add to available hobbies if it's new
+      if (!availableHobbies.includes(hobbyToAdd)) {
+        setAvailableHobbies(prev => [...prev, hobbyToAdd].sort());
+      }
+    }
   };
 
   const formatBirthdayString = (year: string, month: string, day: string): string => {
@@ -814,6 +848,7 @@ const Settings = () => {
         userData?.show_zodiac ?? false,
         finalSocialMediaEntries,
         updatedPets,
+        hobbiesEntries,
         use_first_name,
         use_middle_name,
         use_nick_name
@@ -839,6 +874,7 @@ const Settings = () => {
         show_zodiac: prev.show_zodiac ?? false,
         social_media: finalSocialMediaEntries,
         pets: updatedPets,
+        hobbies: hobbiesEntries,
         use_first_name,
         use_middle_name,
         use_nick_name
@@ -1784,6 +1820,111 @@ const Settings = () => {
                         )}
                       </div>
                     </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Hobbies Section */}
+          <div className="border border-gray-200 rounded-lg mb-5">
+            {/* Accordion Header */}
+            <button
+              type="button"
+              onClick={() => setIsHobbiesOpen(!isHobbiesOpen)}
+              className="w-full px-2 py-3 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between"
+            >
+              <h3 className="text-md font-medium text-gray-900">Hobbies</h3>
+              <svg
+                className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${
+                  isHobbiesOpen ? 'transform rotate-180' : ''
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {/* Accordion Content */}
+            {isHobbiesOpen && (
+              <div className="p-4 border-t border-gray-200">
+                <div className="bg-gray-50 rounded-lg mb-4">
+                  {/* Existing Hobbies */}
+                  {hobbiesEntries.length > 0 ? (
+                    hobbiesEntries.map((hobby, index) => (
+                      <div key={index} className="flex items-center gap-4 mb-2 p-2 rounded-lg hover:bg-gray-200">
+                        <div className="flex-1">
+                          <span className="text-sm font-medium text-gray-700">{hobby}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveHobby(index)}
+                          className="text-red-600 hover:text-red-800 text-sm font-medium"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500 py-2">No hobbies added yet.</p>
+                  )}
+                </div>
+                
+                {/* Add New Hobby */}
+                <div className="">
+                  <h4 className="text-md font-medium text-gray-900 mb-3">Add Hobby</h4>
+                  <div className="mb-4 relative z-0 w-full group">
+                    <input
+                      type="text"
+                      list="hobbies-list"
+                      value={newHobby}
+                      onChange={(e) => {
+                        setNewHobby(e.target.value);
+                      }}
+                      onInput={(e) => {
+                        // This fires when user selects from datalist
+                        const value = (e.target as HTMLInputElement).value.trim();
+                        if (value && availableHobbies.includes(value) && !hobbiesEntries.includes(value)) {
+                          // Small delay to ensure state is updated
+                          setTimeout(() => {
+                            handleAddHobby(value);
+                          }, 50);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddHobby();
+                        }
+                      }}
+                      onBlur={(e) => {
+                        // Add hobby when user leaves the field with a value (for manually typed hobbies)
+                        const trimmedValue = e.target.value.trim();
+                        if (trimmedValue && !hobbiesEntries.includes(trimmedValue)) {
+                          handleAddHobby();
+                        }
+                      }}
+                      className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                      placeholder=" "
+                    />
+                    <datalist id="hobbies-list">
+                      {availableHobbies.map((hobby) => (
+                        <option key={hobby} value={hobby} />
+                      ))}
+                    </datalist>
+                    <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
+                      Hobby (Type or select from existing, press Enter to add)
+                    </label>
+                  </div>
+                  <div className="text-xs text-gray-500 mb-2">
+                    {newHobby && !availableHobbies.includes(newHobby.trim()) && (
+                      <span className="text-blue-600">This will create a new hobby.</span>
+                    )}
+                    {newHobby && hobbiesEntries.includes(newHobby.trim()) && (
+                      <span className="text-orange-600">This hobby is already in your list.</span>
+                    )}
                   </div>
                 </div>
               </div>

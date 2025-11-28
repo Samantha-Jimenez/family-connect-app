@@ -224,6 +224,7 @@ export const saveUserToDB = async (
   show_zodiac?: boolean,
   social_media?: { platform: string; url: string }[],
   pets?: { name: string; birthday: string; death_date?: string; image?: string }[],
+  hobbies?: string[],
   use_first_name?: boolean,
   use_middle_name?: boolean,
   use_nick_name?: boolean
@@ -292,6 +293,13 @@ export const saveUserToDB = async (
       };
     }
 
+    // Add hobbies data if provided
+    if (hobbies && hobbies.length > 0) {
+      item.hobbies = {
+        L: hobbies.map(hobby => ({ S: hobby }))
+      };
+    }
+
     const params = {
       TableName: TABLES.FAMILY,
       Item: item,
@@ -327,6 +335,7 @@ interface GetUserDataReturn {
   show_zodiac: boolean;
   social_media: { platform: string; url: string }[];
   pets: { name: string; birthday: string; death_date?: string; image?: string }[];
+  hobbies: string[];
   use_first_name: boolean;
   use_middle_name: boolean;
   use_nick_name: boolean;
@@ -381,6 +390,7 @@ export const getUserData = async (userId: string): Promise<GetUserDataReturn | n
         death_date: item.M?.death_date?.S || undefined,
         image: item.M?.image?.S || undefined
       })) || [],
+      hobbies: data.Item.hobbies?.L?.map((item: any) => item.S || '') || [],
       use_first_name: data.Item.use_first_name?.BOOL ?? true,
       use_middle_name: data.Item.use_middle_name?.BOOL ?? false,
       use_nick_name: data.Item.use_nick_name?.BOOL ?? false,
@@ -582,6 +592,82 @@ export const getAllFamilyMembers = async (): Promise<FamilyMember[]> => {
     }));
   } catch (error) {
     console.error("❌ Error fetching family members:", error);
+    return [];
+  }
+};
+
+// Function to get all unique hobbies from all family members
+export const getAllHobbies = async (): Promise<string[]> => {
+  try {
+    const params = {
+      TableName: TABLES.FAMILY,
+    };
+
+    const command = new ScanCommand(params);
+    const response = await dynamoDB.send(command);
+
+    if (!response.Items) {
+      return [];
+    }
+
+    const allHobbies = new Set<string>();
+    response.Items.forEach(item => {
+      if (item.hobbies?.L) {
+        item.hobbies.L.forEach((hobby: any) => {
+          const hobbyName = hobby.S || '';
+          if (hobbyName.trim()) {
+            allHobbies.add(hobbyName.trim());
+          }
+        });
+      }
+    });
+
+    return Array.from(allHobbies).sort();
+  } catch (error) {
+    console.error("❌ Error fetching all hobbies:", error);
+    return [];
+  }
+};
+
+// Function to get all family members who have a specific hobby
+export const getFamilyMembersWithHobby = async (hobby: string): Promise<Array<{ id: string; name: string; profile_photo?: string }>> => {
+  try {
+    const params = {
+      TableName: TABLES.FAMILY,
+    };
+
+    const command = new ScanCommand(params);
+    const response = await dynamoDB.send(command);
+
+    if (!response.Items) {
+      return [];
+    }
+
+    const members: Array<{ id: string; name: string; profile_photo?: string }> = [];
+    
+    response.Items.forEach(item => {
+      if (item.hobbies?.L) {
+        const hobbies = item.hobbies.L.map((h: any) => h.S || '').map((h: string) => h.trim().toLowerCase());
+        if (hobbies.includes(hobby.trim().toLowerCase())) {
+          const firstName = item.first_name?.S || '';
+          const lastName = item.last_name?.S || '';
+          const memberId = item.family_member_id?.S || '';
+          const profilePhoto = item.profile_photo?.S || '';
+          
+          if (memberId) {
+            members.push({
+              id: memberId,
+              name: `${firstName} ${lastName}`.trim(),
+              profile_photo: profilePhoto || undefined
+            });
+          }
+        }
+      }
+    });
+
+    return members;
+  } catch (error) {
+    console.error("❌ Error fetching family members with hobby:", error);
     return [];
   }
 };
@@ -1095,7 +1181,7 @@ export const getPhotosByAlbum = async (albumId: string) => {
       });
 
       try {
-        const url = await getSignedUrl(s3Client, getObjectCommand, { expiresIn: 3600 });
+        const url = await getSignedUrl(s3Client, getObjectCommand, { expiresIn: 86400 });
         return {
           photo_id: item.photo_id?.S || '',
           s3_key: s3Key,
@@ -1274,7 +1360,7 @@ export const getFavoritedPhotosByUser = async (userId: string): Promise<PhotoDat
       });
 
       try {
-        const url = await getSignedUrl(s3Client, getObjectCommand, { expiresIn: 3600 });
+        const url = await getSignedUrl(s3Client, getObjectCommand, { expiresIn: 86400 });
         return {
           photo_id: item.photo_id?.S || '',
           s3_key: s3Key,
@@ -1716,7 +1802,7 @@ export const getUserPhotos = async (userId: string): Promise<PhotoData[]> => {
       });
 
       try {
-        const url = await getSignedUrl(s3Client, getObjectCommand, { expiresIn: 3600 });
+        const url = await getSignedUrl(s3Client, getObjectCommand, { expiresIn: 86400 });
         return {
           photo_id: item.photo_id?.S || '',
           s3_key: s3Key,

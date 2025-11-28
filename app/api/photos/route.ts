@@ -89,7 +89,7 @@ export async function GET(request: Request) {
       });
       
       try {
-        const url = await getSignedUrl(s3Client, getObjectCommand, { expiresIn: 3600 });        
+        const url = await getSignedUrl(s3Client, getObjectCommand, { expiresIn: 86400 }); // 24 hours instead of 1 hour        
         return {
           album_ids: item.album_ids?.L?.map((id: any) => id.S || '') || [],
           photo_id: item.photo_id.S || '',

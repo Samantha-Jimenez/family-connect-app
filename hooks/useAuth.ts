@@ -1,5 +1,5 @@
 "use client";
-import { getCurrentUser, AuthUser } from '@aws-amplify/auth';
+import { getCurrentUser, AuthUser } from 'aws-amplify/auth';
 import { useState, useEffect } from 'react';
 
 export function useAuth() {
