@@ -29,7 +29,8 @@ const TABLES = {
   ALBUMS: "Albums",
   RELATIONSHIPS: "Relationships",
   // EVENTS: "Events",
-  EVENT_RSVP: "EventRSVPs"
+  EVENT_RSVP: "EventRSVPs",
+  HOBBY_COMMENTS: "HobbyComments"
 } as const;
 
 // Export all interfaces
@@ -1565,6 +1566,110 @@ export const getProfilePhotoById = async (userId: string): Promise<string | null
   } catch (error) {
     console.error("❌ Error fetching profile photo by ID:", error);
     return null;
+  }
+};
+
+// Hobby Comments Functions
+export const addCommentToHobby = async (hobby: string, userId: string, comment: string, author: string, profilePhoto: string) => {
+  try {
+    const timestamp = new Date().toISOString();
+    const params = {
+      TableName: TABLES.HOBBY_COMMENTS,
+      Key: {
+        hobby: { S: hobby }
+      },
+      UpdateExpression: "SET comments = list_append(if_not_exists(comments, :emptyList), :comment)",
+      ExpressionAttributeValues: {
+        ":comment": { L: [{ M: { userId: { S: userId }, text: { S: comment }, author: { S: author }, timestamp: { S: timestamp }, profilePhoto: { S: profilePhoto } } }] },
+        ":emptyList": { L: [] }
+      }
+    };
+
+    await dynamoDB.send(new UpdateItemCommand(params));
+    console.log("✅ Comment added to hobby successfully!");
+  } catch (error) {
+    console.error("❌ Error adding comment to hobby:", error);
+    throw error;
+  }
+};
+
+export const getCommentsForHobby = async (hobby: string): Promise<Array<{ userId: string; text: string; author: string; timestamp: string; commenterPhoto: string }>> => {
+  try {
+    const params = {
+      TableName: TABLES.HOBBY_COMMENTS,
+      Key: {
+        hobby: { S: hobby }
+      }
+    };
+
+    const data = await dynamoDB.send(new GetItemCommand(params));
+
+    if (!data.Item || !data.Item.comments || !data.Item.comments.L) {
+      return [];
+    }
+
+    return await Promise.all(data.Item.comments.L.map(async (comment: any) => {
+      const userId = comment.M?.userId?.S || '';
+      const userName = await getUserNameById(userId);
+      return {
+        userId: userId,
+        text: comment.M?.text?.S || '',
+        author: userName ? `${userName.firstName} ${userName.lastName}` : comment.M?.author?.S || 'Unknown',
+        timestamp: comment.M?.timestamp?.S || '',
+        commenterPhoto: comment.M?.profilePhoto?.S || ''
+      };
+    }));
+  } catch (error) {
+    console.error("❌ Error fetching comments for hobby:", error);
+    return [];
+  }
+};
+
+export const deleteCommentFromHobby = async (hobby: string, userId: string, commentIndex: number) => {
+  try {
+    const params = {
+      TableName: TABLES.HOBBY_COMMENTS,
+      Key: {
+        hobby: { S: hobby }
+      },
+      UpdateExpression: `REMOVE comments[${commentIndex}]`,
+      ConditionExpression: `comments[${commentIndex}].userId = :userId`,
+      ExpressionAttributeValues: {
+        ":userId": { S: userId }
+      }
+    };
+
+    await dynamoDB.send(new UpdateItemCommand(params));
+    console.log("✅ Comment deleted from hobby successfully!");
+  } catch (error) {
+    console.error("❌ Error deleting comment from hobby:", error);
+    throw error;
+  }
+};
+
+export const editCommentInHobby = async (hobby: string, userId: string, commentIndex: number, newText: string) => {
+  try {
+    const params = {
+      TableName: TABLES.HOBBY_COMMENTS,
+      Key: {
+        hobby: { S: hobby }
+      },
+      UpdateExpression: `SET comments[${commentIndex}].#text = :newText`,
+      ConditionExpression: `comments[${commentIndex}].userId = :userId`,
+      ExpressionAttributeNames: {
+        "#text": "text"
+      },
+      ExpressionAttributeValues: {
+        ":newText": { S: newText },
+        ":userId": { S: userId }
+      }
+    };
+
+    await dynamoDB.send(new UpdateItemCommand(params));
+    console.log("✅ Comment edited in hobby successfully!");
+  } catch (error) {
+    console.error("❌ Error editing comment in hobby:", error);
+    throw error;
   }
 };
 
