@@ -130,40 +130,42 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
 
         <div className="text-gray-800 dark:text-gray-200">
           {members.length > 0 ? (
-            <ul className="space-y-3 mb-6">
-              {members.map((member) => (
-                <li key={member.id} className="flex items-center gap-3">
-                  <Link 
-                    href={`/profile/${member.id}`}
-                    className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-                    onClick={onClose}
-                  >
-                    {member.profile_photo ? (
-                      <div className="avatar">
-                        <div className="w-12 h-12 rounded-full overflow-hidden">
+            <>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex -space-x-3">
+                  {members.slice(0, 6).map((member) => (
+                    <Link
+                      key={member.id}
+                      href={`/profile/${member.id}`}
+                      className="group relative inline-block"
+                      onClick={onClose}
+                    >
+                      <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white dark:ring-gray-800 bg-gray-100 dark:bg-gray-700 transition-all duration-200 ease-out group-hover:-translate-y-1 group-hover:scale-105 group-hover:ring-plantain-green shadow-sm">
+                        {member.profile_photo ? (
                           <Image
                             src={getFullImageUrl(member.profile_photo)}
                             alt={member.name}
-                            width={48}
-                            height={48}
-                            className="object-cover"
+                            width={40}
+                            height={40}
+                            className="object-cover w-full h-full"
                           />
-                        </div>
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <span className="icon-[mdi--account] text-xl text-gray-400" />
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="avatar">
-                        <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                          <span className="icon-[mdi--account] text-2xl text-gray-400" />
-                        </div>
-                      </div>
-                    )}
-                    <span className="text-plantain-green hover:underline font-medium">
-                      {member.name}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+                      <span className="sr-only">{member.name}</span>
+                    </Link>
+                  ))}
+                  {members.length > 6 && (
+                    <div className="w-10 h-10 rounded-full bg-plantain-green/20 text-plantain-green flex items-center justify-center text-xs font-semibold ring-2 ring-white dark:ring-gray-800">
+                      +{members.length - 6}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
           ) : (
             <p className="text-gray-500 dark:text-gray-400 mb-6">No other family members have this hobby.</p>
           )}
@@ -307,4 +309,3 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
 };
 
 export default HobbyMembersModal;
-
