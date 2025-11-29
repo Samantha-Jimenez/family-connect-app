@@ -29,6 +29,8 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
   const [editedCommentText, setEditedCommentText] = useState('');
   const [loading, setLoading] = useState(false);
   const [userProfilePhoto, setUserProfilePhoto] = useState<string>('');
+  const [hoveredMemberId, setHoveredMemberId] = useState<string | null>(null);
+  const hoveredMemberName = hoveredMemberId ? members.find((m) => m.id === hoveredMemberId)?.name : '';
 
   React.useEffect(() => {
     setMounted(true);
@@ -132,37 +134,57 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
           {members.length > 0 ? (
             <>
               <div className="flex items-center gap-3 mb-4">
-                <div className="flex -space-x-3">
-                  {members.slice(0, 6).map((member) => (
-                    <Link
-                      key={member.id}
-                      href={`/profile/${member.id}`}
-                      className="group relative inline-block"
-                      onClick={onClose}
-                    >
-                      <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white dark:ring-gray-800 bg-gray-100 dark:bg-gray-700 transition-all duration-200 ease-out group-hover:-translate-y-1 group-hover:scale-105 group-hover:ring-plantain-green shadow-sm">
-                        {member.profile_photo ? (
-                          <Image
-                            src={getFullImageUrl(member.profile_photo)}
-                            alt={member.name}
-                            width={40}
-                            height={40}
-                            className="object-cover w-full h-full"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <span className="icon-[mdi--account] text-xl text-gray-400" />
-                          </div>
-                        )}
+                <div className="flex flex-col items-start">
+                  <div className="flex -space-x-3">
+                    {members.slice(0, 6).map((member) => (
+                      <Link
+                        key={member.id}
+                        href={`/profile/${member.id}`}
+                        className="group relative inline-block"
+                        onClick={onClose}
+                        onMouseEnter={() => setHoveredMemberId(member.id)}
+                        onMouseLeave={() => setHoveredMemberId(null)}
+                      >
+                        <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white dark:ring-gray-800 bg-gray-100 dark:bg-gray-700 transition-all duration-200 ease-out group-hover:-translate-y-1 group-hover:scale-105 group-hover:ring-plantain-green shadow-sm">
+                          {member.profile_photo ? (
+                            <Image
+                              src={getFullImageUrl(member.profile_photo)}
+                              alt={member.name}
+                              width={40}
+                              height={40}
+                              className="object-cover w-full h-full"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <span className="icon-[mdi--account] text-xl text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                        <span className="sr-only">{member.name}</span>
+                      </Link>
+                    ))}
+                    {members.length > 6 && (
+                      <div className="w-10 h-10 rounded-full bg-plantain-green/20 text-plantain-green flex items-center justify-center text-xs font-semibold ring-2 ring-white dark:ring-gray-800">
+                        +{members.length - 6}
                       </div>
-                      <span className="sr-only">{member.name}</span>
-                    </Link>
-                  ))}
-                  {members.length > 6 && (
-                    <div className="w-10 h-10 rounded-full bg-plantain-green/20 text-plantain-green flex items-center justify-center text-xs font-semibold ring-2 ring-white dark:ring-gray-800">
-                      +{members.length - 6}
-                    </div>
-                  )}
+                    )}
+                  </div>
+                  {/* Member name display on hover */}
+                  <div className="relative mt-3 h-3 w-full">
+                    {hoveredMemberName ? (
+                      <div
+                        key={hoveredMemberId}
+                        className="name-float absolute inline-flex items-center gap-2 px-2 rounded-full bg-gradient-to-r from-dark-spring-green to-plantain-green text-white shadow-lg ring-1 ring-black/5 dark:ring-white/5"
+                      >
+                        {/* <span className="h-2 w-2 rounded-full bg-white/80 shadow-sm" /> */}
+                        <span className="text-sm font-semibold tracking-wide whitespace-nowrap drop-shadow-sm">
+                          {hoveredMemberName}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="absolute h-full w-36 rounded-full" aria-hidden />
+                    )}
+                  </div>
                 </div>
               </div>
             </>
@@ -301,6 +323,29 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
             Close
           </button>
         </div>
+        <style jsx>{`
+          .name-float {
+            animation: nameFloat 260ms ease-out;
+          }
+
+          @keyframes nameFloat {
+            0% {
+              opacity: 0;
+              transform: translateY(10px) scale(0.95);
+              filter: blur(3px);
+            }
+            55% {
+              opacity: 1;
+              transform: translateY(-4px) scale(1.03);
+              filter: blur(0);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+              filter: blur(0);
+            }
+          }
+        `}</style>
       </div>
     </div>
   );
