@@ -279,19 +279,19 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
                   handleAddComment();
                 }
               }}
-              className="input input-bordered w-full text-black bg-white border-gray-300"
+              className="input input-sm input-bordered w-full text-black bg-white border-gray-300 rounded-md shadow-sm !text-base block rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors"
               placeholder="Add a comment..."
             />
             <button
               onClick={handleAddComment}
-              className="btn bg-blue-500 text-white border-0 hover:bg-blue-600"
+              className="btn btn-sm bg-dark-spring-green text-white rounded-md shadow hover:bg-plantain-green transition border-0"
             >
               Post
             </button>
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end">
+        <div className="mt-4 flex justify-end">
           <button
             onClick={onClose}
             className="btn btn-sm bg-golden-sand text-black border-0 hover:bg-golden-sand/70"
