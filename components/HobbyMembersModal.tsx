@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -31,6 +31,8 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
   const [userProfilePhoto, setUserProfilePhoto] = useState<string>('');
   const [hoveredMemberId, setHoveredMemberId] = useState<string | null>(null);
   const hoveredMemberName = hoveredMemberId ? members.find((m) => m.id === hoveredMemberId)?.name : '';
+  const newCommentTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const editCommentTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   React.useEffect(() => {
     setMounted(true);
@@ -75,6 +77,9 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
       
       await addCommentToHobby(hobby, user.userId, newComment.trim(), author, userProfilePhoto);
       setNewComment('');
+      if (newCommentTextareaRef.current) {
+        newCommentTextareaRef.current.style.height = '40px';
+      }
       await fetchComments();
     } catch (error) {
       console.error('Error adding comment:', error);
@@ -88,6 +93,9 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
       await editCommentInHobby(hobby, user.userId, index, editedCommentText.trim());
       setEditingCommentIndex(null);
       setEditedCommentText('');
+      if (editCommentTextareaRef.current) {
+        editCommentTextareaRef.current.style.height = '40px';
+      }
       await fetchComments();
     } catch (error) {
       console.error('Error editing comment:', error);
@@ -111,6 +119,28 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
       handleDeleteComment(index);
     }
   };
+
+  const autoResizeTextarea = (textarea: HTMLTextAreaElement | null) => {
+    if (!textarea) return;
+    textarea.style.height = 'auto';
+    const scrollHeight = textarea.scrollHeight;
+    const minHeight = 40; // min-h-[40px]
+    const maxHeight = 120; // max-h-[120px]
+    const newHeight = Math.min(Math.max(scrollHeight, minHeight), maxHeight);
+    textarea.style.height = `${newHeight}px`;
+  };
+
+  useEffect(() => {
+    if (editingCommentIndex !== null && editCommentTextareaRef.current) {
+      autoResizeTextarea(editCommentTextareaRef.current);
+    }
+  }, [editingCommentIndex, editedCommentText]);
+
+  useEffect(() => {
+    if (newCommentTextareaRef.current) {
+      autoResizeTextarea(newCommentTextareaRef.current);
+    }
+  }, [newComment]);
 
   if (!isOpen || !mounted) return null;
 
@@ -204,28 +234,43 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
                 {comments.map((comment, index) => (
                   <div key={index} className="flex items-start gap-2">
                     {editingCommentIndex === index ? (
-                      <div className="flex items-center w-full">
-                        <input
-                          type="text"
+                      <div className="flex items-start w-full gap-2">
+                        <textarea
+                          ref={editCommentTextareaRef}
                           value={editedCommentText}
-                          onChange={(e) => setEditedCommentText(e.target.value)}
-                          className="input input-bordered w-full text-black bg-white border-gray-300"
-                        />
-                        <button
-                          onClick={() => handleEditComment(index)}
-                          className="btn bg-green-500 text-white ml-2 border-0"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditingCommentIndex(null);
-                            setEditedCommentText('');
+                          onChange={(e) => {
+                            setEditedCommentText(e.target.value);
+                            autoResizeTextarea(e.target);
                           }}
-                          className="btn bg-gray-500 text-white ml-2 border-0"
-                        >
-                          Cancel
-                        </button>
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              // Allow default Enter behavior (new line)
+                              setTimeout(() => autoResizeTextarea(e.currentTarget), 0);
+                            }
+                          }}
+                          className="input input-bordered w-full text-black bg-white border-gray-300 resize-none min-h-[40px] max-h-[120px] overflow-y-auto"
+                          rows={1}
+                        />
+                        <div className="flex flex-col gap-2">
+                          <button
+                            onClick={() => handleEditComment(index)}
+                            className="btn bg-green-500 text-white border-0"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingCommentIndex(null);
+                              setEditedCommentText('');
+                              if (editCommentTextareaRef.current) {
+                                editCommentTextareaRef.current.style.height = '40px';
+                              }
+                            }}
+                            className="btn bg-gray-500 text-white border-0"
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <>
@@ -250,7 +295,7 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
                           <div className="chat-header text-gray-600 font-light">
                             {comment.author}
                           </div>
-                          <div className="chat-bubble bg-gray-200 text-gray-800 text-sm px-2 py-0.5 min-h-3 font-light !max-w-full break-all whitespace-normal overflow-hidden">
+                          <div className="chat-bubble bg-gray-200 text-gray-800 text-sm px-2 py-0.5 min-h-3 font-light !max-w-full break-words whitespace-pre-wrap overflow-hidden">
                             {comment.text}
                           </div>
                           <time className="chat-footer opacity-50 text-gray-700 font-light text-sm">
@@ -293,22 +338,30 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
           </div>
           
           {/* Add Comment Input */}
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
+          <div className="flex items-start gap-2">
+            <textarea
+              ref={newCommentTextareaRef}
               value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
+              onChange={(e) => {
+                setNewComment(e.target.value);
+                autoResizeTextarea(e.target);
+              }}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === 'Enter' && e.shiftKey) {
+                  e.preventDefault();
                   handleAddComment();
+                } else if (e.key === 'Enter' && !e.shiftKey) {
+                  // Allow default Enter behavior (new line)
+                  setTimeout(() => autoResizeTextarea(e.currentTarget), 0);
                 }
               }}
-              className="input input-sm input-bordered w-full text-black bg-white border-gray-300 rounded-md shadow-sm !text-base block rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors"
-              placeholder="Add a comment..."
+              className="input input-sm input-bordered w-full text-black bg-white border-gray-300 rounded-md shadow-sm !text-base block rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors resize-none min-h-[40px] max-h-[120px] overflow-y-auto"
+              placeholder="Add a comment... (Shift+Enter to submit)"
+              rows={1}
             />
             <button
               onClick={handleAddComment}
-              className="btn btn-sm bg-dark-spring-green text-white rounded-md shadow hover:bg-plantain-green transition border-0"
+              className="btn btn-sm bg-dark-spring-green text-white rounded-md shadow hover:bg-plantain-green transition border-0 self-end"
             >
               Post
             </button>
