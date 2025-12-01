@@ -1570,9 +1570,22 @@ export const getProfilePhotoById = async (userId: string): Promise<string | null
 };
 
 // Hobby Comments Functions
-export const addCommentToHobby = async (hobby: string, userId: string, comment: string, author: string, profilePhoto: string) => {
+export const addCommentToHobby = async (hobby: string, userId: string, comment: string, author: string, profilePhoto: string, photoUrl?: string) => {
   try {
     const timestamp = new Date().toISOString();
+    const commentItem: Record<string, any> = {
+      userId: { S: userId },
+      text: { S: comment },
+      author: { S: author },
+      timestamp: { S: timestamp },
+      profilePhoto: { S: profilePhoto }
+    };
+    
+    // Add photoUrl if provided
+    if (photoUrl) {
+      commentItem.photoUrl = { S: photoUrl };
+    }
+    
     const params = {
       TableName: TABLES.HOBBY_COMMENTS,
       Key: {
@@ -1580,7 +1593,7 @@ export const addCommentToHobby = async (hobby: string, userId: string, comment: 
       },
       UpdateExpression: "SET comments = list_append(if_not_exists(comments, :emptyList), :comment)",
       ExpressionAttributeValues: {
-        ":comment": { L: [{ M: { userId: { S: userId }, text: { S: comment }, author: { S: author }, timestamp: { S: timestamp }, profilePhoto: { S: profilePhoto } } }] },
+        ":comment": { L: [{ M: commentItem }] },
         ":emptyList": { L: [] }
       }
     };
@@ -1593,7 +1606,7 @@ export const addCommentToHobby = async (hobby: string, userId: string, comment: 
   }
 };
 
-export const getCommentsForHobby = async (hobby: string): Promise<Array<{ userId: string; text: string; author: string; timestamp: string; commenterPhoto: string }>> => {
+export const getCommentsForHobby = async (hobby: string): Promise<Array<{ userId: string; text: string; author: string; timestamp: string; commenterPhoto: string; photoUrl?: string }>> => {
   try {
     const params = {
       TableName: TABLES.HOBBY_COMMENTS,
@@ -1616,7 +1629,8 @@ export const getCommentsForHobby = async (hobby: string): Promise<Array<{ userId
         text: comment.M?.text?.S || '',
         author: userName ? `${userName.firstName} ${userName.lastName}` : comment.M?.author?.S || 'Unknown',
         timestamp: comment.M?.timestamp?.S || '',
-        commenterPhoto: comment.M?.profilePhoto?.S || ''
+        commenterPhoto: comment.M?.profilePhoto?.S || '',
+        photoUrl: comment.M?.photoUrl?.S || undefined
       };
     }));
   } catch (error) {

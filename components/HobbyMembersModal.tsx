@@ -23,7 +23,7 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
 }) => {
   const [mounted, setMounted] = React.useState(false);
   const { user } = useAuthenticator();
-  const [comments, setComments] = useState<Array<{ userId: string; text: string; author: string; timestamp: string; commenterPhoto: string }>>([]);
+  const [comments, setComments] = useState<Array<{ userId: string; text: string; author: string; timestamp: string; commenterPhoto: string; photoUrl?: string }>>([]);
   const [newComment, setNewComment] = useState('');
   const [editingCommentIndex, setEditingCommentIndex] = useState<number | null>(null);
   const [editedCommentText, setEditedCommentText] = useState('');
@@ -31,9 +31,13 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
   const [userProfilePhoto, setUserProfilePhoto] = useState<string>('');
   const [hoveredMemberId, setHoveredMemberId] = useState<string | null>(null);
   const hoveredMemberName = hoveredMemberId ? members.find((m) => m.id === hoveredMemberId)?.name : '';
+  const [commentPhoto, setCommentPhoto] = useState<File | null>(null);
+  const [commentPhotoPreview, setCommentPhotoPreview] = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const newCommentTextareaRef = useRef<HTMLTextAreaElement>(null);
   const editCommentTextareaRef = useRef<HTMLTextAreaElement>(null);
   const commentsScrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
     setMounted(true);
@@ -67,23 +71,85 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
   };
 
   const handleAddComment = async () => {
-    if (!newComment.trim() || !user?.userId) return;
+    if ((!newComment.trim() && !commentPhoto) || !user?.userId) return;
 
     try {
+      setUploadingPhoto(true);
+      let photoUrl: string | undefined = undefined;
+
+      // Upload photo if one is selected
+      if (commentPhoto) {
+        const formData = new FormData();
+        formData.append('file', commentPhoto);
+        
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to upload photo');
+        }
+        
+        const result = await response.json();
+        if (result.key) {
+          photoUrl = result.key;
+        }
+      }
+
       const userAttributes = await fetchUserAttributes();
       const userData = await getUserData(user.userId);
       const firstName = userData?.first_name || '';
       const lastName = userData?.last_name || '';
       const author = `${firstName} ${lastName}`.trim() || userAttributes.email || 'Unknown';
       
-      await addCommentToHobby(hobby, user.userId, newComment.trim(), author, userProfilePhoto);
+      await addCommentToHobby(hobby, user.userId, newComment.trim() || '', author, userProfilePhoto, photoUrl);
       setNewComment('');
+      setCommentPhoto(null);
+      setCommentPhotoPreview(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       if (newCommentTextareaRef.current) {
         newCommentTextareaRef.current.style.height = '40px';
       }
       await fetchComments();
     } catch (error) {
       console.error('Error adding comment:', error);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('Image size must be less than 10MB');
+        return;
+      }
+
+      setCommentPhoto(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCommentPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setCommentPhoto(null);
+    setCommentPhotoPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -311,8 +377,21 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
                           <div className="chat-header text-gray-600 font-light">
                             {comment.author}
                           </div>
-                          <div className="chat-bubble bg-gray-200 text-gray-800 text-sm px-2 py-0.5 min-h-3 font-light !max-w-full break-words whitespace-pre-wrap overflow-hidden">
-                            {comment.text}
+                          <div className="chat-bubble bg-gray-200 text-gray-800 text-sm px-2 py-1.5 min-h-3 font-light !max-w-full break-words whitespace-pre-wrap overflow-hidden">
+                            {comment.photoUrl && (
+                              <div className="mb-2 rounded-lg overflow-hidden max-w-sm">
+                                <Image
+                                  src={getFullImageUrl(comment.photoUrl)}
+                                  alt="Comment photo"
+                                  width={400}
+                                  height={400}
+                                  className="object-contain w-full h-auto max-h-64"
+                                />
+                              </div>
+                            )}
+                            {comment.text && (
+                              <div>{comment.text}</div>
+                            )}
                           </div>
                           <time className="chat-footer opacity-50 text-gray-700 font-light text-sm">
                             {new Date(comment.timestamp).toLocaleString([], {
@@ -354,33 +433,72 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
           </div>
           
           {/* Add Comment Input */}
-          <div className="flex items-start gap-2">
-            <textarea
-              ref={newCommentTextareaRef}
-              value={newComment}
-              onChange={(e) => {
-                setNewComment(e.target.value);
-                autoResizeTextarea(e.target);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && e.shiftKey) {
-                  e.preventDefault();
-                  handleAddComment();
-                } else if (e.key === 'Enter' && !e.shiftKey) {
-                  // Allow default Enter behavior (new line)
-                  setTimeout(() => autoResizeTextarea(e.currentTarget), 0);
-                }
-              }}
-              className="input input-sm input-bordered w-full text-black bg-white border-gray-300 rounded-md shadow-sm !text-base block rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors resize-none min-h-[40px] max-h-[120px] overflow-y-auto"
-              placeholder="Add a comment... (Shift+Enter to submit)"
-              rows={1}
-            />
-            <button
-              onClick={handleAddComment}
-              className="btn btn-sm bg-dark-spring-green text-white rounded-md shadow hover:bg-plantain-green transition border-0 self-end"
-            >
-              Post
-            </button>
+          <div className="space-y-2">
+            {commentPhotoPreview && (
+              <div className="relative inline-block">
+                <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-300">
+                  <Image
+                    src={commentPhotoPreview}
+                    alt="Photo preview"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <button
+                  onClick={handleRemovePhoto}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                  type="button"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+            <div className="flex items-start gap-2">
+              <div className="flex-1 flex flex-col gap-2">
+                <textarea
+                  ref={newCommentTextareaRef}
+                  value={newComment}
+                  onChange={(e) => {
+                    setNewComment(e.target.value);
+                    autoResizeTextarea(e.target);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && e.shiftKey) {
+                      e.preventDefault();
+                      handleAddComment();
+                    } else if (e.key === 'Enter' && !e.shiftKey) {
+                      // Allow default Enter behavior (new line)
+                      setTimeout(() => autoResizeTextarea(e.currentTarget), 0);
+                    }
+                  }}
+                  className="input input-sm input-bordered w-full text-black bg-white border-gray-300 rounded-md shadow-sm !text-base block rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2 transition-colors resize-none min-h-[40px] max-h-[120px] overflow-y-auto"
+                  placeholder="Add a comment... (Shift+Enter to submit)"
+                  rows={1}
+                />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoSelect}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="btn btn-sm btn-ghost text-gray-600 hover:text-gray-800 self-start"
+                >
+                  <span className="icon-[mdi--image] text-lg mr-1" />
+                  Add Photo
+                </button>
+              </div>
+              <button
+                onClick={handleAddComment}
+                disabled={uploadingPhoto || ((!newComment.trim() && !commentPhoto))}
+                className="btn btn-sm bg-dark-spring-green text-white rounded-md shadow hover:bg-plantain-green transition border-0 self-start disabled:opacity-50 disabled:cursor-not-allowed h-10"
+              >
+                {uploadingPhoto ? 'Posting...' : 'Post'}
+              </button>
+            </div>
           </div>
         </div>
 
