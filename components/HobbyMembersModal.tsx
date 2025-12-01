@@ -33,6 +33,7 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
   const hoveredMemberName = hoveredMemberId ? members.find((m) => m.id === hoveredMemberId)?.name : '';
   const newCommentTextareaRef = useRef<HTMLTextAreaElement>(null);
   const editCommentTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const commentsScrollRef = useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     setMounted(true);
@@ -142,6 +143,18 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
     }
   }, [newComment]);
 
+  // Scroll to bottom when comments change or load
+  useEffect(() => {
+    if (commentsScrollRef.current && !loading) {
+      // Use setTimeout to ensure DOM is updated
+      setTimeout(() => {
+        if (commentsScrollRef.current) {
+          commentsScrollRef.current.scrollTop = commentsScrollRef.current.scrollHeight;
+        }
+      }, 0);
+    }
+  }, [comments, loading]);
+
   if (!isOpen || !mounted) return null;
 
   const modalContent = (
@@ -226,7 +239,10 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
         {/* Comments Section */}
         <div className="border-t pt-4 mt-4">
           <h3 className="text-lg font-bold text-black dark:text-white mb-3">Comments</h3>
-          <div className="max-h-[300px] overflow-y-auto scrollbar scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-gray-400 scrollbar-thumb-rounded-full scrollbar-track-rounded-full mb-4">
+          <div 
+            ref={commentsScrollRef}
+            className="max-h-[300px] overflow-y-auto scrollbar scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-gray-400 scrollbar-thumb-rounded-full scrollbar-track-rounded-full mb-4"
+          >
             {loading ? (
               <p className="text-gray-500 dark:text-gray-400">Loading comments...</p>
             ) : comments.length > 0 ? (
