@@ -34,6 +34,7 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
   const [commentPhoto, setCommentPhoto] = useState<File | null>(null);
   const [commentPhotoPreview, setCommentPhotoPreview] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [showScrollUpArrow, setShowScrollUpArrow] = useState(false);
   const newCommentTextareaRef = useRef<HTMLTextAreaElement>(null);
   const editCommentTextareaRef = useRef<HTMLTextAreaElement>(null);
   const commentsScrollRef = useRef<HTMLDivElement>(null);
@@ -221,6 +222,26 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
     }
   }, [comments, loading]);
 
+  // Handle scroll to show/hide up arrow
+  useEffect(() => {
+    const scrollElement = commentsScrollRef.current;
+    if (!scrollElement) return;
+
+    const handleScroll = () => {
+      const hasScrolledDown = scrollElement.scrollTop > 0;
+      setShowScrollUpArrow(hasScrolledDown);
+    };
+
+    scrollElement.addEventListener('scroll', handleScroll);
+    
+    // Check initial state
+    handleScroll();
+
+    return () => {
+      scrollElement.removeEventListener('scroll', handleScroll);
+    };
+  }, [comments, loading]);
+
   if (!isOpen || !mounted) return null;
 
   const modalContent = (
@@ -230,7 +251,10 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-start mb-4">
-          <h2 className="text-2xl font-bold text-black dark:text-white">Family Members with {hobby}</h2>
+          <div>
+            <h2 className="text-2xl font-bold text-black dark:text-white">{hobby} Hub</h2>
+            <p className='text-gray-500 dark:text-gray-400 text-sm'>Send photos, share stories, and connect with your family members who share your interests!</p>
+          </div>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl leading-none top-[-1rem] right-[-0.75rem] relative font-light"
@@ -305,10 +329,27 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
         {/* Comments Section */}
         <div className="border-t pt-4 mt-4">
           <h3 className="text-lg font-bold text-black dark:text-white mb-3">Comments</h3>
-          <div 
-            ref={commentsScrollRef}
-            className="max-h-[300px] overflow-y-auto scrollbar scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-gray-400 scrollbar-thumb-rounded-full scrollbar-track-rounded-full mb-4"
-          >
+          <div className="relative">
+            {showScrollUpArrow && (
+              <div className="absolute top-0 right-0 transform -translate-x-1/2 z-10 flex justify-center mb-2">
+                <button
+                  onClick={() => {
+                    if (commentsScrollRef.current) {
+                      commentsScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
+                  className="tooltip tooltip-bottom bg-white rounded-full pt-1.5 px-1.5 shadow-lg border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
+                  data-tip="Scroll to top"
+                  aria-label="Scroll to top of comments"
+                >
+                  <span className="icon-[mdi--chevron-up] text-2xl text-gray-600" />
+                </button>
+              </div>
+            )}
+            <div 
+              ref={commentsScrollRef}
+              className="max-h-[300px] overflow-y-auto scrollbar scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-gray-400 scrollbar-thumb-rounded-full scrollbar-track-rounded-full mb-4"
+            >
             {loading ? (
               <p className="text-gray-500 dark:text-gray-400">Loading comments...</p>
             ) : comments.length > 0 ? (
@@ -430,6 +471,7 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
             ) : (
               <p className="text-gray-500 dark:text-gray-400">No comments yet. Be the first to comment!</p>
             )}
+            </div>
           </div>
           
           {/* Add Comment Input */}
