@@ -303,7 +303,7 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
                     )}
                   </div>
                   {/* Member name display on hover */}
-                  <div className="relative mt-3 h-3 w-full">
+                  <div className="relative mt-1 h-3 w-full">
                     {hoveredMemberName ? (
                       <div
                         key={hoveredMemberId}
