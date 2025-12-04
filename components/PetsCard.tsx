@@ -59,6 +59,7 @@ const sortPets = (pets: Pet[]): Pet[] => {
 const PetsCard = ({ userId }: { userId: string }) => {
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hoveredPetIndex, setHoveredPetIndex] = useState<number | null>(null);
 
   const formatBirthdayDisplay = (birthday: string): string => {
     if (!birthday) return '';
@@ -155,56 +156,95 @@ const PetsCard = ({ userId }: { userId: string }) => {
 
   return (
     <div className="card text-black p-6">
-      {/* <h2 className="text-xl font-medium mb-4">Pets</h2> */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {pets.map((pet, index) => (
-          <div key={`${pet.name}-${index}`} className="text-black">
-            <div className="flex items-start gap-4">
-              {/* Pet Image */}
-              <div className="flex-shrink-0">
-                {pet.image ? (
-                  <div className="w-20 h-20 avatar rounded-full overflow-hidden shadow-xl">
-                    <Image 
-                      src={getFullImageUrl(pet.image)}
-                      alt={pet.name}
-                      width={80}
-                      height={80}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-20 h-20 avatar rounded-full bg-gray-200 flex items-center justify-center shadow-lg">
-                    <span className="icon-[mdi--paw] text-3xl text-gray-400" />
-                  </div>
-                )}
-              </div>
+      <h2 className="text-xl font-medium mb-7">Pets</h2>
+      <div className="flex flex-col items-start gap-4">
+        {/* Grouped Pet Avatars */}
+        <div className="flex flex-col items-start">
+          <div className="flex -space-x-3">
+            {pets.slice(0, 6).map((pet, index) => {
+              const isDeceased = !!pet.death_date;
+              const hoverRingClass = isDeceased 
+                ? 'group-hover:ring-gray-400' 
+                : 'group-hover:ring-plantain-green';
               
-              {/* Pet Info */}
-              <div className="flex-1 min-w-0 self-center">
-                <h3 className="text-lg font-medium">{pet.name}</h3>
-                <div className="text-sm text-gray-600">
-                  {(formatBirthdayDisplay(pet.birthday) || formatBirthdayDisplay(pet.death_date || '')) && (
-                    <p>
-                      {formatBirthdayDisplay(pet.birthday)}
-                      {pet.death_date && formatBirthdayDisplay(pet.death_date) && (
-                        <span className="source-sans-3"> - {formatBirthdayDisplay(pet.death_date)}</span>
-                      )}
-                    </p>
+              return (
+                <div
+                  key={`${pet.name}-${index}`}
+                  className="group relative inline-block"
+                  onMouseEnter={() => setHoveredPetIndex(index)}
+                  onMouseLeave={() => setHoveredPetIndex(null)}
+                >
+                  {pet.image ? (
+                    <div className={`w-16 h-16 rounded-full overflow-hidden ring-2 ring-white dark:ring-gray-800 bg-gray-100 dark:bg-gray-700 transition-all duration-300 ease-out group-hover:-translate-y-2 group-hover:scale-150 ${hoverRingClass} group-hover:shadow-xl shadow-md`}>
+                      <Image 
+                        src={getFullImageUrl(pet.image)}
+                        alt={pet.name}
+                        width={64}
+                        height={64}
+                        className="object-cover w-full h-full"
+                      />
+                    </div>
+                  ) : (
+                    <div className={`w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center ring-2 ring-white dark:ring-gray-800 transition-all duration-300 ease-out group-hover:-translate-y-2 group-hover:scale-150 ${hoverRingClass} group-hover:shadow-xl shadow-md`}>
+                      <span className="icon-[mdi--paw] text-2xl text-gray-400 dark:text-gray-500" />
+                    </div>
                   )}
-                  {calculateAge(pet.birthday, pet.death_date) && (
-                    <p>
-                      {pet.death_date && (
-                        <span className="source-sans-3">RIP 🕊️ </span>
-                      )}
-                      {calculateAge(pet.birthday, pet.death_date)}
-                    </p>
+                  <span className="sr-only">{pet.name}</span>
+                </div>
+              );
+            })}
+            {pets.length > 6 && (
+              <div className="w-16 h-16 rounded-full bg-plantain-green/20 text-plantain-green flex items-center justify-center text-sm font-semibold ring-2 ring-white dark:ring-gray-800 shadow-md">
+                +{pets.length - 6}
+              </div>
+            )}
+          </div>
+          {/* Pet info display on hover */}
+          <div className="relative mt-2 h-4 w-full">
+            {hoveredPetIndex !== null && pets[hoveredPetIndex] ? (
+              <div
+                key={hoveredPetIndex}
+                className="pet-info-float absolute inline-flex flex-col items-start gap-0.5 px-1 py-1.5 rounded-lg text-black"
+              >
+                <span className="text-sm font-semibold tracking-wide whitespace-nowrap drop-shadow-sm">
+                  {pets[hoveredPetIndex].name}
+                </span>
+                <div className="text-xs font-medium opacity-90 whitespace-nowrap">
+                  {pets[hoveredPetIndex].death_date && (
+                    <span>RIP 🕊️ </span>
                   )}
+                  {calculateAge(pets[hoveredPetIndex].birthday, pets[hoveredPetIndex].death_date)}
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="absolute h-full w-36 rounded-lg" aria-hidden />
+            )}
           </div>
-        ))}
+        </div>
       </div>
+      <style jsx>{`
+        .pet-info-float {
+          animation: petInfoFloat 300ms ease-out;
+        }
+
+        @keyframes petInfoFloat {
+          0% {
+            opacity: 0;
+            transform: translateY(10px) scale(0.95);
+            filter: blur(3px);
+          }
+          55% {
+            opacity: 1;
+            transform: translateY(-4px) scale(1.03);
+            filter: blur(0);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            filter: blur(0);
+          }
+        }
+      `}</style>
     </div>
   );
 };
