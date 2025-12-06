@@ -60,6 +60,9 @@ const PetsCard = ({ userId }: { userId: string }) => {
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
   const [hoveredPetIndex, setHoveredPetIndex] = useState<number | null>(null);
+  const [showOverflowList, setShowOverflowList] = useState(false);
+
+  const extraPets = pets.slice(6);
 
   const formatBirthdayDisplay = (birthday: string): string => {
     if (!birthday) return '';
@@ -170,12 +173,13 @@ const PetsCard = ({ userId }: { userId: string }) => {
               return (
                 <div
                   key={`${pet.name}-${index}`}
-                  className="group relative inline-block"
+                  className="group relative inline-block opacity-0 animate-pet-stack"
+                  style={{ animationDelay: `${index * 70}ms` }}
                   onMouseEnter={() => setHoveredPetIndex(index)}
                   onMouseLeave={() => setHoveredPetIndex(null)}
                 >
                   {pet.image ? (
-                    <div className={`w-16 h-16 rounded-full overflow-hidden ring-2 ring-white dark:ring-gray-800 bg-gray-100 dark:bg-gray-700 transition-all duration-300 ease-out group-hover:-translate-y-2 group-hover:scale-150 ${hoverRingClass} group-hover:shadow-xl shadow-md`}>
+                    <div className={`w-16 h-16 rounded-full overflow-hidden ring-2 ring-offset-2 ring-white dark:ring-gray-800 bg-gray-100 dark:bg-gray-700 transition-[transform,box-shadow,filter,border-color] duration-200 ease-out group-hover:-translate-y-2 group-hover:scale-150 ${hoverRingClass} group-hover:shadow-xl shadow-md`}>
                       <Image 
                         src={getFullImageUrl(pet.image)}
                         alt={pet.name}
@@ -185,7 +189,7 @@ const PetsCard = ({ userId }: { userId: string }) => {
                       />
                     </div>
                   ) : (
-                    <div className={`w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center ring-2 ring-white dark:ring-gray-800 transition-all duration-300 ease-out group-hover:-translate-y-2 group-hover:scale-150 ${hoverRingClass} group-hover:shadow-xl shadow-md`}>
+                    <div className={`w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center ring-2 ring-offset-2 ring-white dark:ring-gray-800 transition-[transform,box-shadow,filter,border-color] duration-200 ease-out group-hover:-translate-y-2 group-hover:scale-150 ${hoverRingClass} group-hover:shadow-xl shadow-md`}>
                       <span className="icon-[mdi--paw] text-2xl text-gray-400 dark:text-gray-500" />
                     </div>
                   )}
@@ -194,8 +198,39 @@ const PetsCard = ({ userId }: { userId: string }) => {
               );
             })}
             {pets.length > 6 && (
-              <div className="w-16 h-16 rounded-full bg-plantain-green/20 text-plantain-green flex items-center justify-center text-sm font-semibold ring-2 ring-white dark:ring-gray-800 shadow-md">
-                +{pets.length - 6}
+              <div 
+                className="relative inline-block opacity-0 animate-pet-stack"
+                style={{ animationDelay: `${6 * 70}ms` }}
+                onMouseEnter={() => setShowOverflowList(true)}
+                onMouseLeave={() => setShowOverflowList(false)}
+              >
+                <button
+                  type="button"
+                  className="w-16 h-16 rounded-full bg-plantain-green/20 text-plantain-green flex items-center justify-center text-sm font-semibold ring-2 ring-white dark:ring-gray-800 shadow-md transition-[transform,box-shadow,filter,border-color] duration-200 ease-out hover:-translate-y-2 hover:scale-150 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-plantain-green/50"
+                  onClick={() => setShowOverflowList(prev => !prev)}
+                  aria-expanded={showOverflowList}
+                  aria-label={`Show ${pets.length - 6} more pets`}
+                >
+                  +{pets.length - 6}
+                </button>
+                {showOverflowList && (
+                  <div className="absolute left-1/2 -translate-x-1/2 mt-3 min-w-[12rem] rounded-xl border border-black/5 dark:border-white/10 bg-white/90 dark:bg-gray-800/90 backdrop-blur shadow-2xl p-3 z-10 animate-pet-info">
+                    <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">More pets</div>
+                    <div className="flex flex-col gap-2">
+                      {extraPets.map((pet, extraIndex) => (
+                        <div key={`${pet.name}-extra-${extraIndex}`} className="flex items-start justify-between gap-2">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-semibold text-black dark:text-white">{pet.name}</span>
+                            <span className="text-xs text-gray-600 dark:text-gray-300">{calculateAge(pet.birthday, pet.death_date)}</span>
+                          </div>
+                          {pet.death_date && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200">In memory</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -225,6 +260,23 @@ const PetsCard = ({ userId }: { userId: string }) => {
       <style jsx>{`
         .pet-info-float {
           animation: petInfoFloat 300ms ease-out;
+        }
+
+        .animate-pet-stack {
+          animation: petStackReveal 200ms ease-out forwards;
+        }
+
+        @keyframes petStackReveal {
+          0% {
+            opacity: 0;
+            transform: translateY(8px) scale(0.92);
+            filter: blur(4px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            filter: blur(0);
+          }
         }
 
         @keyframes petInfoFloat {
