@@ -13,6 +13,23 @@ import { useUser } from '@/context/UserContext';
 import LoadSpinner from '@/components/LoadSpinner';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface Pet {
   name: string;
@@ -169,6 +186,77 @@ const COMMON_LANGUAGES = [
   { value: 'Montenegrin', label: 'Montenegrin' }
 ].sort((a, b) => a.label.localeCompare(b.label));
 
+// Sortable Language Item Component
+const SortableLanguageItem = ({
+  id,
+  language,
+  index,
+  onRemove,
+}: {
+  id: string;
+  language: Language;
+  index: number;
+  onRemove: () => void;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-4 mb-2 p-1.5 rounded-lg hover:bg-gray-200 bg-white"
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing flex items-center justify-center p-1 hover:bg-gray-300 rounded"
+        aria-label="Drag to reorder"
+      >
+        <svg
+          className="w-5 h-5 text-gray-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 8h16M4 16h16"
+          />
+        </svg>
+      </div>
+      <div className="flex-1 inline-flex gap-1">
+        <span className="text-sm font-medium text-gray-700">{language.name}</span> 
+        <span className="text-sm">•</span>
+        <p className="text-sm text-gray-600 capitalize">
+          {PROFICIENCY_LEVELS.find(p => p.value === language.proficiency)?.label || language.proficiency}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="text-red-600 hover:text-red-800 text-sm font-medium px-1"
+      >
+        Remove
+      </button>
+    </div>
+  );
+};
+
 const Settings = () => {
   const { authStatus } = useAuth();
   const { user } = useAuthenticator((context) => [context.user]);
@@ -208,6 +296,28 @@ const Settings = () => {
   const [languagesEntries, setLanguagesEntries] = useState<Language[]>([]);
   const [newLanguage, setNewLanguage] = useState({ name: '', proficiency: '' });
   const [isLanguagesOpen, setIsLanguagesOpen] = useState(false);
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end for languages
+  const handleLanguagesDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setLanguagesEntries((items) => {
+        const oldIndex = items.findIndex((_, index) => `language-${index}` === active.id);
+        const newIndex = items.findIndex((_, index) => `language-${index}` === over.id);
+
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -2095,23 +2205,26 @@ const Settings = () => {
                 <div className="bg-gray-50 rounded-lg mb-4">
                   {/* Existing Languages */}
                   {languagesEntries.length > 0 ? (
-                    languagesEntries.map((language, index) => (
-                      <div key={index} className="flex items-center gap-4 mb-2 p-2 rounded-lg hover:bg-gray-200">
-                        <div className="flex-1">
-                          <span className="text-sm font-medium text-gray-700">{language.name}</span>
-                          <p className="text-sm text-gray-600 capitalize">
-                            {PROFICIENCY_LEVELS.find(p => p.value === language.proficiency)?.label || language.proficiency}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveLanguage(index)}
-                          className="text-red-600 hover:text-red-800 text-sm font-medium"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleLanguagesDragEnd}
+                    >
+                      <SortableContext
+                        items={languagesEntries.map((_, index) => `language-${index}`)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {languagesEntries.map((language, index) => (
+                          <SortableLanguageItem
+                            key={`language-${index}`}
+                            id={`language-${index}`}
+                            language={language}
+                            index={index}
+                            onRemove={() => handleRemoveLanguage(index)}
+                          />
+                        ))}
+                      </SortableContext>
+                    </DndContext>
                   ) : (
                     <p className="text-sm text-gray-500 py-2">No languages added yet.</p>
                   )}
@@ -2130,6 +2243,12 @@ const Settings = () => {
                         }}
                         onCreateOption={(inputValue) => {
                           setNewLanguage(prev => ({ ...prev, name: inputValue.trim() }));
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && newLanguage.name.trim() && newLanguage.proficiency) {
+                            e.preventDefault();
+                            handleAddLanguage();
+                          }
                         }}
                         options={COMMON_LANGUAGES}
                         placeholder="Type or select a language"
@@ -2168,15 +2287,22 @@ const Settings = () => {
                         }}
                       />
                       <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-2 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
-                        Language
+                        Language (Type or select, press Enter to add)
                       </label>
                     </div>
                     <div className="relative z-0 w-full group self-end">
                       <Select
                         value={PROFICIENCY_LEVELS.find(option => option.value === newLanguage.proficiency) || null}
-                        onChange={(selectedOption) => 
-                          setNewLanguage(prev => ({ ...prev, proficiency: selectedOption?.value || '' }))
-                        }
+                        onChange={(selectedOption) => {
+                          const proficiency = selectedOption?.value || '';
+                          setNewLanguage(prev => ({ ...prev, proficiency }));
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && newLanguage.name.trim() && newLanguage.proficiency) {
+                            e.preventDefault();
+                            handleAddLanguage();
+                          }
+                        }}
                         options={PROFICIENCY_LEVELS}
                         placeholder="Select proficiency"
                         className="text-sm"
@@ -2205,18 +2331,15 @@ const Settings = () => {
                         }}
                       />
                       <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-2 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
-                        Proficiency Level
+                        Proficiency Level (Press Enter to add)
                       </label>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleAddLanguage}
-                    disabled={!newLanguage.name.trim() || !newLanguage.proficiency}
-                    className="text-white bg-plantain-green hover:bg-dark-spring-green focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-5 py-2.5 text-center disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Add Language
-                  </button>
+                  <div className="text-xs text-gray-500 mb-2">
+                    {newLanguage.name && newLanguage.proficiency && languagesEntries.some(lang => lang.name.toLowerCase() === newLanguage.name.trim().toLowerCase()) && (
+                      <span className="text-orange-600">This language is already in your list.</span>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
