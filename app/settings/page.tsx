@@ -187,6 +187,73 @@ const COMMON_LANGUAGES = [
 ].sort((a, b) => a.label.localeCompare(b.label));
 
 // Sortable Language Item Component
+// Sortable Hobby Item Component
+const SortableHobbyItem = ({
+  id,
+  hobby,
+  index,
+  onRemove,
+}: {
+  id: string;
+  hobby: string;
+  index: number;
+  onRemove: () => void;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-4 mb-2 p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200"
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing flex items-center justify-center p-1 hover:bg-gray-300 rounded"
+        aria-label="Drag to reorder"
+      >
+        <svg
+          className="w-5 h-5 text-gray-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 8h16M4 16h16"
+          />
+        </svg>
+      </div>
+      <div className="flex-1">
+        <span className="text-sm font-medium text-gray-700">{hobby}</span>
+      </div>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="text-red-600 hover:text-red-800 text-sm font-medium px-1"
+      >
+        Remove
+      </button>
+    </div>
+  );
+};
+
 const SortableLanguageItem = ({
   id,
   language,
@@ -217,7 +284,7 @@ const SortableLanguageItem = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-4 mb-2 p-1.5 rounded-lg hover:bg-gray-200 bg-white"
+      className="flex items-center gap-4 mb-2 p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200"
     >
       <div
         {...attributes}
@@ -304,6 +371,20 @@ const Settings = () => {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  // Handle drag end for hobbies
+  const handleHobbiesDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setHobbiesEntries((items) => {
+        const oldIndex = items.findIndex((_, index) => `hobby-${index}` === active.id);
+        const newIndex = items.findIndex((_, index) => `hobby-${index}` === over.id);
+
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
 
   // Handle drag end for languages
   const handleLanguagesDragEnd = (event: DragEndEvent) => {
@@ -2097,23 +2178,29 @@ const Settings = () => {
             {/* Accordion Content */}
             {isHobbiesOpen && (
               <div className="p-4 border-t border-gray-200">
-                <div className="bg-gray-50 rounded-lg mb-4">
+                <div className="rounded-lg mb-4">
                   {/* Existing Hobbies */}
                   {hobbiesEntries.length > 0 ? (
-                    hobbiesEntries.map((hobby, index) => (
-                      <div key={index} className="flex items-center gap-4 mb-2 p-2 rounded-lg hover:bg-gray-200">
-                        <div className="flex-1">
-                          <span className="text-sm font-medium text-gray-700">{hobby}</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveHobby(index)}
-                          className="text-red-600 hover:text-red-800 text-sm font-medium"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleHobbiesDragEnd}
+                    >
+                      <SortableContext
+                        items={hobbiesEntries.map((_, index) => `hobby-${index}`)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {hobbiesEntries.map((hobby, index) => (
+                          <SortableHobbyItem
+                            key={`hobby-${index}`}
+                            id={`hobby-${index}`}
+                            hobby={hobby}
+                            index={index}
+                            onRemove={() => handleRemoveHobby(index)}
+                          />
+                        ))}
+                      </SortableContext>
+                    </DndContext>
                   ) : (
                     <p className="text-sm text-gray-500 py-2">No hobbies added yet.</p>
                   )}
@@ -2121,7 +2208,7 @@ const Settings = () => {
                 
                 {/* Add New Hobby */}
                 <div className="">
-                  <h4 className="text-md font-medium text-gray-900 mb-3">Add Hobby</h4>
+                  <h4 className="text-md font-medium text-gray-900 mb-1.5">Add Hobby</h4>
                   <div className="mb-4 relative z-0 w-full group">
                     <input
                       type="text"
@@ -2202,7 +2289,7 @@ const Settings = () => {
             {/* Accordion Content */}
             {isLanguagesOpen && (
               <div className="p-4 border-t border-gray-200">
-                <div className="bg-gray-50 rounded-lg mb-4">
+                <div className="rounded-lg mb-4">
                   {/* Existing Languages */}
                   {languagesEntries.length > 0 ? (
                     <DndContext
