@@ -187,6 +187,77 @@ const COMMON_LANGUAGES = [
 ].sort((a, b) => a.label.localeCompare(b.label));
 
 // Sortable Language Item Component
+// Sortable Social Media Item Component
+const SortableSocialMediaItem = ({
+  id,
+  entry,
+  index,
+  onRemove,
+}: {
+  id: string;
+  entry: { platform: string; url: string };
+  index: number;
+  onRemove: () => void;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-4 mb-2 p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200"
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing flex items-center justify-center p-1 hover:bg-gray-300 rounded"
+        aria-label="Drag to reorder"
+      >
+        <svg
+          className="w-5 h-5 text-gray-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 8h16M4 16h16"
+          />
+        </svg>
+      </div>
+      <div className="flex-1 inline-flex gap-1">
+        <span className="text-sm font-medium text-gray-700 capitalize">
+          {SOCIAL_MEDIA_PLATFORMS.find(p => p.value === entry.platform)?.label || entry.platform}
+        </span>
+        <span className="text-sm">•</span>
+        <p className="text-sm text-gray-600 break-all">{entry.url}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="text-red-600 hover:text-red-800 text-sm font-medium group px-1"
+      >
+        Remove
+      </button>
+    </div>
+  );
+};
+
 // Sortable Hobby Item Component
 const SortableHobbyItem = ({
   id,
@@ -371,6 +442,20 @@ const Settings = () => {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  // Handle drag end for social media
+  const handleSocialMediaDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setSocialMediaEntries((items) => {
+        const oldIndex = items.findIndex((_, index) => `social-media-${index}` === active.id);
+        const newIndex = items.findIndex((_, index) => `social-media-${index}` === over.id);
+
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
 
   // Handle drag end for hobbies
   const handleHobbiesDragEnd = (event: DragEndEvent) => {
@@ -1620,26 +1705,29 @@ const Settings = () => {
             {/* Accordion Content */}
             {isSocialMediaOpen && (
               <div className="p-4 border-t border-gray-200">
-                <div className="bg-gray-50 rounded-lg mb-4">
+                <div className="rounded-lg mb-4">
                   {/* Existing Social Media Entries */}
                   {socialMediaEntries.length > 0 ? (
-                    socialMediaEntries.map((entry, index) => (
-                      <div key={index} className="flex items-center gap-4 mb-2 p-2 rounded-lg hover:bg-gray-200">
-                        <div className="flex-1">
-                          <span className="text-sm font-medium text-gray-700 capitalize">
-                            {SOCIAL_MEDIA_PLATFORMS.find(p => p.value === entry.platform)?.label || entry.platform}
-                          </span>
-                          <p className="text-sm text-gray-600 break-all">{entry.url}</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveSocialMedia(index)}
-                          className="text-red-600 hover:text-red-800 text-sm font-medium group"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleSocialMediaDragEnd}
+                    >
+                      <SortableContext
+                        items={socialMediaEntries.map((_, index) => `social-media-${index}`)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {socialMediaEntries.map((entry, index) => (
+                          <SortableSocialMediaItem
+                            key={`social-media-${index}`}
+                            id={`social-media-${index}`}
+                            entry={entry}
+                            index={index}
+                            onRemove={() => handleRemoveSocialMedia(index)}
+                          />
+                        ))}
+                      </SortableContext>
+                    </DndContext>
                   ) : (
                     <p className="text-sm text-gray-500 py-2">No social media links added yet.</p>
                   )}
