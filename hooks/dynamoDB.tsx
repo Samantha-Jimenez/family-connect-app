@@ -226,6 +226,7 @@ export const saveUserToDB = async (
   social_media?: { platform: string; url: string }[],
   pets?: { name: string; birthday: string; death_date?: string; image?: string }[],
   hobbies?: string[],
+  languages?: { name: string; proficiency: string }[],
   use_first_name?: boolean,
   use_middle_name?: boolean,
   use_nick_name?: boolean
@@ -301,6 +302,18 @@ export const saveUserToDB = async (
       };
     }
 
+    // Add languages data if provided
+    if (languages && languages.length > 0) {
+      item.languages = {
+        L: languages.map(lang => ({
+          M: {
+            name: { S: lang.name },
+            proficiency: { S: lang.proficiency }
+          }
+        }))
+      };
+    }
+
     const params = {
       TableName: TABLES.FAMILY,
       Item: item,
@@ -337,6 +350,7 @@ interface GetUserDataReturn {
   social_media: { platform: string; url: string }[];
   pets: { name: string; birthday: string; death_date?: string; image?: string }[];
   hobbies: string[];
+  languages: { name: string; proficiency: string }[];
   use_first_name: boolean;
   use_middle_name: boolean;
   use_nick_name: boolean;
@@ -392,6 +406,10 @@ export const getUserData = async (userId: string): Promise<GetUserDataReturn | n
         image: item.M?.image?.S || undefined
       })) || [],
       hobbies: data.Item.hobbies?.L?.map((item: any) => item.S || '') || [],
+      languages: data.Item.languages?.L?.map((item: any) => ({
+        name: item.M?.name?.S || '',
+        proficiency: item.M?.proficiency?.S || ''
+      })) || [],
       use_first_name: data.Item.use_first_name?.BOOL ?? true,
       use_middle_name: data.Item.use_middle_name?.BOOL ?? false,
       use_nick_name: data.Item.use_nick_name?.BOOL ?? false,

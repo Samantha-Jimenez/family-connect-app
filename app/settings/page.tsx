@@ -12,12 +12,18 @@ import { useToast } from '@/context/ToastContext';
 import { useUser } from '@/context/UserContext';
 import LoadSpinner from '@/components/LoadSpinner';
 import Select from 'react-select';
+import CreatableSelect from 'react-select/creatable';
 
 interface Pet {
   name: string;
   birthday: string;
   death_date?: string;
   image?: string;
+}
+
+interface Language {
+  name: string;
+  proficiency: string;
 }
 
 interface UserData {
@@ -39,6 +45,7 @@ interface UserData {
   social_media?: { platform: string; url: string }[];
   pets?: Pet[];
   hobbies?: string[];
+  languages?: Language[];
   use_first_name?: boolean;
   use_middle_name?: boolean;
   use_nick_name?: boolean;
@@ -64,6 +71,103 @@ const SOCIAL_MEDIA_PLATFORMS = [
   { value: 'letterboxd', label: 'Letterboxd' },
   { value: 'other', label: 'Other' }
 ];
+
+const PROFICIENCY_LEVELS = [
+  { value: 'beginner', label: 'Beginner' },
+  { value: 'intermediate', label: 'Intermediate' },
+  { value: 'advanced', label: 'Advanced' },
+  { value: 'native', label: 'Native/Fluent' }
+];
+
+const COMMON_LANGUAGES = [
+  { value: 'English', label: 'English' },
+  { value: 'Spanish', label: 'Spanish' },
+  { value: 'French', label: 'French' },
+  { value: 'German', label: 'German' },
+  { value: 'Italian', label: 'Italian' },
+  { value: 'Portuguese', label: 'Portuguese' },
+  { value: 'Russian', label: 'Russian' },
+  { value: 'Chinese', label: 'Chinese' },
+  { value: 'Mandarin', label: 'Mandarin' },
+  { value: 'Japanese', label: 'Japanese' },
+  { value: 'Korean', label: 'Korean' },
+  { value: 'Arabic', label: 'Arabic' },
+  { value: 'Hindi', label: 'Hindi' },
+  { value: 'Dutch', label: 'Dutch' },
+  { value: 'Swedish', label: 'Swedish' },
+  { value: 'Norwegian', label: 'Norwegian' },
+  { value: 'Danish', label: 'Danish' },
+  { value: 'Finnish', label: 'Finnish' },
+  { value: 'Polish', label: 'Polish' },
+  { value: 'Turkish', label: 'Turkish' },
+  { value: 'Greek', label: 'Greek' },
+  { value: 'Hebrew', label: 'Hebrew' },
+  { value: 'Vietnamese', label: 'Vietnamese' },
+  { value: 'Thai', label: 'Thai' },
+  { value: 'Indonesian', label: 'Indonesian' },
+  { value: 'Malay', label: 'Malay' },
+  { value: 'Tagalog', label: 'Tagalog' },
+  { value: 'Swahili', label: 'Swahili' },
+  { value: 'Czech', label: 'Czech' },
+  { value: 'Hungarian', label: 'Hungarian' },
+  { value: 'Romanian', label: 'Romanian' },
+  { value: 'Bulgarian', label: 'Bulgarian' },
+  { value: 'Croatian', label: 'Croatian' },
+  { value: 'Serbian', label: 'Serbian' },
+  { value: 'Slovak', label: 'Slovak' },
+  { value: 'Slovenian', label: 'Slovenian' },
+  { value: 'Ukrainian', label: 'Ukrainian' },
+  { value: 'Bengali', label: 'Bengali' },
+  { value: 'Urdu', label: 'Urdu' },
+  { value: 'Persian', label: 'Persian' },
+  { value: 'Punjabi', label: 'Punjabi' },
+  { value: 'Tamil', label: 'Tamil' },
+  { value: 'Telugu', label: 'Telugu' },
+  { value: 'Marathi', label: 'Marathi' },
+  { value: 'Gujarati', label: 'Gujarati' },
+  { value: 'Kannada', label: 'Kannada' },
+  { value: 'Malayalam', label: 'Malayalam' },
+  { value: 'Odia', label: 'Odia' },
+  { value: 'Assamese', label: 'Assamese' },
+  { value: 'Nepali', label: 'Nepali' },
+  { value: 'Sinhala', label: 'Sinhala' },
+  { value: 'Burmese', label: 'Burmese' },
+  { value: 'Khmer', label: 'Khmer' },
+  { value: 'Lao', label: 'Lao' },
+  { value: 'Mongolian', label: 'Mongolian' },
+  { value: 'Tibetan', label: 'Tibetan' },
+  { value: 'Georgian', label: 'Georgian' },
+  { value: 'Armenian', label: 'Armenian' },
+  { value: 'Azerbaijani', label: 'Azerbaijani' },
+  { value: 'Kazakh', label: 'Kazakh' },
+  { value: 'Uzbek', label: 'Uzbek' },
+  { value: 'Kyrgyz', label: 'Kyrgyz' },
+  { value: 'Tajik', label: 'Tajik' },
+  { value: 'Pashto', label: 'Pashto' },
+  { value: 'Kurdish', label: 'Kurdish' },
+  { value: 'Amharic', label: 'Amharic' },
+  { value: 'Hausa', label: 'Hausa' },
+  { value: 'Yoruba', label: 'Yoruba' },
+  { value: 'Igbo', label: 'Igbo' },
+  { value: 'Zulu', label: 'Zulu' },
+  { value: 'Xhosa', label: 'Xhosa' },
+  { value: 'Afrikaans', label: 'Afrikaans' },
+  { value: 'Welsh', label: 'Welsh' },
+  { value: 'Irish', label: 'Irish' },
+  { value: 'Scottish Gaelic', label: 'Scottish Gaelic' },
+  { value: 'Basque', label: 'Basque' },
+  { value: 'Catalan', label: 'Catalan' },
+  { value: 'Galician', label: 'Galician' },
+  { value: 'Icelandic', label: 'Icelandic' },
+  { value: 'Maltese', label: 'Maltese' },
+  { value: 'Estonian', label: 'Estonian' },
+  { value: 'Latvian', label: 'Latvian' },
+  { value: 'Lithuanian', label: 'Lithuanian' },
+  { value: 'Albanian', label: 'Albanian' },
+  { value: 'Macedonian', label: 'Macedonian' },
+  { value: 'Bosnian', label: 'Bosnian' },
+  { value: 'Montenegrin', label: 'Montenegrin' }
+].sort((a, b) => a.label.localeCompare(b.label));
 
 const Settings = () => {
   const { authStatus } = useAuth();
@@ -101,6 +205,9 @@ const Settings = () => {
   const [newHobby, setNewHobby] = useState('');
   const [availableHobbies, setAvailableHobbies] = useState<string[]>([]);
   const [isHobbiesOpen, setIsHobbiesOpen] = useState(false);
+  const [languagesEntries, setLanguagesEntries] = useState<Language[]>([]);
+  const [newLanguage, setNewLanguage] = useState({ name: '', proficiency: '' });
+  const [isLanguagesOpen, setIsLanguagesOpen] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -125,6 +232,7 @@ const Settings = () => {
           social_media: data.social_media || [],
           pets: data.pets || [],
           hobbies: data.hobbies || [],
+          languages: data.languages || [],
           use_first_name: data.use_first_name ?? true,
           use_middle_name: data.use_middle_name ?? false,
           use_nick_name: data.use_nick_name ?? false,
@@ -132,6 +240,7 @@ const Settings = () => {
         setSocialMediaEntries(data.social_media || []);
         setPetsEntries(data.pets || []);
         setHobbiesEntries(data.hobbies || []);
+        setLanguagesEntries(data.languages || []);
       } else {
         setUserData({
           first_name: '',
@@ -152,6 +261,7 @@ const Settings = () => {
           social_media: [],
           pets: [],
           hobbies: [],
+          languages: [],
           use_first_name: true,
           use_middle_name: false,
           use_nick_name: false,
@@ -159,6 +269,7 @@ const Settings = () => {
         setSocialMediaEntries([]);
         setPetsEntries([]);
         setHobbiesEntries([]);
+        setLanguagesEntries([]);
       }
     };
 
@@ -306,6 +417,7 @@ const Settings = () => {
         userData?.social_media || [],
         userData?.pets || [],
         userData?.hobbies || [],
+        userData?.languages || [],
         userData?.use_first_name ?? true,
         userData?.use_middle_name ?? false,
         userData?.use_nick_name ?? false
@@ -389,6 +501,7 @@ const Settings = () => {
           userData?.social_media || [],
           userData?.pets || [],
           userData?.hobbies || [],
+          userData?.languages || [],
           userData?.use_first_name ?? true,
           userData?.use_middle_name ?? false,
           userData?.use_nick_name ?? false
@@ -442,6 +555,28 @@ const Settings = () => {
       // Add to available hobbies if it's new
       if (!availableHobbies.includes(hobbyToAdd)) {
         setAvailableHobbies(prev => [...prev, hobbyToAdd].sort());
+      }
+    }
+  };
+
+  const handleRemoveLanguage = (index: number) => {
+    setLanguagesEntries(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddLanguage = () => {
+    const languageName = newLanguage.name.trim();
+    const proficiency = newLanguage.proficiency;
+    if (languageName && proficiency) {
+      // Check if language already exists (case-insensitive)
+      const languageExists = languagesEntries.some(lang => 
+        lang.name.toLowerCase() === languageName.toLowerCase()
+      );
+      
+      if (!languageExists) {
+        setLanguagesEntries(prev => [...prev, { name: languageName, proficiency }]);
+        setNewLanguage({ name: '', proficiency: '' });
+      } else {
+        showToast('This language is already in your list.', 'error');
       }
     }
   };
@@ -849,6 +984,7 @@ const Settings = () => {
         finalSocialMediaEntries,
         updatedPets,
         hobbiesEntries,
+        languagesEntries,
         use_first_name,
         use_middle_name,
         use_nick_name
@@ -875,6 +1011,7 @@ const Settings = () => {
         social_media: finalSocialMediaEntries,
         pets: updatedPets,
         hobbies: hobbiesEntries,
+        languages: languagesEntries,
         use_first_name,
         use_middle_name,
         use_nick_name
@@ -1926,6 +2063,160 @@ const Settings = () => {
                       <span className="text-orange-600">This hobby is already in your list.</span>
                     )}
                   </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Languages Section */}
+          <div className="border border-gray-200 rounded-lg mb-5">
+            {/* Accordion Header */}
+            <button
+              type="button"
+              onClick={() => setIsLanguagesOpen(!isLanguagesOpen)}
+              className="w-full px-2 py-3 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between"
+            >
+              <h3 className="text-md font-medium text-gray-900">Languages</h3>
+              <svg
+                className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${
+                  isLanguagesOpen ? 'transform rotate-180' : ''
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {/* Accordion Content */}
+            {isLanguagesOpen && (
+              <div className="p-4 border-t border-gray-200">
+                <div className="bg-gray-50 rounded-lg mb-4">
+                  {/* Existing Languages */}
+                  {languagesEntries.length > 0 ? (
+                    languagesEntries.map((language, index) => (
+                      <div key={index} className="flex items-center gap-4 mb-2 p-2 rounded-lg hover:bg-gray-200">
+                        <div className="flex-1">
+                          <span className="text-sm font-medium text-gray-700">{language.name}</span>
+                          <p className="text-sm text-gray-600 capitalize">
+                            {PROFICIENCY_LEVELS.find(p => p.value === language.proficiency)?.label || language.proficiency}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveLanguage(index)}
+                          className="text-red-600 hover:text-red-800 text-sm font-medium"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500 py-2">No languages added yet.</p>
+                  )}
+                </div>
+                
+                {/* Add New Language */}
+                <div className="">
+                  <h4 className="text-md font-medium text-gray-900 mb-3">Add Language</h4>
+                  <div className="grid md:grid-cols-2 gap-4 mb-4">
+                    <div className="relative z-0 w-full group self-end">
+                      <CreatableSelect
+                        value={newLanguage.name ? { value: newLanguage.name, label: newLanguage.name } : null}
+                        onChange={(selectedOption) => {
+                          const languageName = selectedOption?.value || '';
+                          setNewLanguage(prev => ({ ...prev, name: languageName }));
+                        }}
+                        onCreateOption={(inputValue) => {
+                          setNewLanguage(prev => ({ ...prev, name: inputValue.trim() }));
+                        }}
+                        options={COMMON_LANGUAGES}
+                        placeholder="Type or select a language"
+                        isClearable
+                        isSearchable
+                        formatCreateLabel={(inputValue) => `Add "${inputValue}"`}
+                        className="text-sm"
+                        menuPlacement="top"
+                        styles={{
+                          control: (provided) => ({
+                            ...provided,
+                            borderBottom: '2px solid #d1d5db',
+                            borderTop: 'none',
+                            borderLeft: 'none',
+                            borderRight: 'none',
+                            borderRadius: '0',
+                            boxShadow: 'none',
+                            '&:hover': {
+                              borderBottom: '2px solid #3b82f6',
+                            },
+                            '&:focus-within': {
+                              borderBottom: '2px solid #3b82f6',
+                            },
+                          }),
+                          placeholder: (provided) => ({
+                            ...provided,
+                            color: '#9ca3af',
+                            fontSize: '14px',
+                          }),
+                          input: (provided) => ({
+                            ...provided,
+                            margin: '0',
+                            paddingBottom: '0',
+                            paddingTop: '0',
+                          }),
+                        }}
+                      />
+                      <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-2 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
+                        Language
+                      </label>
+                    </div>
+                    <div className="relative z-0 w-full group self-end">
+                      <Select
+                        value={PROFICIENCY_LEVELS.find(option => option.value === newLanguage.proficiency) || null}
+                        onChange={(selectedOption) => 
+                          setNewLanguage(prev => ({ ...prev, proficiency: selectedOption?.value || '' }))
+                        }
+                        options={PROFICIENCY_LEVELS}
+                        placeholder="Select proficiency"
+                        className="text-sm"
+                        menuPlacement="top"
+                        styles={{
+                          control: (provided) => ({
+                            ...provided,
+                            borderBottom: '2px solid #d1d5db',
+                            borderTop: 'none',
+                            borderLeft: 'none',
+                            borderRight: 'none',
+                            borderRadius: '0',
+                            boxShadow: 'none',
+                            '&:hover': {
+                              borderBottom: '2px solid #3b82f6',
+                            },
+                            '&:focus': {
+                              borderBottom: '2px solid #3b82f6',
+                            },
+                          }),
+                          placeholder: (provided) => ({
+                            ...provided,
+                            color: '#9ca3af',
+                            fontSize: '14px',
+                          }),
+                        }}
+                      />
+                      <label className="peer-focus:font-medium absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-2 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
+                        Proficiency Level
+                      </label>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddLanguage}
+                    disabled={!newLanguage.name.trim() || !newLanguage.proficiency}
+                    className="text-white bg-plantain-green hover:bg-dark-spring-green focus:ring-4 focus:outline-none font-medium rounded-lg text-sm px-5 py-2.5 text-center disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Add Language
+                  </button>
                 </div>
               </div>
             )}
