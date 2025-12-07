@@ -218,16 +218,16 @@ const SortableSocialMediaItem = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-4 mb-2 p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200"
+      className="flex items-center gap-4 mb-2 p-1.5 rounded-lg bg-tea-green/20 hover:bg-tea-green/50"
     >
       <div
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing flex items-center justify-center p-1 hover:bg-gray-300 rounded"
+        className="cursor-grab active:cursor-grabbing flex items-center justify-center p-1 hover:bg-tea-green/70 rounded"
         aria-label="Drag to reorder"
       >
         <svg
-          className="w-5 h-5 text-gray-500"
+          className="w-5 h-5 text-palm-green"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -244,7 +244,7 @@ const SortableSocialMediaItem = ({
         <span className="text-sm font-medium text-gray-700 capitalize">
           {SOCIAL_MEDIA_PLATFORMS.find(p => p.value === entry.platform)?.label || entry.platform}
         </span>
-        <span className="text-sm">•</span>
+        <span className="text-sm text-palm-green">•</span>
         <p className="text-sm text-gray-600 break-all">{entry.url}</p>
       </div>
       <button
@@ -289,16 +289,16 @@ const SortableHobbyItem = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-4 mb-2 p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200"
+      className="flex items-center gap-4 mb-2 p-1.5 rounded-lg bg-tea-green/20 hover:bg-tea-green/50"
     >
       <div
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing flex items-center justify-center p-1 hover:bg-gray-300 rounded"
+        className="cursor-grab active:cursor-grabbing flex items-center justify-center p-1 hover:bg-tea-green/70 rounded"
         aria-label="Drag to reorder"
       >
         <svg
-          className="w-5 h-5 text-gray-500"
+          className="w-5 h-5 text-palm-green"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -355,16 +355,16 @@ const SortableLanguageItem = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-4 mb-2 p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200"
+      className="flex items-center gap-4 mb-2 p-1.5 rounded-lg bg-tea-green/20 hover:bg-tea-green/50"
     >
       <div
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing flex items-center justify-center p-1 hover:bg-gray-300 rounded"
+        className="cursor-grab active:cursor-grabbing flex items-center justify-center p-1 hover:bg-tea-green/70 rounded"
         aria-label="Drag to reorder"
       >
         <svg
-          className="w-5 h-5 text-gray-500"
+          className="w-5 h-5 text-palm-green"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -379,7 +379,7 @@ const SortableLanguageItem = ({
       </div>
       <div className="flex-1 inline-flex gap-1">
         <span className="text-sm font-medium text-gray-700">{language.name}</span> 
-        <span className="text-sm">•</span>
+        <span className="text-sm text-palm-green">•</span>
         <p className="text-sm text-gray-600 capitalize">
           {PROFICIENCY_LEVELS.find(p => p.value === language.proficiency)?.label || language.proficiency}
         </p>
@@ -1682,12 +1682,12 @@ const Settings = () => {
           </div>
           
           {/* Social Media Section */}
-          <div className="border border-gray-200 rounded-lg mb-5">
+          <div className="rounded-lg mb-5">
             {/* Accordion Header */}
             <button
               type="button"
               onClick={() => setIsSocialMediaOpen(!isSocialMediaOpen)}
-              className="w-full px-2 py-3 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between"
+              className="rounded-lg w-full px-2 py-3 bg-carrot-orange/10 hover:bg-carrot-orange/20 transition-colors flex items-center justify-between"
             >
               <h3 className="text-md font-medium text-gray-900">Social Media Links</h3>
               <svg
@@ -1793,12 +1793,12 @@ const Settings = () => {
           </div>
           
           {/* Pets Section */}
-          <div className="border border-gray-200 rounded-lg mb-5">
+          <div className="rounded-lg mb-5">
             {/* Accordion Header */}
             <button
               type="button"
               onClick={() => setIsPetsOpen(!isPetsOpen)}
-              className="w-full px-2 py-3 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between"
+              className="rounded-lg w-full px-2 py-3 bg-carrot-orange/10 hover:bg-carrot-orange/20 transition-colors flex items-center justify-between"
             >
               <h3 className="text-md font-medium text-gray-900">Pets</h3>
               <svg
@@ -1816,17 +1816,18 @@ const Settings = () => {
             {/* Accordion Content */}
             {isPetsOpen && (
               <div className="p-4 border-t border-gray-200">
-                <div className="bg-gray-50 rounded-lg mb-4">
+                <div className="rounded-lg mb-4">
                   {/* Existing Pet Entries */}
                   {petsEntries.length > 0 ? (
-                    petsEntries.map((pet, index) => (
-                      <div key={index} className="mb-4 p-3 rounded-lg hover:bg-gray-200 border border-gray-300">
+                    <div className="flex flex-wrap gap-3">
+                      {petsEntries.map((pet, index) => (
+                        <div key={index} className="flex-shrink-0 p-4 rounded-lg bg-tea-green/20 hover:bg-tea-green/30 min-h-[186px]">
                         {editingPetIndex === index ? (
                           /* Edit Mode */
                           <div className="space-y-4">
                             <div className="flex items-start gap-4">
                               {/* Pet Image */}
-                              <div className="flex-shrink-0">
+                              <div className="w-20 flex-shrink-0">
                                 {petImagePreviews.get(index) ? (
                                   <div className="w-20 h-20 rounded-lg overflow-hidden">
                                     <Image 
@@ -1852,32 +1853,34 @@ const Settings = () => {
                                     <span className="icon-[mdi--paw] text-3xl text-gray-400" />
                                   </div>
                                 )}
-                                <input
-                                  ref={(el) => {
-                                    if (el) {
-                                      petFileInputRefs.current.set(index, el);
-                                    }
-                                  }}
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={(e) => handlePetImageChange(index, e)}
-                                  className="mt-2 file-input file-input-bordered file-input-xs w-full text-xs"
-                                  disabled={isUploading}
-                                />
-                                {(petImagePreviews.get(index) || (editingPet?.image && !removePetImage.has(index))) && (
-                                  <button
-                                    type="button"
-                                    className="btn btn-xs bg-engineering-orange hover:bg-engineering-orange/90 border-none text-white mt-2 w-full"
-                                    onClick={() => handleClearPetImage(index)}
+                                <div className="mt-2 flex flex-col gap-2">
+                                  <input
+                                    ref={(el) => {
+                                      if (el) {
+                                        petFileInputRefs.current.set(index, el);
+                                      }
+                                    }}
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => handlePetImageChange(index, e)}
+                                    className="file-input file-input-bordered file-input-xs w-full text-xs"
                                     disabled={isUploading}
-                                  >
-                                    Delete
-                                  </button>
-                                )}
+                                  />
+                                  {(petImagePreviews.get(index) || (editingPet?.image && !removePetImage.has(index))) && (
+                                    <button
+                                      type="button"
+                                      className="btn btn-xs bg-engineering-orange hover:bg-engineering-orange/90 border-none text-white w-full"
+                                      onClick={() => handleClearPetImage(index)}
+                                      disabled={isUploading}
+                                    >
+                                      Delete
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                               
                               {/* Editable Pet Info */}
-                              <div className="flex-1 space-y-3">
+                              <div className="flex-1 space-y-3 mt-2">
                                 <div className="relative z-0 w-full group">
                                   <input
                                     type="text"
@@ -2022,60 +2025,60 @@ const Settings = () => {
                           </div>
                         ) : (
                           /* Display Mode */
-                          <div className="flex items-start gap-4">
+                          <div className="flex flex-col items-center gap-2 h-full">
                             {/* Pet Image */}
                             <div className="flex-shrink-0">
                               {petImagePreviews.get(index) ? (
-                                <div className="w-20 h-20 rounded-lg overflow-hidden">
+                                <div className="w-16 h-16 rounded-lg overflow-hidden">
                                   <Image 
                                     src={petImagePreviews.get(index)!}
                                     alt={pet.name}
-                                    width={80}
-                                    height={80}
+                                    width={64}
+                                    height={64}
                                     className="w-full h-full object-cover"
                                   />
                                 </div>
                               ) : pet.image ? (
-                                <div className="w-20 h-20 rounded-lg overflow-hidden">
+                                <div className="w-16 h-16 rounded-lg overflow-hidden">
                                   <Image 
                                     src={getFullImageUrl(pet.image)}
                                     alt={pet.name}
-                                    width={80}
-                                    height={80}
+                                    width={64}
+                                    height={64}
                                     className="w-full h-full object-cover"
                                   />
                                 </div>
                               ) : (
-                                <div className="w-20 h-20 rounded-lg bg-gray-200 flex items-center justify-center">
-                                  <span className="icon-[mdi--paw] text-3xl text-gray-400" />
+                                <div className="w-16 h-16 rounded-lg bg-gray-300 flex items-center justify-center">
+                                  <span className="icon-[mdi--paw] text-2xl text-gray-500" />
                                 </div>
                               )}
                             </div>
                             
                             {/* Pet Info */}
-                            <div className="flex-1">
-                              <div className="mb-2">
+                            <div className="w-full text-center flex-1">
+                              <div className="mb-1">
                                 <span className="text-sm font-medium text-gray-700">{pet.name}</span>
                               </div>
-                            <div className="text-xs text-gray-600 space-y-1">
-                              <p>Birthday: {formatBirthdayDisplay(pet.birthday)}</p>
-                              {pet.death_date && <p>Death Date: {formatBirthdayDisplay(pet.death_date)}</p>}
-                            </div>
+                              <div className="text-xs text-gray-600 space-y-0.5">
+                                {pet.birthday && <p className="truncate">B: {formatBirthdayDisplay(pet.birthday)}</p>}
+                                {pet.death_date && <p className="truncate">D: {formatBirthdayDisplay(pet.death_date)}</p>}
+                              </div>
                             </div>
                             
                             {/* Action Buttons */}
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 w-full justify-center mt-auto">
                               <button
                                 type="button"
                                 onClick={() => handleEditPet(index)}
-                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                className="text-blue-600 hover:text-blue-800 text-xs font-medium px-2 py-1"
                               >
                                 Edit
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleRemovePet(index)}
-                                className="text-red-600 hover:text-red-800 text-sm font-medium"
+                                className="text-red-600 hover:text-red-800 text-xs font-medium px-2 py-1"
                               >
                                 Remove
                               </button>
@@ -2083,7 +2086,8 @@ const Settings = () => {
                           </div>
                         )}
                       </div>
-                    ))
+                      ))}
+                    </div>
                   ) : (
                     <p className="text-sm text-gray-500 py-2">No pets added yet.</p>
                   )}
@@ -2243,12 +2247,12 @@ const Settings = () => {
           </div>
           
           {/* Hobbies Section */}
-          <div className="border border-gray-200 rounded-lg mb-5">
+          <div className="rounded-lg mb-5">
             {/* Accordion Header */}
             <button
               type="button"
               onClick={() => setIsHobbiesOpen(!isHobbiesOpen)}
-              className="w-full px-2 py-3 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between"
+              className="rounded-lg w-full px-2 py-3 bg-carrot-orange/10 hover:bg-carrot-orange/20 transition-colors flex items-center justify-between"
             >
               <h3 className="text-md font-medium text-gray-900">Hobbies</h3>
               <svg
@@ -2354,12 +2358,12 @@ const Settings = () => {
           </div>
           
           {/* Languages Section */}
-          <div className="border border-gray-200 rounded-lg mb-5">
+          <div className="rounded-lg mb-5">
             {/* Accordion Header */}
             <button
               type="button"
               onClick={() => setIsLanguagesOpen(!isLanguagesOpen)}
-              className="w-full px-2 py-3 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between"
+              className="rounded-lg w-full px-2 py-3 bg-carrot-orange/10 hover:bg-carrot-orange/20 transition-colors flex items-center justify-between"
             >
               <h3 className="text-md font-medium text-gray-900">Languages</h3>
               <svg
