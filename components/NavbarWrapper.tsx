@@ -2,6 +2,7 @@
 
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import Navbar from "./Navbar";
+import Footer from "./Footer";
 import { CalendarProvider } from '@/context/CalendarContext';
 import { Authenticator } from '@aws-amplify/ui-react';
 import { useState, useEffect } from 'react';
@@ -161,6 +162,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
         <main>
           {children}
         </main>
+        <Footer />
       </div>
     </CalendarProvider>
   );
