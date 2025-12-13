@@ -212,8 +212,14 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
       const templateId = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID;
       const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
 
+      // Debug: Log which variables are missing
       if (!serviceId || !templateId || !publicKey) {
-        throw new Error('EmailJS configuration is missing');
+        const missing = [];
+        if (!serviceId) missing.push('NEXT_PUBLIC_EMAILJS_SERVICE_ID');
+        if (!templateId) missing.push('NEXT_PUBLIC_EMAILJS_TEMPLATE_ID');
+        if (!publicKey) missing.push('NEXT_PUBLIC_EMAILJS_PUBLIC_KEY');
+        console.error('Missing EmailJS environment variables:', missing);
+        throw new Error(`EmailJS configuration is missing: ${missing.join(', ')}`);
       }
 
       await emailjs.send(
