@@ -5,6 +5,7 @@ import { useToast } from '@/context/ToastContext';
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import { getUserData } from '@/hooks/dynamoDB';
 import Select from 'react-select';
+import emailjs from '@emailjs/browser';
 
 interface ContactModalProps {
   isOpen: boolean;
@@ -51,6 +52,18 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
   const [selectedSubjectOption, setSelectedSubjectOption] = useState<SubjectOption | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingName, setIsLoadingName] = useState(false);
+
+  // Initialize EmailJS
+  useEffect(() => {
+    const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
+    if (publicKey) {
+      emailjs.init({
+        publicKey,
+      });
+    } else {
+      console.error('EmailJS public key is not configured');
+    }
+  }, []);
 
   const subjectOptions: SubjectOption[] = [
     { value: 'suggestion', label: 'Suggestion' },
@@ -169,27 +182,46 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
     setIsSubmitting(true);
 
     try {
-      // Prepare submission data
-      const submissionData = {
-        name: formData.name,
-        preferredContactMethods: formData.preferredContactMethods,
-        email: formData.preferredContactMethods.includes('email') ? (savedEmail || formData.email) : '',
-        phone: formData.preferredContactMethods.includes('text') ? (savedPhone || formData.phone) : '',
-        subject: formData.subject,
-        message: formData.message,
+      // Prepare contact information
+      const contactEmail = formData.preferredContactMethods.includes('email') 
+        ? (savedEmail || formData.email) 
+        : '';
+      const contactPhone = formData.preferredContactMethods.includes('text') 
+        ? (savedPhone || formData.phone) 
+        : '';
+      
+      // Prepare EmailJS template parameters
+      // Combine subject and message into the message field
+      const combinedMessage = formData.subject 
+        ? `${formData.subject}: ${formData.message}`
+        : formData.message;
+      
+      const templateParams = {
+        from_name: formData.name,
+        reply_to: contactEmail || contactPhone || 'No contact method provided',
+        subject: formData.subject || 'No subject',
+        message: combinedMessage,
+        preferred_contact_methods: formData.preferredContactMethods.join(', '),
+        contact_email: contactEmail || 'N/A',
+        contact_phone: contactPhone || 'N/A',
+        site_name: 'Family Connect App',
       };
 
-      const response = await fetch('/api/contact', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(submissionData),
-      });
+      // Send email using EmailJS
+      const serviceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
+      const templateId = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID;
+      const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
 
-      if (!response.ok) {
-        throw new Error('Failed to submit contact form');
+      if (!serviceId || !templateId || !publicKey) {
+        throw new Error('EmailJS configuration is missing');
       }
+
+      await emailjs.send(
+        serviceId,
+        templateId,
+        templateParams,
+        { publicKey }
+      );
 
       showToast('Thank you for your message! We\'ll get back to you soon.', 'success');
       
