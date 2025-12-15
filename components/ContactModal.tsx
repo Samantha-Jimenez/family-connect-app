@@ -41,7 +41,7 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
   const { user } = useAuthenticator();
   const [formData, setFormData] = useState({
     name: '',
-    preferredContactMethods: [] as ('email' | 'text')[],
+    preferredContactMethod: '' as 'email' | 'text' | '',
     email: '',
     phone: '',
     subject: '',
@@ -124,16 +124,10 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
   };
 
   const handleContactMethodChange = (method: 'email' | 'text') => {
-    setFormData(prev => {
-      const currentMethods = prev.preferredContactMethods;
-      const isSelected = currentMethods.includes(method);
-      return {
-        ...prev,
-        preferredContactMethods: isSelected
-          ? currentMethods.filter(m => m !== method)
-          : [...currentMethods, method],
-      };
-    });
+    setFormData(prev => ({
+      ...prev,
+      preferredContactMethod: prev.preferredContactMethod === method ? '' : method,
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -144,14 +138,14 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
       return;
     }
 
-    // Require at least one contact method
-    if (formData.preferredContactMethods.length === 0) {
-      showToast('Please select at least one contact method (Email or Text)', 'error');
+    // Require a contact method to be selected
+    if (!formData.preferredContactMethod) {
+      showToast('Please select a contact method (Email or Text)', 'error');
       return;
     }
 
     // Validate email if email method is selected
-    if (formData.preferredContactMethods.includes('email')) {
+    if (formData.preferredContactMethod === 'email') {
       const emailToValidate = savedEmail || formData.email;
       if (!emailToValidate.trim()) {
         showToast('Please provide an email address', 'error');
@@ -165,7 +159,7 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
     }
 
     // Validate phone if text method is selected
-    if (formData.preferredContactMethods.includes('text')) {
+    if (formData.preferredContactMethod === 'text') {
       const phoneToValidate = savedPhone || formData.phone;
       if (!phoneToValidate.trim()) {
         showToast('Please provide a phone number', 'error');
@@ -183,10 +177,10 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
 
     try {
       // Prepare contact information
-      const contactEmail = formData.preferredContactMethods.includes('email') 
+      const contactEmail = formData.preferredContactMethod === 'email' 
         ? (savedEmail || formData.email) 
         : '';
-      const contactPhone = formData.preferredContactMethods.includes('text') 
+      const contactPhone = formData.preferredContactMethod === 'text' 
         ? (savedPhone || formData.phone) 
         : '';
       
@@ -201,7 +195,7 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
         reply_to: contactEmail || contactPhone || 'No contact method provided',
         subject: formData.subject || 'No subject',
         message: combinedMessage,
-        preferred_contact_methods: formData.preferredContactMethods.join(', '),
+        preferred_contact_methods: formData.preferredContactMethod,
         contact_email: contactEmail || 'N/A',
         contact_phone: contactPhone || 'N/A',
         site_name: 'Family Connect App',
@@ -235,7 +229,7 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
       const currentName = formData.name;
       setFormData({
         name: currentName,
-        preferredContactMethods: [],
+        preferredContactMethod: '',
         email: '',
         phone: '',
         subject: '',
@@ -310,17 +304,19 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
             <label className="block text-sm font-medium text-gray-700 mb-0.5">
               If a response is required, how should I contact you? <span className="text-red-500">*</span>
             </label>
-            <p className="text-xs text-gray-500 mb-2">(Select at least one option)</p>
+            <p className="text-xs text-gray-500 mb-2">(Select one option)</p>
             
             <div className="space-y-1">
               {/* Email Option */}
               <div className="flex items-start space-x-3">
                 <input
-                  type="checkbox"
+                  type="radio"
                   id="contact-email"
-                  checked={formData.preferredContactMethods.includes('email')}
+                  name="preferredContactMethod"
+                  value="email"
+                  checked={formData.preferredContactMethod === 'email'}
                   onChange={() => handleContactMethodChange('email')}
-                  className="checkbox checkbox-success checkbox-sm mt-1 [--chkfg:white]"
+                  className="radio radio-success radio-sm mt-1"
                   disabled={isSubmitting}
                 />
                 <div className="flex-1">
@@ -333,11 +329,12 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
                     <input
                       type="email"
                       name="email"
+                      autoComplete="email"
                       value={formData.email}
                       onChange={handleChange}
                       placeholder="Enter your email"
                       className="mt-0.5 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm"
-                      disabled={isSubmitting || !formData.preferredContactMethods.includes('email')}
+                      disabled={isSubmitting || formData.preferredContactMethod !== 'email'}
                     />
                   )}
                 </div>
@@ -346,11 +343,13 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
               {/* Text Option */}
               <div className="flex items-start space-x-3">
                 <input
-                  type="checkbox"
+                  type="radio"
                   id="contact-text"
-                  checked={formData.preferredContactMethods.includes('text')}
+                  name="preferredContactMethod"
+                  value="text"
+                  checked={formData.preferredContactMethod === 'text'}
                   onChange={() => handleContactMethodChange('text')}
-                  className="checkbox checkbox-success checkbox-sm mt-1 [--chkfg:white]"
+                  className="radio radio-success radio-sm mt-1 [--chkfg:white]"
                   disabled={isSubmitting}
                 />
                 <div className="flex-1">
@@ -362,12 +361,13 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
                   ) : (
                     <input
                       type="tel"
+                      autoComplete="tel"
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
                       placeholder="Enter your phone number"
                       className="mt-0.5 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm"
-                      disabled={isSubmitting || !formData.preferredContactMethods.includes('text')}
+                      disabled={isSubmitting || formData.preferredContactMethod !== 'text'}
                     />
                   )}
                 </div>
