@@ -1611,7 +1611,7 @@ const Settings = () => {
                     });
                   }
                 }}
-                className="checkbox checkbox-success w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-lime focus:ring-2"
+                className="checkbox checkbox-success w-4 h-4 bg-gray-100 border-gray-300 rounded focus:ring-lime focus:ring-2 [--chkfg:white]"
               />
               <label htmlFor="show_zodiac" className="ml-2 text-sm text-gray-900 md:w-[7rem] w-[13rem]">
                 Show zodiac sign on profile

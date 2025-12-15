@@ -360,6 +360,11 @@ form > fieldset > .amplify-flex {
   width: 100% !important;
 }
 
+/* RADIO BUTTON STYLING */
+.radio:checked, .radio[aria-checked="true"] {
+  box-shadow: 0 0 0 4px white inset, 0 0 0 4px white inset !important;
+}
+
 /* CUSTOM ANIMATIONS */
 
 @keyframes fadeIn {
