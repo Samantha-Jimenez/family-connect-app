@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FamilyMember, addCommentToMember, getCommentsForMember, deleteCommentFromMember, editCommentInMember, getUserNameById, getProfilePhotoById } from '@/hooks/dynamoDB';
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { getFullImageUrl } from '@/utils/imageUtils';
 
 const PassedMemberOverview = ({ memberData }: { memberData: FamilyMember }) => {
@@ -199,7 +200,9 @@ const PassedMemberOverview = ({ memberData }: { memberData: FamilyMember }) => {
                           </div>
                         )}
                         <div className="flex-grow min-w-0">
-                          <h3 className="text-lg font-semibold text-gray-900">{comment.author}</h3>
+                          <Link href={`/profile/${comment.userId}`}>
+                            <h3 className="text-lg font-semibold text-gray-900 hover:text-blue-600 hover:underline cursor-pointer transition-colors">{comment.author}</h3>
+                          </Link>
                           <p className="text-sm text-gray-500">
                             {new Date(comment.timestamp).toLocaleDateString('en-US', {
                               year: 'numeric',
@@ -209,7 +212,7 @@ const PassedMemberOverview = ({ memberData }: { memberData: FamilyMember }) => {
                           </p>
                         </div>
                       </div>
-                      <p className="text-gray-700 leading-relaxed flex-grow">{comment.text}</p>
+                      <p className="text-gray-700 leading-relaxed flex-grow whitespace-pre-wrap">{comment.text}</p>
                       {comment.userId === user?.userId && (
                         <div className="flex gap-2 justify-end mt-2">
                           <button
