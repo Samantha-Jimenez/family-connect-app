@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { FamilyMember, addCommentToMember, getCommentsForMember, deleteCommentFromMember, editCommentInMember, getUserNameById, getProfilePhotoById } from '@/hooks/dynamoDB';
+import { FamilyMember, addCommentToMember, getCommentsForMember, deleteCommentFromMember, editCommentInMember, getUserNameById, getProfilePhotoById, getFamilyRelationships, FamilyRelationship, RELATIONSHIP_RULES, RelationshipType } from '@/hooks/dynamoDB';
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getFullImageUrl } from '@/utils/imageUtils';
+import { useToast } from '@/context/ToastContext';
 
 const PassedMemberOverview = ({ memberData }: { memberData: FamilyMember }) => {
   const { user } = useAuthenticator();
+  const { showToast } = useToast();
   const [newComment, setNewComment] = useState('');
   const [comments, setComments] = useState<{ text: string; author: string; userId: string; timestamp: string; profilePhoto: string }[]>([]);
   const [editingCommentIndex, setEditingCommentIndex] = useState<number | null>(null);
   const [editedCommentText, setEditedCommentText] = useState('');
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [relationships, setRelationships] = useState<FamilyRelationship[]>([]);
 
   useEffect(() => {
     const fetchComments = async () => {
@@ -37,8 +40,20 @@ const PassedMemberOverview = ({ memberData }: { memberData: FamilyMember }) => {
       }
     };
 
+    const fetchRelationships = async () => {
+      if (memberData.family_member_id) {
+        try {
+          const memberRelationships = await getFamilyRelationships(memberData.family_member_id);
+          setRelationships(memberRelationships);
+        } catch (error) {
+          console.error('Error fetching relationships:', error);
+        }
+      }
+    };
+
     fetchComments();
     fetchProfilePhoto();
+    fetchRelationships();
   }, [memberData.family_member_id, user]);
 
   const handleAddComment = async (e: React.FormEvent) => {
@@ -75,8 +90,10 @@ const PassedMemberOverview = ({ memberData }: { memberData: FamilyMember }) => {
         const dbIndex = comments.length - 1 - index;
         await deleteCommentFromMember(memberData.family_member_id, user.userId, dbIndex);
         setComments(comments.filter((_, i) => i !== index));
+        showToast('Comment deleted successfully!', 'success');
       } catch (error) {
         console.error('Error deleting comment:', error);
+        showToast('Error deleting comment. Please try again.', 'error');
       }
     }
   };
@@ -105,6 +122,65 @@ const PassedMemberOverview = ({ memberData }: { memberData: FamilyMember }) => {
     if (confirmDelete) {
       handleDeleteComment(index);
     }
+  };
+
+  // Get inverse relationship type
+  const getInverseRelationshipType = (relationshipType: RelationshipType): RelationshipType => {
+    const rule = RELATIONSHIP_RULES[relationshipType];
+    return (rule?.inverse as RelationshipType) || relationshipType;
+  };
+
+  // Get relationship from commenter's perspective to the deceased member
+  const getCommenterRelationship = (commenterId: string): string | null => {
+    if (!memberData.family_member_id) return null;
+
+    // Find relationship where deceased is person_a or person_b
+    const relationship = relationships.find(
+      rel => 
+        (rel.person_a_id === memberData.family_member_id && rel.person_b_id === commenterId) ||
+        (rel.person_a_id === commenterId && rel.person_b_id === memberData.family_member_id)
+    );
+
+    if (!relationship) return null;
+
+    // Determine relationship from commenter's perspective
+    let relationshipFromCommenter: RelationshipType;
+    if (relationship.person_a_id === commenterId) {
+      // Commenter is person_a, so use the relationship type directly
+      relationshipFromCommenter = relationship.relationship_type;
+    } else {
+      // Commenter is person_b, so we need the inverse
+      relationshipFromCommenter = getInverseRelationshipType(relationship.relationship_type);
+    }
+
+    // Format relationship type for display
+    return formatRelationshipType(relationshipFromCommenter);
+  };
+
+  // Format relationship type to readable string
+  const formatRelationshipType = (type: RelationshipType): string => {
+    const formatted = type
+      .replace(/_/g, ' ')
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+    
+    // Handle common cases for better readability
+    const replacements: Record<string, string> = {
+      'Ex Spouse': 'Former Spouse',
+      'Step Parent': 'Step-Parent',
+      'Step Child': 'Step-Child',
+      'Step Sibling': 'Step-Sibling',
+      'In Law': 'In-Law',
+      'Great Grand': 'Great-Grand',
+    };
+
+    let result = formatted;
+    Object.entries(replacements).forEach(([key, value]) => {
+      result = result.replace(key, value);
+    });
+
+    return result;
   };
 
   return (
@@ -203,6 +279,9 @@ const PassedMemberOverview = ({ memberData }: { memberData: FamilyMember }) => {
                           <Link href={`/profile/${comment.userId}`}>
                             <h3 className="text-lg font-semibold text-gray-900 hover:text-blue-600 hover:underline cursor-pointer transition-colors">{comment.author}</h3>
                           </Link>
+                          {getCommenterRelationship(comment.userId) && (
+                            <p className="text-sm text-gray-600 font-medium">{getCommenterRelationship(comment.userId)}</p>
+                          )}
                           <p className="text-sm text-gray-500">
                             {new Date(comment.timestamp).toLocaleDateString('en-US', {
                               year: 'numeric',
