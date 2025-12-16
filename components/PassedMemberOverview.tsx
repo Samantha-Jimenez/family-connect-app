@@ -229,10 +229,10 @@ const PassedMemberOverview = ({ memberData }: { memberData: FamilyMember }) => {
         ) : comments.length === 0 ? (
           <div className="text-center py-8 text-gray-500">No memories shared yet. Be the first to share a memory.</div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
             {comments.map((comment, index) => (
-              <div key={index} className="bg-white rounded-lg shadow-md p-4 h-full">
-                <div className="flex flex-col h-full">
+              <div key={index} className="bg-white rounded-lg shadow-md p-4">
+                <div className="flex flex-col">
                   {editingCommentIndex === index ? (
                     <div className="space-y-2">
                       <textarea
@@ -291,7 +291,7 @@ const PassedMemberOverview = ({ memberData }: { memberData: FamilyMember }) => {
                           </p>
                         </div>
                       </div>
-                      <p className="text-gray-700 leading-relaxed flex-grow whitespace-pre-wrap">{comment.text}</p>
+                      <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{comment.text}</p>
                       {comment.userId === user?.userId && (
                         <div className="flex gap-2 justify-end mt-2">
                           <button
