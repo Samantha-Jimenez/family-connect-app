@@ -1705,6 +1705,110 @@ export const editCommentInHobby = async (hobby: string, userId: string, commentI
   }
 };
 
+// Memorial Comments Functions (for passed family members)
+export const addCommentToMember = async (memberId: string, userId: string, comment: string, author: string, profilePhoto: string) => {
+  try {
+    const timestamp = new Date().toISOString();
+    const params = {
+      TableName: TABLES.FAMILY,
+      Key: {
+        family_member_id: { S: memberId }
+      },
+      UpdateExpression: "SET memorial_comments = list_append(if_not_exists(memorial_comments, :emptyList), :comment)",
+      ExpressionAttributeValues: {
+        ":comment": { L: [{ M: { userId: { S: userId }, text: { S: comment }, author: { S: author }, timestamp: { S: timestamp }, profilePhoto: { S: profilePhoto } } }] },
+        ":emptyList": { L: [] }
+      }
+    };
+
+    await dynamoDB.send(new UpdateItemCommand(params));
+    console.log("✅ Memorial comment added successfully!");
+  } catch (error) {
+    console.error("❌ Error adding memorial comment:", error);
+    throw error;
+  }
+};
+
+export const getCommentsForMember = async (memberId: string): Promise<{ text: string; author: string; userId: string; timestamp: string; profilePhoto: string }[]> => {
+  try {
+    const params = {
+      TableName: TABLES.FAMILY,
+      Key: {
+        family_member_id: { S: memberId }
+      }
+    };
+
+    const data = await dynamoDB.send(new GetItemCommand(params));
+
+    if (!data.Item || !data.Item.memorial_comments || !data.Item.memorial_comments.L) {
+      return [];
+    }
+
+    return await Promise.all(data.Item.memorial_comments.L.map(async (comment: any) => {
+      const userId = comment.M?.userId?.S || '';
+      const userName = await getUserNameById(userId);
+      return {
+        userId: userId,
+        text: comment.M?.text?.S || '',
+        author: userName ? `${userName.firstName} ${userName.lastName}` : 'Unknown',
+        timestamp: comment.M?.timestamp?.S || '',
+        profilePhoto: comment.M?.profilePhoto?.S || ''
+      };
+    }));
+  } catch (error) {
+    console.error("❌ Error fetching memorial comments:", error);
+    return [];
+  }
+};
+
+export const deleteCommentFromMember = async (memberId: string, userId: string, commentIndex: number) => {
+  try {
+    const params = {
+      TableName: TABLES.FAMILY,
+      Key: {
+        family_member_id: { S: memberId }
+      },
+      UpdateExpression: `REMOVE memorial_comments[${commentIndex}]`,
+      ConditionExpression: `memorial_comments[${commentIndex}].userId = :userId`,
+      ExpressionAttributeValues: {
+        ":userId": { S: userId }
+      }
+    };
+
+    await dynamoDB.send(new UpdateItemCommand(params));
+    console.log("✅ Memorial comment deleted successfully!");
+  } catch (error) {
+    console.error("❌ Error deleting memorial comment:", error);
+    throw error;
+  }
+};
+
+export const editCommentInMember = async (memberId: string, userId: string, commentIndex: number, newText: string) => {
+  try {
+    const params = {
+      TableName: TABLES.FAMILY,
+      Key: {
+        family_member_id: { S: memberId }
+      },
+      UpdateExpression: `SET memorial_comments[${commentIndex}].#text = :newText`,
+      ConditionExpression: `memorial_comments[${commentIndex}].userId = :userId`,
+      ExpressionAttributeNames: {
+        "#text": "text"
+      },
+      ExpressionAttributeValues: {
+        ":newText": { S: newText },
+        ":userId": { S: userId }
+      }
+    };
+
+    await dynamoDB.send(new UpdateItemCommand(params));
+    console.log("✅ Memorial comment edited successfully!");
+  } catch (error) {
+    console.error("❌ Error editing memorial comment:", error);
+    throw error;
+  }
+};
+
 export const saveRSVPToDynamoDB = async (eventId: string, userId: string, status: 'yes' | 'no' | 'maybe') => {
     const rsvpParams = {
         TableName: TABLES.EVENT_RSVP,

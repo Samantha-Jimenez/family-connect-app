@@ -1,65 +1,109 @@
-import React, { useState } from 'react';
-import TaggedPhotosCard from './TaggedPhotosCard';
-import { FamilyMember } from '@/hooks/dynamoDB';
-
-interface Comment {
-  id: string;
-  author: string;
-  content: string;
-  date: string;
-}
-
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-};
+import React, { useState, useEffect } from 'react';
+import { FamilyMember, addCommentToMember, getCommentsForMember, deleteCommentFromMember, editCommentInMember, getUserNameById, getProfilePhotoById } from '@/hooks/dynamoDB';
+import { useAuthenticator } from '@aws-amplify/ui-react';
+import Image from 'next/image';
+import { getFullImageUrl } from '@/utils/imageUtils';
 
 const PassedMemberOverview = ({ memberData }: { memberData: FamilyMember }) => {
+  const { user } = useAuthenticator();
   const [newComment, setNewComment] = useState('');
-  const [comments, setComments] = useState<Comment[]>([
-    {
-      id: '1',
-      author: 'John Doe',
-      content: 'We will always remember your kindness and wisdom. You touched so many lives.',
-      date: '2024-03-15'
-    },
-    {
-      id: '2',
-      author: 'Jane Smith',
-      content: 'Your legacy lives on through all of us. Thank you for being such an important part of our family.',
-      date: '2024-03-14'
-    },
-    {
-      id: '3',
-      author: 'Michael Johnson',
-      content: 'Your smile and laughter will forever be in our hearts. You made every family gathering special.',
-      date: '2024-03-13'
-    },
-    {
-      id: '4',
-      author: 'Sarah Williams',
-      content: 'The stories you shared and the wisdom you imparted will continue to guide us through life.',
-      date: '2024-03-12'
-    }
-  ]);
+  const [comments, setComments] = useState<{ text: string; author: string; userId: string; timestamp: string; profilePhoto: string }[]>([]);
+  const [editingCommentIndex, setEditingCommentIndex] = useState<number | null>(null);
+  const [editedCommentText, setEditedCommentText] = useState('');
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmitComment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newComment.trim()) return;
-
-    const comment: Comment = {
-      id: Date.now().toString(),
-      author: 'Current User', // This should be replaced with actual user data
-      content: newComment,
-      date: new Date().toISOString()
+  useEffect(() => {
+    const fetchComments = async () => {
+      if (memberData.family_member_id) {
+        setLoading(true);
+        try {
+          const memberComments = await getCommentsForMember(memberData.family_member_id);
+          // Reverse to show newest comments first (using spread to avoid mutating)
+          setComments([...memberComments].reverse());
+        } catch (error) {
+          console.error('Error fetching comments:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
     };
 
-    setComments([comment, ...comments]);
-    setNewComment('');
+    const fetchProfilePhoto = async () => {
+      if (user) {
+        const photoUrl = await getProfilePhotoById(user.userId);
+        setProfilePhoto(photoUrl);
+      }
+    };
+
+    fetchComments();
+    fetchProfilePhoto();
+  }, [memberData.family_member_id, user]);
+
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim() || !user) return;
+
+    try {
+      const userName = await getUserNameById(user.userId);
+      if (userName) {
+        const authorName = `${userName.firstName} ${userName.lastName}`;
+        await addCommentToMember(memberData.family_member_id, user.userId, newComment, authorName, profilePhoto || '');
+        
+        // Add the comment to the local state (prepend since newest should be first)
+        const newCommentObj = {
+          text: newComment,
+          author: authorName,
+          userId: user.userId,
+          timestamp: new Date().toISOString(),
+          profilePhoto: profilePhoto || ''
+        };
+        setComments([newCommentObj, ...comments]);
+        setNewComment('');
+      }
+    } catch (error) {
+      console.error('Error adding comment:', error);
+    }
+  };
+
+  const handleDeleteComment = async (index: number) => {
+    if (user) {
+      try {
+        // Map UI index (newest first) to database index (oldest first)
+        // UI index 0 (newest) = database index (comments.length - 1 - index)
+        const dbIndex = comments.length - 1 - index;
+        await deleteCommentFromMember(memberData.family_member_id, user.userId, dbIndex);
+        setComments(comments.filter((_, i) => i !== index));
+      } catch (error) {
+        console.error('Error deleting comment:', error);
+      }
+    }
+  };
+
+  const handleEditComment = async (index: number) => {
+    if (editedCommentText.trim() && user) {
+      try {
+        // Map UI index (newest first) to database index (oldest first)
+        const dbIndex = comments.length - 1 - index;
+        await editCommentInMember(memberData.family_member_id, user.userId, dbIndex, editedCommentText);
+        
+        const updatedComments = [...comments];
+        updatedComments[index].text = editedCommentText;
+        setComments(updatedComments);
+        
+        setEditingCommentIndex(null);
+        setEditedCommentText('');
+      } catch (error) {
+        console.error('Error editing comment:', error);
+      }
+    }
+  };
+
+  const confirmDeleteComment = (index: number) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this comment?");
+    if (confirmDelete) {
+      handleDeleteComment(index);
+    }
   };
 
   return (
@@ -80,7 +124,7 @@ const PassedMemberOverview = ({ memberData }: { memberData: FamilyMember }) => {
       {/* Comment Form */}
       <div className="bg-white rounded-lg shadow-md p-4 mb-8">
         <h2 className="text-2xl font-semibold text-gray-900 mb-4">Share Your Memory</h2>
-        <form onSubmit={handleSubmitComment} className="space-y-4">
+        <form onSubmit={handleAddComment} className="space-y-4">
           <div>
             <textarea
               value={newComment}
@@ -102,22 +146,96 @@ const PassedMemberOverview = ({ memberData }: { memberData: FamilyMember }) => {
 
       {/* Comments Section */}
       <div>
-        <h2 className="text-2xl font-semibold text-gray-900 mb-6">Memories Shared</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {comments.map((comment) => (
-            <div key={comment.id} className="bg-white rounded-lg shadow-md p-4 h-full">
-              <div className="flex flex-col h-full">
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">{comment.author}</h3>
-                  <p className="text-sm text-gray-500">
-                    {formatDate(comment.date)}
-                  </p>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-6">Memories</h2>
+        {loading ? (
+          <div className="text-center py-8">Loading memories...</div>
+        ) : comments.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">No memories shared yet. Be the first to share a memory.</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {comments.map((comment, index) => (
+              <div key={index} className="bg-white rounded-lg shadow-md p-4 h-full">
+                <div className="flex flex-col h-full">
+                  {editingCommentIndex === index ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editedCommentText}
+                        onChange={(e) => setEditedCommentText(e.target.value)}
+                        className="w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none bg-gray-200"
+                        rows={4}
+                      />
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          onClick={() => handleEditComment(index)}
+                          className="btn btn-sm bg-green-600 text-white hover:bg-green-700 border-0"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingCommentIndex(null);
+                            setEditedCommentText('');
+                          }}
+                          className="btn btn-sm bg-gray-500 text-white hover:bg-gray-600 border-0"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-start gap-3 mb-2">
+                        {comment.profilePhoto ? (
+                          <Image
+                            src={getFullImageUrl(comment.profilePhoto) || '/fallback-image.jpg'}
+                            alt="Commenter Profile Photo"
+                            width={75}
+                            height={75}
+                            className="object-cover rounded-tl-full rounded-tr-full rounded-bl-full rounded-br-none flex-shrink-0 w-[75px] h-[75px]"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="icon-[mdi--account] text-xl text-gray-400" />
+                          </div>
+                        )}
+                        <div className="flex-grow min-w-0">
+                          <h3 className="text-lg font-semibold text-gray-900">{comment.author}</h3>
+                          <p className="text-sm text-gray-500">
+                            {new Date(comment.timestamp).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-gray-700 leading-relaxed flex-grow">{comment.text}</p>
+                      {comment.userId === user?.userId && (
+                        <div className="flex gap-2 justify-end mt-2">
+                          <button
+                            onClick={() => {
+                              setEditingCommentIndex(index);
+                              setEditedCommentText(comment.text);
+                            }}
+                            className="text-blue-500 hover:underline text-sm"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => confirmDeleteComment(index)}
+                            className="text-red-500 hover:underline text-sm"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
-                <p className="text-gray-700 leading-relaxed flex-grow">{comment.content}</p>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
     </>
