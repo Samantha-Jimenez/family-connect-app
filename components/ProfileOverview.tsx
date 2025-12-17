@@ -86,7 +86,7 @@ const ProfileOverview = ({ userId }: { userId: string }) => {
       </div>
 
       {/* ADD MORE COMPONENTS HERE */}
-      <div className="card bg-yellow-300/5 text-black shadow-lg p-6 col-span-1 md:col-span-1 md:col-start-2 h-min">
+      <div className="card bg-yellow-300/5 text-black shadow-lg p-4 col-span-1 md:col-span-1 md:col-start-2 h-min">
         <h2 className="text-xl">Family Tree</h2>
         <p className="mt-2">Nuclear family connections</p>
         {loading ? (

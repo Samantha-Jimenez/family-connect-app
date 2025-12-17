@@ -46,7 +46,7 @@ const LanguagesCard = ({ userId }: { userId: string }) => {
   }
 
   return (
-    <div className="card text-black p-6 bg-[#C8D5B9]/20 shadow-lg">
+    <div className="card text-black p-4 bg-[#C8D5B9]/20 shadow-lg">
       <h2 className="text-xl font-medium mb-3">Languages</h2>
       <div className="flex flex-col gap-1">
         {languages.map((language, index) => (

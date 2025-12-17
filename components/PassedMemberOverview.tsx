@@ -185,7 +185,7 @@ const PassedMemberOverview = ({ memberData }: { memberData: FamilyMember }) => {
 
   return (
     <>
-    <div className="md:px-4 px-0 py-8">
+    <div className="md:px-4 px-0 pb-8 pt-5">
       {/* Memorial Header */}
       {/* <div className="text-center mb-12">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">
@@ -201,7 +201,7 @@ const PassedMemberOverview = ({ memberData }: { memberData: FamilyMember }) => {
       {/* Comment Form */}
       <div className="bg-white rounded-lg shadow-md p-4 mb-8">
         <h2 className="text-2xl font-semibold text-gray-900 mb-4">Share Your Memory</h2>
-        <form onSubmit={handleAddComment} className="space-y-4">
+        <form onSubmit={handleAddComment} className="">
           <div>
             <textarea
               value={newComment}
@@ -213,7 +213,7 @@ const PassedMemberOverview = ({ memberData }: { memberData: FamilyMember }) => {
           <div className="flex justify-end">
             <button
               type="submit"
-              className="btn px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 w-full md:w-auto border-0 min-h-[2.5rem] h-[2.5rem]"
+              className="btn px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 w-full md:w-auto border-0 min-h-[2.5rem] h-[2.5rem] mt-1"
             >
               Share
             </button>
@@ -223,7 +223,7 @@ const PassedMemberOverview = ({ memberData }: { memberData: FamilyMember }) => {
 
       {/* Comments Section */}
       <div>
-        <h2 className="text-2xl font-semibold text-gray-900 mb-6">Memories</h2>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">Memories</h2>
         {loading ? (
           <div className="text-center py-8">Loading memories...</div>
         ) : comments.length === 0 ? (
@@ -231,7 +231,7 @@ const PassedMemberOverview = ({ memberData }: { memberData: FamilyMember }) => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
             {comments.map((comment, index) => (
-              <div key={index} className="bg-white rounded-lg shadow-md p-4">
+              <div key={index} className="bg-[#E8D4B8]/10 text-black rounded-lg shadow-md p-4">
                 <div className="flex flex-col">
                   {editingCommentIndex === index ? (
                     <div className="space-y-2">
@@ -277,7 +277,7 @@ const PassedMemberOverview = ({ memberData }: { memberData: FamilyMember }) => {
                         )}
                         <div className="flex-grow min-w-0">
                           <Link href={`/profile/${comment.userId}`}>
-                            <h3 className="text-lg font-semibold text-gray-900 hover:text-blue-600 hover:underline cursor-pointer transition-colors">{comment.author}</h3>
+                            <h3 className="text-lg font-semibold text-gray-900 hover:text-gray-500 hover:no-underline cursor-pointer transition-colors">{comment.author}</h3>
                           </Link>
                           {getCommenterRelationship(comment.userId) && (
                             <p className="text-sm text-gray-600 font-medium">{getCommenterRelationship(comment.userId)}</p>
