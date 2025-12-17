@@ -458,10 +458,10 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             className="object-contain rounded-lg"
             onError={handleImageError}
           />
-          <div className="absolute top-[0.6rem] right-[0.7rem] flex items-center bg-gray-400/30 rounded-full px-2 py-0.5 gap-2 shadow-sm">
+          <div className="absolute top-[0.6rem] right-[0.7rem] flex items-center bg-gray-400/40 rounded-full px-2 py-0.5 gap-2 shadow-sm hover:bg-gray-400/60">
             <div className="tooltip" data-tip="Favorite">
               <div
-                className={`cursor-pointer transition-transform duration-300 h-5 ${isAnimating ? 'scale-125' : ''}`}
+                className={`cursor-pointer transition-transform duration-300 h-5 hover:scale-[1.15] active:scale-[1.5] ${isAnimating ? 'scale-150' : ''}`}
                 onClick={toggleFavorite}
               >
                 {isFavorited ? <span className="icon-[mdi--heart] text-red-500 h-5 w-5" /> : <span className="icon-[mdi--heart-plus] text-white h-5 w-5" />}
@@ -482,8 +482,8 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                   }}
                 >
                   <span
-                    className={`icon-[mdi--tray-download] h-5 w-5 transition-transform duration-300
-                      ${isDownloadAnimating ? 'scale-125' : ''}
+                    className={`icon-[mdi--tray-download] h-5 w-5 transition-transform duration-300 hover:scale-[1.15] active:scale-[1.5]
+                      ${isDownloadAnimating ? 'scale-150' : ''}
                       ${hasDownloaded ? 'text-gray-600' : 'text-white'}
                     `}
                   />
