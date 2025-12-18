@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useRef, useEffect } from 'react'
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import Image from 'next/image';
 import { getFullImageUrl } from '@/utils/imageUtils';
@@ -18,6 +18,14 @@ interface PhotoCommentsProps {
 
 const PhotoComments = ({ comments, editingCommentIndex, setEditingCommentIndex, editedCommentText, setEditedCommentText, newComment, setNewComment, handleAddComment, handleEditComment, handleDeleteComment }: PhotoCommentsProps) => {
     const { user } = useAuthenticator();
+    const commentsScrollRef = useRef<HTMLDivElement>(null);
+
+    // Scroll to bottom (newest comments) when comments change
+    useEffect(() => {
+        if (commentsScrollRef.current) {
+            commentsScrollRef.current.scrollTop = commentsScrollRef.current.scrollHeight;
+        }
+    }, [comments]);
 
     const confirmDeleteComment = (index: number) => {
         const confirmDelete = window.confirm("Are you sure you want to delete this comment?");
@@ -30,7 +38,10 @@ const PhotoComments = ({ comments, editingCommentIndex, setEditingCommentIndex, 
     <div className="grid md:h-full">
         <div className="mt-2 border-t pt-2">
             <h3 className="text-lg font-bold text-black">Comments</h3>
-            <div className="md:overflow-y-scroll md:overflow-x-hidden md:max-h-[309px] scrollbar scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-gray-400 scrollbar-thumb-rounded-full scrollbar-track-rounded-full">
+            <div 
+                ref={commentsScrollRef}
+                className="md:overflow-y-scroll md:overflow-x-hidden md:max-h-[350px] scrollbar scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-gray-400 scrollbar-thumb-rounded-full scrollbar-track-rounded-full"
+            >
                 <div className="grid grid-cols-1 gap-2">
                     {comments.map((comment, index) => (
                         <div key={index} className="grid grid-cols-[1fr_auto] items-start gap-2 pr-[10px] min-w-0">
