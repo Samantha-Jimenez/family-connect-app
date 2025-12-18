@@ -1461,12 +1461,14 @@ export const getCommentsForPhoto = async (photoId: string): Promise<{ text: stri
     return await Promise.all(data.Item.comments.L.map(async (comment: any) => {
       const userId = comment.M?.userId?.S || '';
       const userName = await getUserNameById(userId);
+      // Fetch current profile photo instead of using stored one
+      const currentProfilePhoto = await getProfilePhotoById(userId);
       return {
         userId: userId,
         text: comment.M?.text?.S || '',
         author: userName ? `${userName.firstName} ${userName.lastName}` : 'Unknown',
         timestamp: comment.M?.timestamp?.S || '',
-        profilePhoto: comment.M?.profilePhoto?.S || ''
+        profilePhoto: currentProfilePhoto || ''
       };
     }));
   } catch (error) {
@@ -1642,12 +1644,14 @@ export const getCommentsForHobby = async (hobby: string): Promise<Array<{ userId
     return await Promise.all(data.Item.comments.L.map(async (comment: any) => {
       const userId = comment.M?.userId?.S || '';
       const userName = await getUserNameById(userId);
+      // Fetch current profile photo instead of using stored one
+      const currentProfilePhoto = await getProfilePhotoById(userId);
       return {
         userId: userId,
         text: comment.M?.text?.S || '',
         author: userName ? `${userName.firstName} ${userName.lastName}` : comment.M?.author?.S || 'Unknown',
         timestamp: comment.M?.timestamp?.S || '',
-        commenterPhoto: comment.M?.profilePhoto?.S || '',
+        commenterPhoto: currentProfilePhoto || '',
         photoUrl: comment.M?.photoUrl?.S || undefined
       };
     }));
@@ -1747,12 +1751,14 @@ export const getCommentsForMember = async (memberId: string): Promise<{ text: st
     return await Promise.all(data.Item.memorial_comments.L.map(async (comment: any) => {
       const userId = comment.M?.userId?.S || '';
       const userName = await getUserNameById(userId);
+      // Fetch current profile photo instead of using stored one
+      const currentProfilePhoto = await getProfilePhotoById(userId);
       return {
         userId: userId,
         text: comment.M?.text?.S || '',
         author: userName ? `${userName.firstName} ${userName.lastName}` : 'Unknown',
         timestamp: comment.M?.timestamp?.S || '',
-        profilePhoto: comment.M?.profilePhoto?.S || ''
+        profilePhoto: currentProfilePhoto || ''
       };
     }));
   } catch (error) {
