@@ -126,7 +126,7 @@ export default function UploadedPhotosCard({ userId }: { userId: string }) {
                 src={photo.url || ''}
                 alt={`Photo ${index + 1}`}
                 fill
-                className="object-cover rounded"
+                className="object-cover rounded cursor-pointer"
                 sizes="(max-width: 768px) 33vw, 20vw"
                 priority={true}
               />

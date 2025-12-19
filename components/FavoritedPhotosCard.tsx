@@ -81,7 +81,7 @@ export default function FavoritedPhotosCard() {
               src={photo.url || '/fallback-image.jpg'}
               alt="Favorited photo"
               fill
-              className="object-cover rounded"
+              className="object-cover rounded cursor-pointer"
               sizes="(max-width: 768px) 33vw, 20vw"
             />
           </div>
