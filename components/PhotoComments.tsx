@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react'
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { getFullImageUrl } from '@/utils/imageUtils';
 
 interface PhotoCommentsProps {
@@ -70,29 +71,31 @@ const PhotoComments = ({ comments, editingCommentIndex, setEditingCommentIndex, 
                                 <>
                                     <div className="chat chat-start max-w-full overflow-hidden min-w-0">
                                         <div className="chat-image avatar">
-                                            <div className="w-10 rounded-full">
-                                                {/* <img
-                                                    alt="User Avatar"
-                                                    src={comment.commenterPhoto}
-                                                /> */}
-                                                {comment.commenterPhoto ? (
-                                            <Image
-                                                src={getFullImageUrl(comment.commenterPhoto) || '/fallback-image.jpg'}
-                                                alt="Commenters Profile Photo"
-                                                width={40}
-                                                height={40}
-                                                className="object-contain rounded-full"
-                                            />
-                                        ) : (
-                                                <div className="w-full h-full bg-gray-200 rounded-[60px] flex items-center justify-center">
-                                                    <span className="icon-[mdi--account] text-xl text-gray-400" />
+                                            <Link href={`/profile/${comment.userId}`} className="cursor-pointer hover:opacity-80 transition-opacity">
+                                                <div className="w-10 h-10 rounded-full">
+                                                    {/* <img
+                                                        alt="User Avatar"
+                                                        src={comment.commenterPhoto}
+                                                    /> */}
+                                                    {comment.commenterPhoto ? (
+                                                <Image
+                                                    src={getFullImageUrl(comment.commenterPhoto) || '/fallback-image.jpg'}
+                                                    alt="Commenters Profile Photo"
+                                                    width={40}
+                                                    height={40}
+                                                    className="object-contain rounded-full"
+                                                />
+                                            ) : (
+                                                    <div className="w-full h-full bg-gray-200 rounded-[60px] flex items-center justify-center">
+                                                        <span className="icon-[mdi--account] text-xl text-gray-400" />
+                                                    </div>
+                                                )}
                                                 </div>
-                                            )}
-                                            </div>
+                                            </Link>
                                         </div>
-                                        <div className="chat-header text-gray-600 font-light">
+                                        <Link href={`/profile/${comment.userId}`} className="poppins-light chat-header text-gray-600 hover:text-gray-500 cursor-pointer">
                                             {comment.author}
-                                        </div>
+                                        </Link>
                                         <div className="chat-bubble bg-gray-200 text-gray-800 text-sm px-2 py-0.5 min-h-3 font-light !max-w-[calc(100vw-140px)] md:!max-w-full break-all whitespace-normal overflow-hidden">
                                             {comment.text}
                                         </div>
