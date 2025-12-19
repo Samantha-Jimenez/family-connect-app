@@ -151,7 +151,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
   
   return (
     <CalendarProvider>
-      <div>
+      <div className="flex flex-col min-h-screen">
         <Navbar 
           signOut={signOut} 
           username={user.username || 'Guest'} 
@@ -159,7 +159,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
           userLastName={userData?.last_name || 'Last Name'}
           userId={userData?.userId || ''}
         />
-        <main>
+        <main className="flex-grow">
           {children}
         </main>
         <Footer />
