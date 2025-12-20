@@ -35,6 +35,7 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
   const [commentPhotoPreview, setCommentPhotoPreview] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showScrollUpArrow, setShowScrollUpArrow] = useState(false);
+  const [expandedImageUrl, setExpandedImageUrl] = useState<string | null>(null);
   const newCommentTextareaRef = useRef<HTMLTextAreaElement>(null);
   const editCommentTextareaRef = useRef<HTMLTextAreaElement>(null);
   const commentsScrollRef = useRef<HTMLDivElement>(null);
@@ -422,7 +423,10 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
                           </Link>
                           <div className="chat-bubble bg-gray-200 text-gray-800 text-sm px-2 py-1.5 min-h-3 font-light !max-w-full break-words whitespace-pre-wrap overflow-hidden">
                             {comment.photoUrl && (
-                              <div className="mb-2 rounded-lg overflow-hidden max-w-sm">
+                              <div 
+                                className="mb-2 rounded-lg overflow-hidden max-w-sm cursor-pointer hover:scale-[1.02] transition-all duration-200 ease-out"
+                                onClick={() => setExpandedImageUrl(comment.photoUrl || null)}
+                              >
                                 <Image
                                   src={getFullImageUrl(comment.photoUrl)}
                                   alt="Comment photo"
@@ -554,6 +558,35 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
             Close
           </button>
         </div>
+        
+        {/* Expanded Image Modal */}
+        {expandedImageUrl && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[200]"
+            onClick={() => setExpandedImageUrl(null)}
+          >
+            <div 
+              className="relative max-w-[90vw] max-h-[90vh] p-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setExpandedImageUrl(null)}
+                className="absolute top-2 right-2 text-white hover:text-gray-300 text-3xl leading-none z-10 bg-black/50 rounded-full w-10 h-10 flex items-center justify-center transition-colors"
+                aria-label="Close expanded image"
+              >
+                ×
+              </button>
+              <Image
+                src={getFullImageUrl(expandedImageUrl)}
+                alt="Expanded comment photo"
+                width={1200}
+                height={1200}
+                className="object-contain max-w-full max-h-[90vh] rounded-lg"
+              />
+            </div>
+          </div>
+        )}
+        
         <style jsx>{`
           .name-float {
             animation: nameFloat 260ms ease-out;
