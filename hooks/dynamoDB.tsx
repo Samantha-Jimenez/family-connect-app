@@ -1438,6 +1438,17 @@ export const getFavoritedPhotosByUser = async (userId: string): Promise<PhotoDat
 
 export const addCommentToPhoto = async (photoId: string, userId: string, comment: string, author: string, profilePhoto: string) => {
   try {
+    // First, get the photo to find who uploaded it
+    const getPhotoParams = {
+      TableName: TABLES.PHOTOS,
+      Key: {
+        photo_id: { S: photoId }
+      }
+    };
+
+    const photoData = await dynamoDB.send(new GetItemCommand(getPhotoParams));
+    const uploadedBy = photoData.Item?.uploaded_by?.S;
+
     const timestamp = new Date().toISOString();
     const params = {
       TableName: TABLES.PHOTOS,
@@ -1453,6 +1464,31 @@ export const addCommentToPhoto = async (photoId: string, userId: string, comment
 
     await dynamoDB.send(new UpdateItemCommand(params));
     console.log("✅ Comment added to photo successfully!");
+
+    // Create notification for the photo uploader (if they're not the one commenting)
+    if (uploadedBy && uploadedBy !== userId) {
+      try {
+        // Truncate comment for notification message (first 50 chars)
+        const commentPreview = comment.length > 50 ? comment.substring(0, 50) + '...' : comment;
+        
+        const title = "New comment on your photo";
+        const message = `${author} commented: "${commentPreview}"`;
+        
+        await createNotification(
+          uploadedBy,
+          'photo_comment',
+          title,
+          message,
+          photoId, // related_id is the photo_id
+          { commenter_id: userId, comment_preview: commentPreview }
+        );
+        
+        console.log(`✅ Notification created for photo uploader (${uploadedBy})`);
+      } catch (notificationError) {
+        // Don't fail the comment addition if notification creation fails
+        console.error("❌ Error creating photo comment notification:", notificationError);
+      }
+    }
   } catch (error) {
     console.error("❌ Error adding comment to photo:", error);
     throw error;
