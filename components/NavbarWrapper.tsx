@@ -211,14 +211,14 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
           
           {/* Drawer */}
           <div
-            className={`fixed top-0 right-0 h-full w-80 md:w-96 bg-white shadow-2xl z-[50] transition-transform duration-500 ease-out ${
+            className={`fixed top-0 right-0 h-full w-80 md:w-96 bg-white shadow-2xl z-[50] transition-transform duration-500 ease-out rounded-ss-xl	rounded-es-xl ${
               shouldAnimateIn ? 'translate-x-0' : 'translate-x-full'
             }`}
             role="dialog"
             aria-modal="true"
             aria-label="Notifications drawer"
           >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-ss-xl	">
               <h2 className="text-xl font-semibold text-gray-800">Notifications</h2>
               <button
                 onClick={() => setNotificationOpen(false)}
