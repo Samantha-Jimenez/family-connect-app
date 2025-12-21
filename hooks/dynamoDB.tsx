@@ -30,7 +30,8 @@ const TABLES = {
   RELATIONSHIPS: "Relationships",
   // EVENTS: "Events",
   EVENT_RSVP: "EventRSVPs",
-  HOBBY_COMMENTS: "HobbyComments"
+  HOBBY_COMMENTS: "HobbyComments",
+  NOTIFICATIONS: "Notifications"
 } as const;
 
 // Export all interfaces
@@ -93,6 +94,21 @@ export interface FamilyMember {
     platform: string;
     url: string;
   }[];
+}
+
+// Notification types
+export type NotificationType = 'birthday' | 'hobby_comment' | 'photo_comment' | 'photo_tag';
+
+export interface Notification {
+  notification_id: string;
+  user_id: string; // Who should see this notification
+  type: NotificationType;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+  related_id?: string; // e.g., member_id for birthday, photo_id for photo tag, hobby name for hobby comment
+  metadata?: Record<string, any>; // Additional data
 }
 
 // Enhanced relationship types
@@ -1620,6 +1636,40 @@ export const addCommentToHobby = async (hobby: string, userId: string, comment: 
 
     await dynamoDB.send(new UpdateItemCommand(params));
     console.log("✅ Comment added to hobby successfully!");
+
+    // Create notifications for all members who have this hobby (except the commenter)
+    try {
+      const membersWithHobby = await getFamilyMembersWithHobby(hobby);
+      
+      // Truncate comment for notification message (first 50 chars)
+      const commentPreview = comment.length > 50 ? comment.substring(0, 50) + '...' : comment;
+      
+      let notificationCount = 0;
+      for (const member of membersWithHobby) {
+        // Don't notify the person who made the comment
+        if (member.id === userId) continue;
+        
+        const title = `New comment in ${hobby}`;
+        const message = `${author} commented: "${commentPreview}"`;
+        
+        await createNotification(
+          member.id,
+          'hobby_comment',
+          title,
+          message,
+          hobby, // related_id is the hobby name
+          { commenter_id: userId, comment_preview: commentPreview }
+        );
+        notificationCount++;
+      }
+      
+      if (notificationCount > 0) {
+        console.log(`✅ Notifications created for ${notificationCount} member${notificationCount === 1 ? '' : 's'} in ${hobby} hobby`);
+      }
+    } catch (notificationError) {
+      // Don't fail the comment addition if notification creation fails
+      console.error("❌ Error creating hobby comment notifications:", notificationError);
+    }
   } catch (error) {
     console.error("❌ Error adding comment to hobby:", error);
     throw error;
@@ -2468,5 +2518,247 @@ export const suggestPossibleRelationships = async (
   } catch (error) {
     console.error("❌ Error suggesting relationships:", error);
     return [];
+  }
+};
+
+// ========== NOTIFICATION FUNCTIONS ==========
+
+// Helper function to calculate days until birthday
+const getDaysUntilBirthday = (birthday: string): number | null => {
+  if (!birthday) return null;
+  
+  try {
+    const dateStr = birthday.split('T')[0]; // Get YYYY-MM-DD part
+    const [year, month, day] = dateStr.split('-').map(Number);
+    
+    if (!month || !day) return null;
+    
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    
+    // Create birthday date for this year
+    const thisYearBirthday = new Date(currentYear, month - 1, day);
+    
+    // If birthday already passed this year, use next year
+    const nextBirthday = thisYearBirthday < today 
+      ? new Date(currentYear + 1, month - 1, day)
+      : thisYearBirthday;
+    
+    const diffTime = nextBirthday.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays;
+  } catch (error) {
+    console.error("❌ Error calculating days until birthday:", error);
+    return null;
+  }
+};
+
+// Create a notification
+export const createNotification = async (
+  userId: string,
+  type: NotificationType,
+  title: string,
+  message: string,
+  relatedId?: string,
+  metadata?: Record<string, any>
+): Promise<void> => {
+  try {
+    const notificationId = uuidv4();
+    const timestamp = new Date().toISOString();
+    
+    const item: Record<string, any> = {
+      notification_id: { S: notificationId },
+      user_id: { S: userId },
+      type: { S: type },
+      title: { S: title },
+      message: { S: message },
+      is_read: { BOOL: false },
+      created_at: { S: timestamp }
+    };
+    
+    if (relatedId) {
+      item.related_id = { S: relatedId };
+    }
+    
+    if (metadata) {
+      item.metadata = { M: {} };
+      Object.keys(metadata).forEach(key => {
+        if (typeof metadata[key] === 'string') {
+          item.metadata.M[key] = { S: metadata[key] };
+        } else if (typeof metadata[key] === 'number') {
+          item.metadata.M[key] = { N: metadata[key].toString() };
+        } else if (typeof metadata[key] === 'boolean') {
+          item.metadata.M[key] = { BOOL: metadata[key] };
+        }
+      });
+    }
+    
+    const params = {
+      TableName: TABLES.NOTIFICATIONS,
+      Item: item
+    };
+    
+    await dynamoDB.send(new PutItemCommand(params));
+    console.log("✅ Notification created successfully!");
+  } catch (error) {
+    console.error("❌ Error creating notification:", error);
+    throw error;
+  }
+};
+
+// Generate birthday notifications for all family members (for birthdays in next 4 weeks)
+export const generateBirthdayNotifications = async (): Promise<void> => {
+  try {
+    const familyMembers = await getAllFamilyMembers();
+    const today = new Date();
+    const fourWeeksFromNow = new Date(today);
+    fourWeeksFromNow.setDate(fourWeeksFromNow.getDate() + 28);
+    
+    for (const member of familyMembers) {
+      if (!member.birthday || member.death_date) continue; // Skip if no birthday or deceased
+      
+      const daysUntilBirthday = getDaysUntilBirthday(member.birthday);
+      if (daysUntilBirthday === null || daysUntilBirthday < 0 || daysUntilBirthday > 28) {
+        continue; // Skip if not in next 4 weeks
+      }
+      
+      // Create notifications for all other family members
+      for (const otherMember of familyMembers) {
+        if (otherMember.family_member_id === member.family_member_id) continue; // Don't notify the person themselves
+        
+        const memberName = member.use_nick_name && member.nick_name 
+          ? member.nick_name 
+          : member.use_middle_name && member.middle_name 
+            ? member.middle_name 
+            : member.first_name;
+        
+        const daysText = daysUntilBirthday === 0 
+          ? "today" 
+          : daysUntilBirthday === 1 
+            ? "tomorrow" 
+            : `in ${daysUntilBirthday} days`;
+        
+        const title = `${memberName} ${member.last_name}'s Birthday`;
+        const message = `${memberName} ${member.last_name}'s birthday is ${daysText}! 🎂`;
+        
+        // Check if notification already exists for this birthday
+        const existingNotifications = await getNotificationsByUser(otherMember.family_member_id);
+        const alreadyNotified = existingNotifications.some(
+          n => n.type === 'birthday' 
+            && n.related_id === member.family_member_id
+            && n.created_at >= new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString()
+        );
+        
+        if (!alreadyNotified) {
+          await createNotification(
+            otherMember.family_member_id,
+            'birthday',
+            title,
+            message,
+            member.family_member_id,
+            { days_until: daysUntilBirthday }
+          );
+        }
+      }
+    }
+    
+    console.log("✅ Birthday notifications generated successfully!");
+  } catch (error) {
+    console.error("❌ Error generating birthday notifications:", error);
+    throw error;
+  }
+};
+
+// Get all notifications for a user
+export const getNotificationsByUser = async (userId: string): Promise<Notification[]> => {
+  try {
+    const params = {
+      TableName: TABLES.NOTIFICATIONS,
+      FilterExpression: "user_id = :userId",
+      ExpressionAttributeValues: {
+        ":userId": { S: userId }
+      }
+    };
+    
+    const command = new ScanCommand(params);
+    const response = await dynamoDB.send(command);
+    
+    if (!response.Items) {
+      return [];
+    }
+    
+    return response.Items.map(item => ({
+      notification_id: item.notification_id?.S || '',
+      user_id: item.user_id?.S || '',
+      type: (item.type?.S || 'birthday') as NotificationType,
+      title: item.title?.S || '',
+      message: item.message?.S || '',
+      is_read: item.is_read?.BOOL ?? false,
+      created_at: item.created_at?.S || '',
+      related_id: item.related_id?.S,
+      metadata: item.metadata?.M ? Object.keys(item.metadata.M).reduce((acc, key) => {
+        const value = item.metadata!.M![key];
+        if (value.S) acc[key] = value.S;
+        else if (value.N) acc[key] = Number(value.N);
+        else if (value.BOOL !== undefined) acc[key] = value.BOOL;
+        return acc;
+      }, {} as Record<string, any>) : undefined
+    })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  } catch (error) {
+    console.error("❌ Error fetching notifications:", error);
+    return [];
+  }
+};
+
+// Get unread notification count for a user
+export const getUnreadNotificationCount = async (userId: string): Promise<number> => {
+  try {
+    const notifications = await getNotificationsByUser(userId);
+    return notifications.filter(n => !n.is_read).length;
+  } catch (error) {
+    console.error("❌ Error getting unread notification count:", error);
+    return 0;
+  }
+};
+
+// Mark notification as read
+export const markNotificationAsRead = async (notificationId: string, userId: string): Promise<void> => {
+  try {
+    const params = {
+      TableName: TABLES.NOTIFICATIONS,
+      Key: {
+        notification_id: { S: notificationId }
+      },
+      UpdateExpression: "SET is_read = :read",
+      ConditionExpression: "user_id = :userId",
+      ExpressionAttributeValues: {
+        ":read": { BOOL: true },
+        ":userId": { S: userId }
+      }
+    };
+    
+    await dynamoDB.send(new UpdateItemCommand(params));
+    console.log("✅ Notification marked as read!");
+  } catch (error) {
+    console.error("❌ Error marking notification as read:", error);
+    throw error;
+  }
+};
+
+// Mark all notifications as read for a user
+export const markAllNotificationsAsRead = async (userId: string): Promise<void> => {
+  try {
+    const notifications = await getNotificationsByUser(userId);
+    const unreadNotifications = notifications.filter(n => !n.is_read);
+    
+    for (const notification of unreadNotifications) {
+      await markNotificationAsRead(notification.notification_id, userId);
+    }
+    
+    console.log("✅ All notifications marked as read!");
+  } catch (error) {
+    console.error("❌ Error marking all notifications as read:", error);
+    throw error;
   }
 };

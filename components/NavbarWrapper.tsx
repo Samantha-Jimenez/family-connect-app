@@ -6,7 +6,17 @@ import Footer from "./Footer";
 import { CalendarProvider } from '@/context/CalendarContext';
 import { Authenticator } from '@aws-amplify/ui-react';
 import { useState, useEffect } from 'react';
-import { getFamilyMembersWithoutEmail, FamilyMember, updateFamilyMember } from '@/hooks/dynamoDB';
+import { 
+  getFamilyMembersWithoutEmail, 
+  FamilyMember, 
+  updateFamilyMember,
+  getNotificationsByUser,
+  getUnreadNotificationCount,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  generateBirthdayNotifications,
+  Notification
+} from '@/hooks/dynamoDB';
 import { useUser } from '@/context/UserContext';
 import Select from 'react-select';
 import Image from 'next/image';
@@ -22,6 +32,9 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
   const [isNotificationOpen, setNotificationOpen] = useState(false);
   const [isDrawerMounted, setIsDrawerMounted] = useState(false);
   const [shouldAnimateIn, setShouldAnimateIn] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
 
   useEffect(() => {
     async function fetchFamilyMembers() {
@@ -34,6 +47,59 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
     }
     fetchFamilyMembers();
   }, []);
+
+  // Fetch notifications and unread count
+  useEffect(() => {
+    async function fetchNotifications() {
+      if (!userData?.userId) return;
+      
+      try {
+        setNotificationsLoading(true);
+        const [notifs, count] = await Promise.all([
+          getNotificationsByUser(userData.userId),
+          getUnreadNotificationCount(userData.userId)
+        ]);
+        setNotifications(notifs);
+        setUnreadCount(count);
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      } finally {
+        setNotificationsLoading(false);
+      }
+    }
+
+    fetchNotifications();
+    
+    // Refresh notifications every 5 minutes
+    const interval = setInterval(fetchNotifications, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [userData?.userId]);
+
+  // Generate birthday notifications on mount
+  // Note: The function has duplicate checking, but for production consider moving this to a scheduled Lambda function
+  useEffect(() => {
+    async function generateNotifications() {
+      if (!userData?.userId) return;
+      
+      try {
+        await generateBirthdayNotifications();
+        // Refresh notifications after generating
+        const [notifs, count] = await Promise.all([
+          getNotificationsByUser(userData.userId!),
+          getUnreadNotificationCount(userData.userId!)
+        ]);
+        setNotifications(notifs);
+        setUnreadCount(count);
+      } catch (error) {
+        console.error('Error generating birthday notifications:', error);
+      }
+    }
+
+    // Generate notifications when user logs in
+    if (userData?.userId) {
+      generateNotifications();
+    }
+  }, [userData?.userId]);
   
   // Handle drawer mount/unmount for animation
   useEffect(() => {
@@ -48,6 +114,17 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
           setShouldAnimateIn(true);
         });
       });
+      
+      // Mark all notifications as read when drawer opens
+      if (userData?.userId && unreadCount > 0) {
+        markAllNotificationsAsRead(userData.userId).then(() => {
+          setUnreadCount(0);
+          setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+        }).catch(error => {
+          console.error('Error marking notifications as read:', error);
+        });
+      }
+      
       return () => {
         cancelAnimationFrame(frame1);
       };
@@ -60,7 +137,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
       }, 500);
       return () => clearTimeout(timeout);
     }
-  }, [isNotificationOpen]);
+  }, [isNotificationOpen, userData?.userId, unreadCount]);
   
   // If no user, show the authentication component
   if (!user) {
@@ -190,6 +267,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
           userLastName={userData?.last_name || 'Last Name'}
           userId={userData?.userId || ''}
           onNotificationClick={() => setNotificationOpen(true)}
+          unreadNotificationCount={unreadCount}
         />
         <main className="flex-grow">
           {children}
@@ -229,26 +307,104 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
               </button>
             </div>
             <div className="overflow-y-auto h-[calc(100%-73px)]">
-              <ul className="py-2">
-                <li>
-                  <a className="block px-6 py-4 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer border-b border-gray-100 transition-colors">
-                    <div className="font-medium">Notification 1</div>
-                    <div className="text-xs text-gray-500 mt-1">This is a sample notification message</div>
-                  </a>
-                </li>
-                <li>
-                  <a className="block px-6 py-4 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer border-b border-gray-100 transition-colors">
-                    <div className="font-medium">Notification 2</div>
-                    <div className="text-xs text-gray-500 mt-1">This is another notification message</div>
-                  </a>
-                </li>
-                <li>
-                  <a className="block px-6 py-4 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer transition-colors">
-                    <div className="font-medium">Notification 3</div>
-                    <div className="text-xs text-gray-500 mt-1">This is a third notification message</div>
-                  </a>
-                </li>
-              </ul>
+              {notificationsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-gray-500">Loading notifications...</div>
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-gray-500 text-center px-6">
+                    <Icon icon="mdi:bell-off-outline" className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No notifications yet</p>
+                  </div>
+                </div>
+              ) : (
+                <ul className="py-2">
+                  {notifications.map((notification, index) => {
+                    const formatDate = (dateString: string) => {
+                      const date = new Date(dateString);
+                      const now = new Date();
+                      const diffTime = now.getTime() - date.getTime();
+                      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                      const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+                      const diffMinutes = Math.floor(diffTime / (1000 * 60));
+                      
+                      if (diffMinutes < 1) return 'Just now';
+                      if (diffMinutes < 60) return `${diffMinutes}m ago`;
+                      if (diffHours < 24) return `${diffHours}h ago`;
+                      if (diffDays === 1) return 'Yesterday';
+                      if (diffDays < 7) return `${diffDays}d ago`;
+                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+                    };
+
+                    const getNotificationIcon = (type: string) => {
+                      switch (type) {
+                        case 'birthday':
+                          return 'mdi:cake-variant';
+                        case 'hobby_comment':
+                          return 'mdi:comment-text';
+                        case 'photo_comment':
+                          return 'mdi:comment-image';
+                        case 'photo_tag':
+                          return 'mdi:tag';
+                        default:
+                          return 'mdi:bell';
+                      }
+                    };
+
+                    return (
+                      <li key={notification.notification_id}>
+                        <div 
+                          className={`block px-6 py-4 text-sm hover:bg-gray-50 cursor-pointer border-b border-gray-100 transition-colors ${
+                            !notification.is_read ? 'bg-blue-50' : 'bg-white'
+                          }`}
+                          onClick={async () => {
+                            if (!notification.is_read && userData?.userId) {
+                              try {
+                                await markNotificationAsRead(notification.notification_id, userData.userId);
+                                setNotifications(prev => 
+                                  prev.map(n => 
+                                    n.notification_id === notification.notification_id 
+                                      ? { ...n, is_read: true } 
+                                      : n
+                                  )
+                                );
+                                setUnreadCount(prev => Math.max(0, prev - 1));
+                              } catch (error) {
+                                console.error('Error marking notification as read:', error);
+                              }
+                            }
+                            // Navigate to related content if needed
+                            if (notification.related_id && notification.type === 'birthday') {
+                              // Could navigate to profile or calendar
+                            }
+                          }}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`mt-0.5 ${!notification.is_read ? 'text-blue-500' : 'text-gray-400'}`}>
+                              <Icon icon={getNotificationIcon(notification.type)} className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className={`font-medium ${!notification.is_read ? 'text-gray-900' : 'text-gray-700'}`}>
+                                {notification.title}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                {notification.message}
+                              </div>
+                              <div className="text-xs text-gray-400 mt-1">
+                                {formatDate(notification.created_at)}
+                              </div>
+                            </div>
+                            {!notification.is_read && (
+                              <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                            )}
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
           </div>
         </>

@@ -17,14 +17,16 @@ export default function Navbar({
   userFirstName,
   userLastName,
   userId,
-  onNotificationClick, // Add this prop
+  onNotificationClick,
+  unreadNotificationCount = 0,
 }: {
   signOut: () => void;
   username: string;
   userFirstName: string;
   userLastName: string;
   userId: string;
-  onNotificationClick?: () => void; // Add this
+  onNotificationClick?: () => void;
+  unreadNotificationCount?: number;
 }) {
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isProfileOpen, setProfileOpen] = useState(false); // headless control
@@ -123,10 +125,15 @@ export default function Navbar({
             <button
               type="button"
               onClick={onNotificationClick}
-              className="btn btn-ghost rounded-btn hover:bg-transparent hover:border-0 hover:shadow-none border-0 shadow-none bg-transparent !px-2"
+              className="relative btn btn-ghost rounded-btn hover:bg-transparent hover:border-0 hover:shadow-none border-0 shadow-none bg-transparent !px-2"
               aria-label="Notifications"
             >
               <Icon icon="mdi:bell" className="w-[1.4rem] h-[1.4rem] text-gray-600 hover:text-black" />
+              {unreadNotificationCount > 0 && (
+                <span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full border-2 border-white">
+                  {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+                </span>
+              )}
             </button>
 
             {/* Profile dropdown (headless) */}
