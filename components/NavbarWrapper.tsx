@@ -11,6 +11,7 @@ import { useUser } from '@/context/UserContext';
 import Select from 'react-select';
 import Image from 'next/image';
 import ProjectOverviewModal from './ProjectOverviewModal';
+import { Icon } from '@iconify/react';
 
 export default function NavbarWrapper({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuthenticator();
@@ -18,6 +19,9 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [selectedFamilyMember, setSelectedFamilyMember] = useState<{ value: string, label: string } | null>(null);
   const [isProjectOverviewOpen, setIsProjectOverviewOpen] = useState(false);
+  const [isNotificationOpen, setNotificationOpen] = useState(false);
+  const [isDrawerMounted, setIsDrawerMounted] = useState(false);
+  const [shouldAnimateIn, setShouldAnimateIn] = useState(false);
 
   useEffect(() => {
     async function fetchFamilyMembers() {
@@ -30,6 +34,33 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
     }
     fetchFamilyMembers();
   }, []);
+  
+  // Handle drawer mount/unmount for animation
+  useEffect(() => {
+    if (isNotificationOpen) {
+      // Mount the drawer first
+      setIsDrawerMounted(true);
+      // Reset animation state and trigger it after a brief delay
+      setShouldAnimateIn(false);
+      // Use requestAnimationFrame to ensure DOM is updated before animating
+      const frame1 = requestAnimationFrame(() => {
+        const frame2 = requestAnimationFrame(() => {
+          setShouldAnimateIn(true);
+        });
+      });
+      return () => {
+        cancelAnimationFrame(frame1);
+      };
+    } else {
+      // Start exit animation
+      setShouldAnimateIn(false);
+      // Then unmount after animation completes
+      const timeout = setTimeout(() => {
+        setIsDrawerMounted(false);
+      }, 500);
+      return () => clearTimeout(timeout);
+    }
+  }, [isNotificationOpen]);
   
   // If no user, show the authentication component
   if (!user) {
@@ -158,11 +189,70 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
           userFirstName={userData?.first_name || 'First Name'} 
           userLastName={userData?.last_name || 'Last Name'}
           userId={userData?.userId || ''}
+          onNotificationClick={() => setNotificationOpen(true)}
         />
         <main className="flex-grow">
           {children}
         </main>
         <Footer />
+
+      {/* Notification Drawer */}
+      {isDrawerMounted && (
+        <>
+          {/* Backdrop */}
+          <div
+            className={`fixed inset-0 bg-black z-[40] transition-opacity duration-500 ease-out ${
+              shouldAnimateIn ? 'opacity-50' : 'opacity-0'
+            }`}
+            onClick={() => setNotificationOpen(false)}
+            style={{ pointerEvents: shouldAnimateIn ? 'auto' : 'none' }}
+            aria-hidden="true"
+          />
+          
+          {/* Drawer */}
+          <div
+            className={`fixed top-0 right-0 h-full w-80 md:w-96 bg-white shadow-2xl z-[50] transition-transform duration-500 ease-out ${
+              shouldAnimateIn ? 'translate-x-0' : 'translate-x-full'
+            }`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Notifications drawer"
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <h2 className="text-xl font-semibold text-gray-800">Notifications</h2>
+              <button
+                onClick={() => setNotificationOpen(false)}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200 transition-colors"
+                aria-label="Close notifications drawer"
+              >
+                <Icon icon="mdi:close" className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="overflow-y-auto h-[calc(100%-73px)]">
+              <ul className="py-2">
+                <li>
+                  <a className="block px-6 py-4 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer border-b border-gray-100 transition-colors">
+                    <div className="font-medium">Notification 1</div>
+                    <div className="text-xs text-gray-500 mt-1">This is a sample notification message</div>
+                  </a>
+                </li>
+                <li>
+                  <a className="block px-6 py-4 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer border-b border-gray-100 transition-colors">
+                    <div className="font-medium">Notification 2</div>
+                    <div className="text-xs text-gray-500 mt-1">This is another notification message</div>
+                  </a>
+                </li>
+                <li>
+                  <a className="block px-6 py-4 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer transition-colors">
+                    <div className="font-medium">Notification 3</div>
+                    <div className="text-xs text-gray-500 mt-1">This is a third notification message</div>
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </>
+      )}
       </div>
     </CalendarProvider>
   );
