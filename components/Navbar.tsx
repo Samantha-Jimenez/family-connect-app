@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { Icon } from '@iconify/react';
 
 const navigation = [
   { name: 'Dashboard', href: '/', current: true },
@@ -16,12 +17,14 @@ export default function Navbar({
   userFirstName,
   userLastName,
   userId,
+  onNotificationClick, // Add this prop
 }: {
   signOut: () => void;
   username: string;
   userFirstName: string;
   userLastName: string;
   userId: string;
+  onNotificationClick?: () => void; // Add this
 }) {
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isProfileOpen, setProfileOpen] = useState(false); // headless control
@@ -116,8 +119,18 @@ export default function Navbar({
           </div>
 
           <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
+            {/* Notification bell button */}
+            <button
+              type="button"
+              onClick={onNotificationClick}
+              className="btn btn-ghost rounded-btn hover:bg-transparent hover:border-0 hover:shadow-none border-0 shadow-none bg-transparent !px-2"
+              aria-label="Notifications"
+            >
+              <Icon icon="mdi:bell" className="w-[1.4rem] h-[1.4rem] text-gray-600 hover:text-black" />
+            </button>
+
             {/* Profile dropdown (headless) */}
-            <div className="relative ml-3" ref={profileRef}>
+            <div className="relative" ref={profileRef}>
               {/* Trigger toggles open/close */}
               <button
                 type="button"
