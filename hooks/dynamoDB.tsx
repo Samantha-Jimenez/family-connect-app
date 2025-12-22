@@ -468,6 +468,46 @@ export const createAlbum = async (name: string, description?: string) => {
 
 export const savePhotoToDB = async (photoData: PhotoData) => {
   try {
+    // Check if photo already exists to determine new vs existing tags
+    const getPhotoParams = {
+      TableName: TABLES.PHOTOS,
+      Key: {
+        photo_id: { S: photoData.photo_id }
+      }
+    };
+
+    const existingPhotoData = await dynamoDB.send(new GetItemCommand(getPhotoParams));
+    const isNewPhoto = !existingPhotoData.Item;
+    
+    // Get current user (who is doing the tagging/uploading)
+    let taggerId = photoData.uploaded_by; // Default to uploader
+    try {
+      const user = await getCurrentUser();
+      if (user?.userId) {
+        taggerId = user.userId;
+      }
+    } catch (error) {
+      // If we can't get current user, use uploader as fallback
+      console.log('Could not get current user, using uploader as tagger');
+    }
+
+    // Get existing tags if photo already exists
+    const existingTaggedIds = new Set<string>();
+    if (existingPhotoData.Item?.people_tagged?.L) {
+      existingPhotoData.Item.people_tagged.L.forEach((person: any) => {
+        const id = person.M?.id?.S;
+        if (id) {
+          existingTaggedIds.add(id);
+        }
+      });
+    }
+
+    // Determine newly tagged people
+    const newTags = photoData.metadata?.people_tagged || [];
+    const newlyTaggedPeople = newTags.filter(person => {
+      return person.id && !existingTaggedIds.has(person.id);
+    });
+
     // Create the base item with required fields
     const item: Record<string, any> = {
       photo_id: { S: photoData.photo_id },
@@ -519,6 +559,42 @@ export const savePhotoToDB = async (photoData: PhotoData) => {
 
     await dynamoDB.send(command);
     console.log('✅ Photo saved to DynamoDB successfully');
+
+    // Create notifications for newly tagged people
+    if (newlyTaggedPeople.length > 0) {
+      try {
+        // Get tagger's name for the notification
+        const taggerName = await getUserNameById(taggerId);
+        const taggerDisplayName = taggerName 
+          ? `${taggerName.firstName} ${taggerName.lastName}` 
+          : 'Someone';
+
+        for (const taggedPerson of newlyTaggedPeople) {
+          // Don't notify the tagger if they tagged themselves
+          if (taggedPerson.id === taggerId) continue;
+
+          const title = "You were tagged in a photo";
+          const message = `${taggerDisplayName} tagged you in a photo`;
+
+          await createNotification(
+            taggedPerson.id,
+            'photo_tag',
+            title,
+            message,
+            photoData.photo_id, // related_id is the photo_id
+            { tagger_id: taggerId, tagger_name: taggerDisplayName }
+          );
+        }
+
+        if (newlyTaggedPeople.length > 0) {
+          const notificationCount = newlyTaggedPeople.filter(p => p.id !== taggerId).length;
+          console.log(`✅ Created ${notificationCount} notification(s) for newly tagged people`);
+        }
+      } catch (notificationError) {
+        // Don't fail the photo save if notification creation fails
+        console.error("❌ Error creating photo tag notifications:", notificationError);
+      }
+    }
   } catch (error) {
     console.error('❌ Error saving photo to DynamoDB:', error);
     throw error;
