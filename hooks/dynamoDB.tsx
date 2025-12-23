@@ -1514,7 +1514,7 @@ export const getFavoritedPhotosByUser = async (userId: string): Promise<PhotoDat
 
 export const addCommentToPhoto = async (photoId: string, userId: string, comment: string, author: string, profilePhoto: string) => {
   try {
-    // First, get the photo to find who uploaded it
+    // First, get the photo to find who uploaded it and who is tagged
     const getPhotoParams = {
       TableName: TABLES.PHOTOS,
       Key: {
@@ -1524,6 +1524,17 @@ export const addCommentToPhoto = async (photoId: string, userId: string, comment
 
     const photoData = await dynamoDB.send(new GetItemCommand(getPhotoParams));
     const uploadedBy = photoData.Item?.uploaded_by?.S;
+    
+    // Get tagged people IDs
+    const taggedPeopleIds = new Set<string>();
+    if (photoData.Item?.people_tagged?.L) {
+      photoData.Item.people_tagged.L.forEach((person: any) => {
+        const id = person.M?.id?.S;
+        if (id) {
+          taggedPeopleIds.add(id);
+        }
+      });
+    }
 
     const timestamp = new Date().toISOString();
     const params = {
@@ -1541,12 +1552,12 @@ export const addCommentToPhoto = async (photoId: string, userId: string, comment
     await dynamoDB.send(new UpdateItemCommand(params));
     console.log("✅ Comment added to photo successfully!");
 
+    // Truncate comment for notification message (first 50 chars)
+    const commentPreview = comment.length > 50 ? comment.substring(0, 50) + '...' : comment;
+
     // Create notification for the photo uploader (if they're not the one commenting)
     if (uploadedBy && uploadedBy !== userId) {
       try {
-        // Truncate comment for notification message (first 50 chars)
-        const commentPreview = comment.length > 50 ? comment.substring(0, 50) + '...' : comment;
-        
         const title = "New comment on your photo";
         const message = `${author} commented: "${commentPreview}"`;
         
@@ -1562,7 +1573,37 @@ export const addCommentToPhoto = async (photoId: string, userId: string, comment
         console.log(`✅ Notification created for photo uploader (${uploadedBy})`);
       } catch (notificationError) {
         // Don't fail the comment addition if notification creation fails
-        console.error("❌ Error creating photo comment notification:", notificationError);
+        console.error("❌ Error creating photo comment notification for uploader:", notificationError);
+      }
+    }
+
+    // Create notifications for tagged people (excluding commenter and uploader since we already notified uploader)
+    if (taggedPeopleIds.size > 0) {
+      try {
+        for (const taggedUserId of taggedPeopleIds) {
+          // Skip the commenter and uploader (uploader already got a notification above)
+          if (taggedUserId === userId || taggedUserId === uploadedBy) continue;
+
+          const title = "New comment on a photo you're tagged in";
+          const message = `${author} commented: "${commentPreview}"`;
+          
+          await createNotification(
+            taggedUserId,
+            'photo_comment',
+            title,
+            message,
+            photoId, // related_id is the photo_id
+            { commenter_id: userId, comment_preview: commentPreview }
+          );
+        }
+        
+        const notifiedCount = Array.from(taggedPeopleIds).filter(id => id !== userId && id !== uploadedBy).length;
+        if (notifiedCount > 0) {
+          console.log(`✅ Created ${notifiedCount} notification(s) for tagged members`);
+        }
+      } catch (notificationError) {
+        // Don't fail the comment addition if notification creation fails
+        console.error("❌ Error creating photo comment notifications for tagged members:", notificationError);
       }
     }
   } catch (error) {
