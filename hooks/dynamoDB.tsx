@@ -97,7 +97,7 @@ export interface FamilyMember {
 }
 
 // Notification types
-export type NotificationType = 'birthday' | 'hobby_comment' | 'photo_comment' | 'photo_tag' | 'event_rsvp';
+export type NotificationType = 'birthday' | 'hobby_comment' | 'photo_comment' | 'photo_tag' | 'event_rsvp' | 'event_reminder';
 
 export interface Notification {
   notification_id: string;
@@ -2861,6 +2861,96 @@ export const createNotification = async (
 };
 
 // Generate birthday notifications for all family members (for birthdays in next 4 weeks)
+// Helper function to calculate days until event
+const getDaysUntilEvent = (eventStartDate: string): number | null => {
+  try {
+    const eventDate = new Date(eventStartDate);
+    const today = new Date();
+    
+    // Set both dates to midnight for accurate day calculation
+    const eventMidnight = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+    const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    
+    const diffTime = eventMidnight.getTime() - todayMidnight.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays;
+  } catch (error) {
+    console.error("❌ Error calculating days until event:", error);
+    return null;
+  }
+};
+
+// Generate event reminder notifications for users who have RSVP'd
+// This function accepts events from the client side (localStorage)
+export const generateEventReminderNotifications = async (events: Array<{ id?: string; title: string; start: string }>): Promise<void> => {
+  try {
+    // Get all family members to process their RSVPs
+    const familyMembers = await getAllFamilyMembers();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Process each family member's RSVPs
+    for (const member of familyMembers) {
+      const userId = member.family_member_id;
+      
+      // Get all RSVPs for this user
+      const userRSVPs = await getUserRSVPs(userId);
+      
+      for (const rsvp of userRSVPs) {
+        // Find the event in the events array
+        const event = events.find(e => e.id === rsvp.eventId);
+        
+        if (!event || !event.start) continue;
+        
+        const daysUntilEvent = getDaysUntilEvent(event.start);
+        
+        // Only create notifications for upcoming events (not past events)
+        if (daysUntilEvent === null || daysUntilEvent < 0) continue;
+        
+        // Check if we should create a notification at this interval (30 days, 7 days, 1 day, or day of)
+        const reminderDays = [30, 7, 1, 0];
+        if (!reminderDays.includes(daysUntilEvent)) continue;
+        
+        // Check if notification already exists for this event at this day interval
+        const existingNotifications = await getNotificationsByUser(userId);
+        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
+        const alreadyNotified = existingNotifications.some(
+          n => n.type === 'event_reminder'
+            && n.related_id === rsvp.eventId
+            && n.metadata?.days_until === daysUntilEvent
+            && n.created_at >= todayStart
+        );
+        
+        if (!alreadyNotified) {
+          let message = '';
+          if (daysUntilEvent === 0) {
+            message = `${event.title} is today!`;
+          } else if (daysUntilEvent === 1) {
+            message = `${event.title} is tomorrow!`;
+          } else {
+            message = `${event.title} is in ${daysUntilEvent} days`;
+          }
+          
+          await createNotification(
+            userId,
+            'event_reminder',
+            `Upcoming Event: ${event.title}`,
+            message,
+            rsvp.eventId,
+            { days_until: daysUntilEvent }
+          );
+        }
+      }
+    }
+    
+    console.log("✅ Event reminder notifications generated successfully!");
+  } catch (error) {
+    console.error("❌ Error generating event reminder notifications:", error);
+    throw error;
+  }
+};
+
 export const generateBirthdayNotifications = async (): Promise<void> => {
   try {
     const familyMembers = await getAllFamilyMembers();

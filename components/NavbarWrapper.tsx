@@ -15,6 +15,7 @@ import {
   markNotificationAsRead,
   markAllNotificationsAsRead,
   generateBirthdayNotifications,
+  generateEventReminderNotifications,
   Notification,
   getAllFamilyMembers,
   getFamilyMembersWithHobby,
@@ -114,6 +115,50 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
     // Generate notifications when user logs in
     if (userData?.userId) {
       generateNotifications();
+    }
+  }, [userData?.userId]);
+
+  // Generate event reminder notifications on mount
+  useEffect(() => {
+    async function generateEventReminders() {
+      if (!userData?.userId) return;
+      
+      try {
+        // Get events from localStorage
+        const savedEvents = typeof window !== 'undefined' ? localStorage.getItem('calendarEvents') : null;
+        if (!savedEvents) return;
+        
+        const events = JSON.parse(savedEvents);
+        if (!events || events.length === 0) return;
+        
+        // Convert events to the format expected by generateEventReminderNotifications
+        const eventsForReminders = events.map((e: any) => ({
+          id: e.id,
+          title: e.title,
+          start: e.start
+        }));
+        
+        await generateEventReminderNotifications(eventsForReminders);
+        // Refresh notifications after generating
+        const [notifs, count] = await Promise.all([
+          getNotificationsByUser(userData.userId!),
+          getUnreadNotificationCount(userData.userId!)
+        ]);
+        setNotifications(notifs);
+        setUnreadCount(count);
+      } catch (error) {
+        console.error('Error generating event reminder notifications:', error);
+      }
+    }
+
+    // Generate reminders when user logs in
+    if (userData?.userId) {
+      // Small delay to ensure localStorage is ready
+      const timeout = setTimeout(() => {
+        generateEventReminders();
+      }, 1000);
+      
+      return () => clearTimeout(timeout);
     }
   }, [userData?.userId]);
   
@@ -369,6 +414,8 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                           return 'mdi:account-tag';
                         case 'event_rsvp':
                           return 'mdi:calendar-check';
+                        case 'event_reminder':
+                          return 'mdi:calendar-clock';
                         default:
                           return 'mdi:bell';
                       }
@@ -477,6 +524,18 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                                 router.push(`/calendar?eventId=${eventId}`);
                               } catch (error) {
                                 console.error('Error navigating to RSVP event:', error);
+                              }
+                            }
+                            
+                            // Navigate to calendar event modal for event reminder notifications
+                            if (notification.related_id && notification.type === 'event_reminder') {
+                              try {
+                                const eventId = notification.related_id;
+                                // Navigate to calendar with event ID
+                                setNotificationOpen(false);
+                                router.push(`/calendar?eventId=${eventId}`);
+                              } catch (error) {
+                                console.error('Error navigating to event reminder:', error);
                               }
                             }
                           }}
