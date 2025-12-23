@@ -347,6 +347,8 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                           return 'mdi:comment-image';
                         case 'photo_tag':
                           return 'mdi:tag';
+                        case 'event_rsvp':
+                          return 'mdi:calendar-check';
                         default:
                           return 'mdi:bell';
                       }

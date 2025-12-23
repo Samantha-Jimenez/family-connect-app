@@ -97,7 +97,7 @@ export interface FamilyMember {
 }
 
 // Notification types
-export type NotificationType = 'birthday' | 'hobby_comment' | 'photo_comment' | 'photo_tag';
+export type NotificationType = 'birthday' | 'hobby_comment' | 'photo_comment' | 'photo_tag' | 'event_rsvp';
 
 export interface Notification {
   notification_id: string;
@@ -2018,7 +2018,7 @@ export const editCommentInMember = async (memberId: string, userId: string, comm
   }
 };
 
-export const saveRSVPToDynamoDB = async (eventId: string, userId: string, status: 'yes' | 'no' | 'maybe') => {
+export const saveRSVPToDynamoDB = async (eventId: string, userId: string, status: 'yes' | 'no' | 'maybe', eventCreatorId?: string) => {
     const rsvpParams = {
         TableName: TABLES.EVENT_RSVP,
         Item: {
@@ -2031,8 +2031,38 @@ export const saveRSVPToDynamoDB = async (eventId: string, userId: string, status
     try {
         await dynamoDB.send(new PutItemCommand(rsvpParams));
         console.log("✅ RSVP saved to DynamoDB successfully!");
+
+        // Create notification for the event creator (if they're not the one RSVPing and we have the creator ID)
+        if (eventCreatorId && eventCreatorId !== userId) {
+            try {
+                // Get the RSVP person's name
+                const rsvpPersonName = await getUserNameById(userId);
+                const rsvpPersonDisplayName = rsvpPersonName 
+                    ? `${rsvpPersonName.firstName} ${rsvpPersonName.lastName}` 
+                    : 'Someone';
+
+                const statusText = status === 'yes' ? 'is attending' : status === 'maybe' ? 'might attend' : 'cannot attend';
+                const title = "New RSVP for your event";
+                const message = `${rsvpPersonDisplayName} ${statusText} your event`;
+
+                await createNotification(
+                    eventCreatorId,
+                    'event_rsvp',
+                    title,
+                    message,
+                    eventId, // related_id is the event_id
+                    { rsvp_user_id: userId, rsvp_status: status }
+                );
+
+                console.log(`✅ Notification created for event creator (${eventCreatorId})`);
+            } catch (notificationError) {
+                // Don't fail the RSVP save if notification creation fails
+                console.error("❌ Error creating event RSVP notification:", notificationError);
+            }
+        }
     } catch (error) {
         console.error("❌ Error saving RSVP to DynamoDB:", error);
+        throw error;
     }
 };
 

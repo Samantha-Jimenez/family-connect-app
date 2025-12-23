@@ -139,6 +139,10 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
   };
 
   const rsvpEvent = async (eventId: string, status: 'yes' | 'no' | 'maybe') => {
+    // Find the event to get the creator's userId
+    const event = events.find(e => e.id === eventId);
+    const eventCreatorId = event?.userId || event?.extendedProps?.userId;
+
     setEvents(currentEvents => {
       const updatedEvents = currentEvents.map(event =>
         event.id === eventId
@@ -150,7 +154,7 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
     });
     // Save RSVP to DynamoDB and await it
     if (user && typeof user.userId === 'string' && user.userId) {
-      await saveRSVPToDynamoDB(eventId, user.userId, status);
+      await saveRSVPToDynamoDB(eventId, user.userId, status, eventCreatorId);
     }
   };
 
