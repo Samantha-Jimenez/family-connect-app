@@ -398,7 +398,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
                     };
 
-                    const getNotificationIcon = (type: string, title?: string) => {
+                    const getNotificationIcon = (type: string, title?: string, metadata?: Record<string, any>) => {
                       switch (type) {
                         case 'birthday':
                           return 'mdi:cake-variant';
@@ -415,6 +415,20 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                         case 'event_rsvp':
                           return 'mdi:calendar-check';
                         case 'event_reminder':
+                          // Use specific icons based on days until event
+                          if (metadata?.days_until !== undefined) {
+                            const daysUntil = metadata.days_until;
+                            if (daysUntil === 30) {
+                              return 'mdi:event-clock';
+                            } else if (daysUntil === 7) {
+                              return 'mdi:event-auto';
+                            } else if (daysUntil === 1) {
+                              return 'mdi:event-alert';
+                            } else if (daysUntil === 0) {
+                              return 'mdi:event-star';
+                            }
+                          }
+                          // Default fallback
                           return 'mdi:calendar-clock';
                         default:
                           return 'mdi:bell';
@@ -542,7 +556,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                         >
                           <div className="flex items-start gap-3">
                             <div className={`mt-0.5 ${!notification.is_read ? 'text-blue-500' : 'text-gray-400'}`}>
-                              <Icon icon={getNotificationIcon(notification.type, notification.title)} className="w-5 h-5" />
+                              <Icon icon={getNotificationIcon(notification.type, notification.title, notification.metadata)} className="w-5 h-5" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className={`font-medium ${!notification.is_read ? 'text-gray-900' : 'text-gray-700'}`}>
