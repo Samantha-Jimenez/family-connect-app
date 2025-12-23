@@ -22,10 +22,13 @@ import Select from 'react-select';
 import Image from 'next/image';
 import ProjectOverviewModal from './ProjectOverviewModal';
 import { Icon } from '@iconify/react';
+import { useRouter } from 'next/navigation';
+import { getAllFamilyMembers } from '@/hooks/dynamoDB';
 
 export default function NavbarWrapper({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuthenticator();
   const { userData } = useUser();
+  const router = useRouter();
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [selectedFamilyMember, setSelectedFamilyMember] = useState<{ value: string, label: string } | null>(null);
   const [isProjectOverviewOpen, setIsProjectOverviewOpen] = useState(false);
@@ -376,9 +379,36 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                                 console.error('Error marking notification as read:', error);
                               }
                             }
-                            // Navigate to related content if needed
+                            // Navigate to calendar event modal for birthday notifications
                             if (notification.related_id && notification.type === 'birthday') {
-                              // Could navigate to profile or calendar
+                              try {
+                                // Get the member's birthday to calculate the correct event ID
+                                const allMembers = await getAllFamilyMembers();
+                                const member = allMembers.find(m => m.family_member_id === notification.related_id);
+                                
+                                if (member?.birthday) {
+                                  // Calculate which year's birthday event to show
+                                  const today = new Date();
+                                  const currentYear = today.getFullYear();
+                                  const dateStr = member.birthday.split('T')[0];
+                                  const [birthYear, month, day] = dateStr.split('-').map(Number);
+                                  
+                                  if (month && day) {
+                                    // Calculate the next birthday year
+                                    const thisYearBirthday = new Date(currentYear, month - 1, day);
+                                    const nextBirthdayYear = thisYearBirthday < today ? currentYear + 1 : currentYear;
+                                    
+                                    // Construct the event ID (matches the format used in calendar page)
+                                    const eventId = `birthday-${notification.related_id}-${nextBirthdayYear}`;
+                                    
+                                    // Navigate to calendar with event ID
+                                    setNotificationOpen(false);
+                                    router.push(`/calendar?eventId=${eventId}`);
+                                  }
+                                }
+                              } catch (error) {
+                                console.error('Error navigating to birthday event:', error);
+                              }
                             }
                           }}
                         >
