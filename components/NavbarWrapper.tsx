@@ -413,6 +413,18 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                         case 'photo_tag':
                           return 'mdi:account-tag';
                         case 'event_rsvp':
+                          // Use specific icons based on RSVP status
+                          if (metadata?.rsvp_status) {
+                            const rsvpStatus = metadata.rsvp_status;
+                            if (rsvpStatus === 'yes') {
+                              return 'mdi:event-available';
+                            } else if (rsvpStatus === 'maybe') {
+                              return 'mdi:event-question';
+                            } else if (rsvpStatus === 'no') {
+                              return 'mdi:event-busy';
+                            }
+                          }
+                          // Default fallback
                           return 'mdi:calendar-check';
                         case 'event_reminder':
                           // Use specific icons based on days until event
