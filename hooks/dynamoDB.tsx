@@ -2897,7 +2897,10 @@ export const generateEventReminderNotifications = async (events: Array<{ id?: st
       // Get all RSVPs for this user
       const userRSVPs = await getUserRSVPs(userId);
       
-      for (const rsvp of userRSVPs) {
+      // Filter to only include RSVPs with status "yes" or "maybe" (exclude "no")
+      const relevantRSVPs = userRSVPs.filter(rsvp => rsvp.status === 'yes' || rsvp.status === 'maybe');
+      
+      for (const rsvp of relevantRSVPs) {
         // Find the event in the events array
         const event = events.find(e => e.id === rsvp.eventId);
         
