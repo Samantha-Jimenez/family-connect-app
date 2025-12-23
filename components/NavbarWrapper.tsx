@@ -17,13 +17,17 @@ import {
   generateBirthdayNotifications,
   Notification,
   getAllFamilyMembers,
-  getFamilyMembersWithHobby
+  getFamilyMembersWithHobby,
+  getPhotoById,
+  PhotoData,
+  getUserNameById
 } from '@/hooks/dynamoDB';
 import { useUser } from '@/context/UserContext';
 import Select from 'react-select';
 import Image from 'next/image';
 import ProjectOverviewModal from './ProjectOverviewModal';
 import HobbyMembersModal from './HobbyMembersModal';
+import PhotoModal from './PhotoModal';
 import { Icon } from '@iconify/react';
 import { useRouter } from 'next/navigation';
 
@@ -43,6 +47,10 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
   const [isHobbyModalOpen, setIsHobbyModalOpen] = useState(false);
   const [selectedHobby, setSelectedHobby] = useState<string | null>(null);
   const [hobbyMembers, setHobbyMembers] = useState<Array<{ id: string; name: string; profile_photo?: string }>>([]);
+  const [selectedPhoto, setSelectedPhoto] = useState<PhotoData | null>(null);
+  const [photoUploaderName, setPhotoUploaderName] = useState<string | null>(null);
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
+  const [isPhotoEditing, setIsPhotoEditing] = useState(false);
 
   useEffect(() => {
     async function fetchFamilyMembers() {
@@ -430,6 +438,31 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                                 console.error('Error opening hobby modal:', error);
                               }
                             }
+                            
+                            // Open photo modal for photo comment and photo tag notifications
+                            if (notification.related_id && (notification.type === 'photo_comment' || notification.type === 'photo_tag')) {
+                              try {
+                                const photoId = notification.related_id;
+                                // Fetch photo data
+                                const photo = await getPhotoById(photoId);
+                                
+                                if (photo) {
+                                  // Fetch uploader name
+                                  const uploaderNameData = await getUserNameById(photo.uploaded_by);
+                                  const uploaderName = uploaderNameData 
+                                    ? `${uploaderNameData.firstName} ${uploaderNameData.lastName}` 
+                                    : null;
+                                  
+                                  setSelectedPhoto(photo);
+                                  setPhotoUploaderName(uploaderName);
+                                  setIsPhotoEditing(false);
+                                  setNotificationOpen(false);
+                                  setIsPhotoModalOpen(true);
+                                }
+                              } catch (error) {
+                                console.error('Error opening photo modal:', error);
+                              }
+                            }
                           }}
                         >
                           <div className="flex items-start gap-3">
@@ -473,6 +506,32 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
           }}
           hobby={selectedHobby}
           members={hobbyMembers}
+        />
+      )}
+
+      {/* Photo Modal */}
+      {isPhotoModalOpen && selectedPhoto && (
+        <PhotoModal
+          photo={selectedPhoto}
+          uploaderName={photoUploaderName}
+          currentUserId={userData?.userId || null}
+          isEditing={isPhotoEditing}
+          setIsEditing={setIsPhotoEditing}
+          closeModal={() => {
+            setIsPhotoModalOpen(false);
+            setSelectedPhoto(null);
+            setPhotoUploaderName(null);
+          }}
+          handleImageError={() => {}}
+          renderEditForm={() => <></>}
+          onPhotoDeleted={() => {
+            setIsPhotoModalOpen(false);
+            setSelectedPhoto(null);
+            setPhotoUploaderName(null);
+          }}
+          onPhotoUpdated={(updatedPhoto) => {
+            setSelectedPhoto(updatedPhoto);
+          }}
         />
       )}
       </div>

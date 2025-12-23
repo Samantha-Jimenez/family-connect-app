@@ -1264,6 +1264,76 @@ export const getUserAlbums = async (userId: string): Promise<AlbumData[]> => {
   }
 };
 
+// Get a single photo by photo_id
+export const getPhotoById = async (photoId: string): Promise<PhotoData | null> => {
+  try {
+    const params = {
+      TableName: TABLES.PHOTOS,
+      Key: {
+        photo_id: { S: photoId }
+      }
+    };
+
+    const command = new GetItemCommand(params);
+    const response = await dynamoDB.send(command);
+
+    if (!response.Item) {
+      return null;
+    }
+
+    const item = response.Item;
+    const bucketName = process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME;
+    const s3Key = item.s3_key?.S || '';
+
+    if (!s3Key) {
+      return null;
+    }
+
+    const getObjectCommand = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: s3Key,
+    });
+
+    try {
+      const url = await getSignedUrl(s3Client, getObjectCommand, { expiresIn: 86400 });
+      
+      return {
+        photo_id: item.photo_id?.S || '',
+        s3_key: s3Key,
+        uploaded_by: item.uploaded_by?.S || '',
+        upload_date: item.upload_date?.S || '',
+        album_ids: item.album_ids?.L?.map((id: any) => id.S || '') || [],
+        url,
+        metadata: {
+          location: {
+            country: item.location?.M?.country?.S || '',
+            state: item.location?.M?.state?.S || '',
+            city: item.location?.M?.city?.S || '',
+            neighborhood: item.location?.M?.neighborhood?.S || ''
+          },
+          description: item.description?.S || '',
+          date_taken: item.date_taken?.S || '',
+          people_tagged: item.people_tagged?.L ? await Promise.all(item.people_tagged.L.map(async (tagged) => {
+            const userId = tagged.M?.id.S || '';
+            const userName = await getUserNameById(userId);
+            return {
+              id: userId,
+              name: userName ? `${userName.firstName} ${userName.lastName}` : 'Unknown User'
+            };
+          })) : [],
+        },
+        lastModified: item.lastModified?.S || ''
+      };
+    } catch (error) {
+      console.error('Error generating signed URL for key:', s3Key, error);
+      return null;
+    }
+  } catch (error) {
+    console.error("❌ Error fetching photo by ID:", error);
+    return null;
+  }
+};
+
 export const getPhotosByAlbum = async (albumId: string) => {
   try {
     const params = {
