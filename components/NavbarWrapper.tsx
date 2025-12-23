@@ -15,15 +15,17 @@ import {
   markNotificationAsRead,
   markAllNotificationsAsRead,
   generateBirthdayNotifications,
-  Notification
+  Notification,
+  getAllFamilyMembers,
+  getFamilyMembersWithHobby
 } from '@/hooks/dynamoDB';
 import { useUser } from '@/context/UserContext';
 import Select from 'react-select';
 import Image from 'next/image';
 import ProjectOverviewModal from './ProjectOverviewModal';
+import HobbyMembersModal from './HobbyMembersModal';
 import { Icon } from '@iconify/react';
 import { useRouter } from 'next/navigation';
-import { getAllFamilyMembers } from '@/hooks/dynamoDB';
 
 export default function NavbarWrapper({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuthenticator();
@@ -38,6 +40,9 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [isHobbyModalOpen, setIsHobbyModalOpen] = useState(false);
+  const [selectedHobby, setSelectedHobby] = useState<string | null>(null);
+  const [hobbyMembers, setHobbyMembers] = useState<Array<{ id: string; name: string; profile_photo?: string }>>([]);
 
   useEffect(() => {
     async function fetchFamilyMembers() {
@@ -410,6 +415,21 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                                 console.error('Error navigating to birthday event:', error);
                               }
                             }
+                            
+                            // Open hobby modal for hobby comment notifications
+                            if (notification.related_id && notification.type === 'hobby_comment') {
+                              try {
+                                const hobbyName = notification.related_id;
+                                // Fetch members for this hobby
+                                const members = await getFamilyMembersWithHobby(hobbyName);
+                                setSelectedHobby(hobbyName);
+                                setHobbyMembers(members);
+                                setNotificationOpen(false);
+                                setIsHobbyModalOpen(true);
+                              } catch (error) {
+                                console.error('Error opening hobby modal:', error);
+                              }
+                            }
                           }}
                         >
                           <div className="flex items-start gap-3">
@@ -440,6 +460,20 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
             </div>
           </div>
         </>
+      )}
+
+      {/* Hobby Members Modal */}
+      {isHobbyModalOpen && selectedHobby && (
+        <HobbyMembersModal
+          isOpen={isHobbyModalOpen}
+          onClose={() => {
+            setIsHobbyModalOpen(false);
+            setSelectedHobby(null);
+            setHobbyMembers([]);
+          }}
+          hobby={selectedHobby}
+          members={hobbyMembers}
+        />
       )}
       </div>
     </CalendarProvider>
