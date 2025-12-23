@@ -335,7 +335,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                   </div>
                 </div>
               ) : (
-                <ul className="py-2">
+              <ul className="py-2">
                   {notifications.map((notification, index) => {
                     const formatDate = (dateString: string) => {
                       const date = new Date(dateString);
@@ -353,16 +353,20 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
                     };
 
-                    const getNotificationIcon = (type: string) => {
+                    const getNotificationIcon = (type: string, title?: string) => {
                       switch (type) {
                         case 'birthday':
                           return 'mdi:cake-variant';
                         case 'hobby_comment':
-                          return 'mdi:comment-text';
+                          return 'mdi:comment-text-multiple';
                         case 'photo_comment':
-                          return 'mdi:comment-image';
+                          // Use different icon for "New comment on a photo you're tagged in"
+                          if (title === "New comment on a photo you're tagged in") {
+                            return 'mdi:comment-account';
+                          }
+                          return 'mdi:comment-plus';
                         case 'photo_tag':
-                          return 'mdi:tag';
+                          return 'mdi:account-tag';
                         case 'event_rsvp':
                           return 'mdi:calendar-check';
                         default:
@@ -373,7 +377,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                     return (
                       <li key={notification.notification_id}>
                         <div 
-                          className={`block px-6 py-4 text-sm hover:bg-gray-50 cursor-pointer border-b border-gray-100 transition-colors ${
+                          className={`block px-6 py-3 text-sm hover:bg-gray-50 cursor-pointer border-b border-gray-200 transition-colors ${
                             !notification.is_read ? 'bg-blue-50' : 'bg-white'
                           }`}
                           onClick={async () => {
@@ -479,16 +483,16 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                         >
                           <div className="flex items-start gap-3">
                             <div className={`mt-0.5 ${!notification.is_read ? 'text-blue-500' : 'text-gray-400'}`}>
-                              <Icon icon={getNotificationIcon(notification.type)} className="w-5 h-5" />
+                              <Icon icon={getNotificationIcon(notification.type, notification.title)} className="w-5 h-5" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className={`font-medium ${!notification.is_read ? 'text-gray-900' : 'text-gray-700'}`}>
                                 {notification.title}
                               </div>
-                              <div className="text-xs text-gray-500 mt-1">
+                              <div className="text-sm text-gray-500 mt-1 font-extralight">
                                 {notification.message}
                               </div>
-                              <div className="text-xs text-gray-400 mt-1">
+                              <div className="text-xs text-gray-400 mt-1 font-extralight">
                                 {formatDate(notification.created_at)}
                               </div>
                             </div>
@@ -497,10 +501,10 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                             )}
                           </div>
                         </div>
-                      </li>
+                </li>
                     );
                   })}
-                </ul>
+              </ul>
               )}
             </div>
           </div>
