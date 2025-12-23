@@ -463,6 +463,18 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                                 console.error('Error opening photo modal:', error);
                               }
                             }
+                            
+                            // Navigate to calendar event modal for RSVP notifications
+                            if (notification.related_id && notification.type === 'event_rsvp') {
+                              try {
+                                const eventId = notification.related_id;
+                                // Navigate to calendar with event ID
+                                setNotificationOpen(false);
+                                router.push(`/calendar?eventId=${eventId}`);
+                              } catch (error) {
+                                console.error('Error navigating to RSVP event:', error);
+                              }
+                            }
                           }}
                         >
                           <div className="flex items-start gap-3">
