@@ -97,7 +97,7 @@ export interface FamilyMember {
 }
 
 // Notification types
-export type NotificationType = 'birthday' | 'hobby_comment' | 'photo_comment' | 'photo_tag' | 'event_rsvp' | 'event_reminder';
+export type NotificationType = 'birthday' | 'hobby_comment' | 'photo_comment' | 'photo_tag' | 'event_rsvp' | 'event_reminder' | 'event_cancelled';
 
 export interface Notification {
   notification_id: string;
@@ -2950,6 +2950,43 @@ export const generateEventReminderNotifications = async (events: Array<{ id?: st
     console.log("✅ Event reminder notifications generated successfully!");
   } catch (error) {
     console.error("❌ Error generating event reminder notifications:", error);
+    throw error;
+  }
+};
+
+// Send cancellation notifications to users who RSVP'd "yes" or "maybe" to an event
+export const sendEventCancellationNotifications = async (eventId: string, eventTitle: string): Promise<void> => {
+  try {
+    // Get all RSVPs for this event
+    const eventRSVPs = await getEventRSVPs(eventId);
+    
+    // Filter to only include RSVPs with status "yes" or "maybe"
+    const relevantRSVPs = eventRSVPs.filter(rsvp => rsvp.status === 'yes' || rsvp.status === 'maybe');
+    
+    // Send notification to each user who RSVP'd yes or maybe
+    for (const rsvp of relevantRSVPs) {
+      try {
+        const title = "Event Cancelled";
+        const message = `"${eventTitle}" has been cancelled`;
+        
+        await createNotification(
+          rsvp.userId,
+          'event_cancelled',
+          title,
+          message,
+          eventId, // related_id is the event_id
+          { event_title: eventTitle }
+        );
+        
+        console.log(`✅ Cancellation notification created for user (${rsvp.userId})`);
+      } catch (notificationError) {
+        console.error(`❌ Error creating cancellation notification for user ${rsvp.userId}:`, notificationError);
+      }
+    }
+    
+    console.log("✅ Event cancellation notifications sent successfully!");
+  } catch (error) {
+    console.error("❌ Error sending event cancellation notifications:", error);
     throw error;
   }
 };

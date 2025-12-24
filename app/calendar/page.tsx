@@ -15,7 +15,7 @@ import { useAuth } from '@/context/AuthContext';
 import { EventApi } from '@fullcalendar/core';
 import { DEFAULT_EVENTS } from './calendarData'; // Import your default events
 import { useSearchParams } from 'next/navigation';
-import { getAllFamilyMembers, FamilyMember } from '@/hooks/dynamoDB';
+import { getAllFamilyMembers, FamilyMember, sendEventCancellationNotifications } from '@/hooks/dynamoDB';
 
 interface CalendarEvent {
   id?: string;
@@ -246,8 +246,19 @@ export default function Calendar() {
     setIsModalOpen(false);
   };
 
-  const handleDeleteEvent = () => {
+  const handleDeleteEvent = async () => {
     if (!selectedEvent?.id) return;
+    
+    const eventId = selectedEvent.id;
+    const eventTitle = selectedEvent.title;
+    
+    // Send cancellation notifications to users who RSVP'd yes or maybe
+    try {
+      await sendEventCancellationNotifications(eventId, eventTitle);
+    } catch (error) {
+      console.error('Error sending cancellation notifications:', error);
+      // Don't block deletion if notification sending fails
+    }
     
     setEvents(currentEvents =>
       currentEvents.filter(event => event.id !== selectedEvent.id)

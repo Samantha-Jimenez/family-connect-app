@@ -442,6 +442,8 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                           }
                           // Default fallback
                           return 'mdi:calendar-clock';
+                        case 'event_cancelled':
+                          return 'mdi:event-remove';
                         default:
                           return 'mdi:bell';
                       }
@@ -562,6 +564,17 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                                 router.push(`/calendar?eventId=${eventId}`);
                               } catch (error) {
                                 console.error('Error navigating to event reminder:', error);
+                              }
+                            }
+                            
+                            // Navigate to calendar for cancelled event notifications
+                            // (event may not exist anymore, so just navigate to calendar)
+                            if (notification.type === 'event_cancelled') {
+                              try {
+                                setNotificationOpen(false);
+                                router.push('/calendar');
+                              } catch (error) {
+                                console.error('Error navigating to calendar:', error);
                               }
                             }
                           }}
