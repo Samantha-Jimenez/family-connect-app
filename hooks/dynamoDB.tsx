@@ -2995,15 +2995,19 @@ export const generateBirthdayNotifications = async (): Promise<void> => {
   try {
     const familyMembers = await getAllFamilyMembers();
     const today = new Date();
-    const fourWeeksFromNow = new Date(today);
-    fourWeeksFromNow.setDate(fourWeeksFromNow.getDate() + 28);
     
     for (const member of familyMembers) {
       if (!member.birthday || member.death_date) continue; // Skip if no birthday or deceased
       
       const daysUntilBirthday = getDaysUntilBirthday(member.birthday);
-      if (daysUntilBirthday === null || daysUntilBirthday < 0 || daysUntilBirthday > 28) {
-        continue; // Skip if not in next 4 weeks
+      if (daysUntilBirthday === null || daysUntilBirthday < 0) {
+        continue; // Skip if invalid or past birthday
+      }
+      
+      // Only create notifications at specific intervals (30 days, 7 days, 1 day, or day of)
+      const reminderDays = [30, 7, 1, 0];
+      if (!reminderDays.includes(daysUntilBirthday)) {
+        continue; // Skip if not at a reminder interval
       }
       
       // Create notifications for all other family members
@@ -3025,12 +3029,14 @@ export const generateBirthdayNotifications = async (): Promise<void> => {
         const title = `${memberName} ${member.last_name}'s Birthday`;
         const message = `${memberName} ${member.last_name}'s birthday is ${daysText}! 🎂`;
         
-        // Check if notification already exists for this birthday
+        // Check if notification already exists for this birthday at this day interval
         const existingNotifications = await getNotificationsByUser(otherMember.family_member_id);
+        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
         const alreadyNotified = existingNotifications.some(
           n => n.type === 'birthday' 
             && n.related_id === member.family_member_id
-            && n.created_at >= new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString()
+            && n.metadata?.days_until === daysUntilBirthday
+            && n.created_at >= todayStart
         );
         
         if (!alreadyNotified) {
