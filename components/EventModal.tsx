@@ -8,7 +8,7 @@ import { useToast } from '@/context/ToastContext';
 interface EventModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (title: string, start: string, userId: string, end?: string, allDay?: boolean, location?: string, description?: string) => void;
+  onSubmit: (title: string, start: string, userId: string, end?: string, allDay?: boolean, location?: string, description?: string, notifyMembers?: boolean) => void;
   onDelete?: () => void;
   selectedDate: string;
   event?: CalendarEvent | null;
@@ -42,6 +42,7 @@ export default function EventModal({
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [rsvpList, setRsvpList] = useState<{ userId: string; status: 'yes' | 'no' | 'maybe'; name: string }[]>([]);
   const [description, setDescription] = useState('');
+  const [notifyMembers, setNotifyMembers] = useState(false);
 
   useEffect(() => {
     if (event?.userId) {
@@ -108,6 +109,7 @@ export default function EventModal({
               setStartTime('00:00');
               setEndDate(selected.toISOString().split('T')[0]);
               setEndTime('00:00');
+              setNotifyMembers(false);
             }
           }
         } else if (mode === 'add') {
@@ -122,7 +124,11 @@ export default function EventModal({
             setStartTime('00:00');
             setEndDate(selected.toISOString().split('T')[0]);
             setEndTime('00:00');
+            setNotifyMembers(false);
           }
+        } else {
+          // Reset notifyMembers when in edit mode
+          setNotifyMembers(false);
         }
       } catch (error) {
         console.error('Error resetting form:', error);
@@ -130,7 +136,7 @@ export default function EventModal({
     };
 
     resetToEventValues();
-  }, [event, mode, selectedDate, setTitle, setIsAllDay, setLocation, setStartDate, setStartTime, setEndDate, setEndTime, setDescription]);
+  }, [event, mode, selectedDate, setTitle, setIsAllDay, setLocation, setStartDate, setStartTime, setEndDate, setEndTime, setDescription, setNotifyMembers]);
 
   useEffect(() => {
     if (event?.id && user?.userId && isOpen) {
@@ -244,7 +250,8 @@ export default function EventModal({
           endDateTime?.toISOString(),
           isAllDay,
           location.trim() || undefined,
-          description.trim() || undefined
+          description.trim() || undefined,
+          mode === 'add' ? notifyMembers : undefined
         );
 
         // Show success toast
@@ -273,6 +280,7 @@ export default function EventModal({
     setEndTime('');
     setIsAllDay(false);
     setDescription('');
+    setNotifyMembers(false);
   };
 
   const handleClose = () => {
@@ -533,6 +541,20 @@ export default function EventModal({
                     </div>
                   )}
                 </div>
+
+                {mode === 'add' && (
+                  <div className="form-control">
+                    <label className="label cursor-pointer !justify-stretch">
+                      <span className="label-text">Notify all family members about this event</span>
+                      <input
+                        type="checkbox"
+                        checked={notifyMembers}
+                        onChange={(e) => setNotifyMembers(e.target.checked)}
+                        className="checkbox checkbox-success ml-2"
+                      />
+                    </label>
+                  </div>
+                )}
               </div>
 
               <div className="modal-action">
