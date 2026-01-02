@@ -427,6 +427,10 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                           // Default fallback
                           return 'mdi:calendar-check';
                         case 'event_reminder':
+                          // Check if this is a new event notification
+                          if (metadata?.is_new_event === true) {
+                            return 'mdi:event-add';
+                          }
                           // Use specific icons based on days until event
                           if (metadata?.days_until !== undefined) {
                             const daysUntil = metadata.days_until;
