@@ -15,7 +15,7 @@ import { useAuth } from '@/context/AuthContext';
 import { EventApi } from '@fullcalendar/core';
 import { DEFAULT_EVENTS } from './calendarData'; // Import your default events
 import { useSearchParams } from 'next/navigation';
-import { getAllFamilyMembers, FamilyMember, sendEventCancellationNotifications } from '@/hooks/dynamoDB';
+import { getAllFamilyMembers, FamilyMember, sendEventCancellationNotifications, createNotification, getUserNameById } from '@/hooks/dynamoDB';
 
 interface CalendarEvent {
   id?: string;
@@ -205,7 +205,7 @@ export default function Calendar() {
     }
   };
 
-  const handleAddEvent = (title: string, start: string, userId: string, end?: string, allDay?: boolean, location?: string, description?: string) => {
+  const handleAddEvent = async (title: string, start: string, userId: string, end?: string, allDay?: boolean, location?: string, description?: string, notifyMembers?: boolean) => {
     const newEvent = {
       id: crypto.randomUUID(),
       title,
@@ -228,6 +228,52 @@ export default function Calendar() {
     const eventExists = events.some(event => event.title === newEvent.title && event.start === newEvent.start);
     if (!eventExists) {
       setEvents(currentEvents => [...currentEvents, newEvent]);
+
+      // Send notifications to all family members if requested
+      if (notifyMembers) {
+        try {
+          const familyMembers = await getAllFamilyMembers();
+          const creatorName = await getUserNameById(userId);
+          const creatorDisplayName = creatorName 
+            ? `${creatorName.firstName} ${creatorName.lastName}` 
+            : 'A family member';
+
+          // Format the event date for the notification
+          const eventDate = new Date(start);
+          const formattedDate = eventDate.toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            timeZone: 'America/New_York'
+          });
+
+          const notificationTitle = 'New Calendar Event';
+          const notificationMessage = `${creatorDisplayName} created a new event: "${title}" on ${formattedDate}`;
+
+          // Send notification to all family members except the creator
+          for (const member of familyMembers) {
+            if (member.family_member_id !== userId) {
+              try {
+                await createNotification(
+                  member.family_member_id,
+                  'event_reminder',
+                  notificationTitle,
+                  notificationMessage,
+                  newEvent.id,
+                  { event_title: title, event_start: start, is_new_event: true }
+                );
+              } catch (notificationError) {
+                // Don't fail the event creation if notification fails for one member
+                console.error(`Error creating notification for member ${member.family_member_id}:`, notificationError);
+              }
+            }
+          }
+        } catch (error) {
+          // Don't fail the event creation if notification creation fails
+          console.error('Error sending event notifications:', error);
+        }
+      }
     } else {
       console.warn('Event already exists:', newEvent);
     }
