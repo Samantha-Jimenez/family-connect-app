@@ -14,6 +14,8 @@ import {
   getUnreadNotificationCount,
   markNotificationAsRead,
   markAllNotificationsAsRead,
+  deleteNotification,
+  deleteAllReadNotifications,
   generateBirthdayNotifications,
   generateEventReminderNotifications,
   Notification,
@@ -359,13 +361,38 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-ss-xl	">
               <h2 className="text-xl font-semibold text-gray-800">Notifications</h2>
-              <button
-                onClick={() => setNotificationOpen(false)}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200 transition-colors"
-                aria-label="Close notifications drawer"
-              >
-                <Icon icon="mdi:close" className="w-6 h-6" />
-              </button>
+              <div className="flex items-center gap-2">
+                {notifications.some(n => n.is_read) && (
+                  <button
+                    onClick={async () => {
+                      if (!userData?.userId) return;
+                      try {
+                        await deleteAllReadNotifications(userData.userId);
+                        const [notifs, count] = await Promise.all([
+                          getNotificationsByUser(userData.userId),
+                          getUnreadNotificationCount(userData.userId)
+                        ]);
+                        setNotifications(notifs);
+                        setUnreadCount(count);
+                      } catch (error) {
+                        console.error('Error deleting read notifications:', error);
+                      }
+                    }}
+                    className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-200 transition-colors"
+                    aria-label="Clear all read notifications"
+                    title="Clear all read notifications"
+                  >
+                    Clear read
+                  </button>
+                )}
+                <button
+                  onClick={() => setNotificationOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200 transition-colors"
+                  aria-label="Close notifications drawer"
+                >
+                  <Icon icon="mdi:close" className="w-6 h-6" />
+                </button>
+              </div>
             </div>
             <div className="overflow-y-auto h-[calc(100%-73px)]">
               {notificationsLoading ? (
@@ -456,10 +483,13 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                     return (
                       <li key={notification.notification_id}>
                         <div 
-                          className={`block px-6 py-3 text-sm hover:bg-gray-50 cursor-pointer border-b border-gray-200 transition-colors ${
+                          className={`block px-6 py-3 text-sm hover:bg-gray-50 border-b border-gray-200 transition-colors group ${
                             !notification.is_read ? 'bg-blue-50' : 'bg-white'
                           }`}
-                          onClick={async () => {
+                        >
+                          <div
+                            className="cursor-pointer"
+                            onClick={async () => {
                             if (!notification.is_read && userData?.userId) {
                               try {
                                 await markNotificationAsRead(notification.notification_id, userData.userId);
@@ -581,26 +611,49 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                                 console.error('Error navigating to calendar:', error);
                               }
                             }
-                          }}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className={`mt-0.5 ${!notification.is_read ? 'text-blue-500' : 'text-gray-400'}`}>
-                              <Icon icon={getNotificationIcon(notification.type, notification.title, notification.metadata)} className="w-5 h-5" />
+                            }}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={`mt-0.5 ${!notification.is_read ? 'text-blue-500' : 'text-gray-400'}`}>
+                                <Icon icon={getNotificationIcon(notification.type, notification.title, notification.metadata)} className="w-5 h-5" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className={`font-medium ${!notification.is_read ? 'text-gray-900' : 'text-gray-700'}`}>
+                                  {notification.title}
+                                </div>
+                                <div className="text-sm text-gray-500 mt-1 font-extralight">
+                                  {notification.message}
+                                </div>
+                                <div className="text-xs text-gray-400 mt-1 font-extralight">
+                                  {formatDate(notification.created_at)}
+                                </div>
+                              </div>
+                              {!notification.is_read && (
+                                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                              )}
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (!userData?.userId) return;
+                                  try {
+                                    await deleteNotification(notification.notification_id, userData.userId);
+                                    const [notifs, count] = await Promise.all([
+                                      getNotificationsByUser(userData.userId),
+                                      getUnreadNotificationCount(userData.userId)
+                                    ]);
+                                    setNotifications(notifs);
+                                    setUnreadCount(count);
+                                  } catch (error) {
+                                    console.error('Error deleting notification:', error);
+                                  }
+                                }}
+                                className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-200 transition-all ml-auto flex-shrink-0"
+                                aria-label="Delete notification"
+                                title="Delete notification"
+                              >
+                                <Icon icon="mdi:delete-outline" className="w-4 h-4" />
+                              </button>
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <div className={`font-medium ${!notification.is_read ? 'text-gray-900' : 'text-gray-700'}`}>
-                                {notification.title}
-                              </div>
-                              <div className="text-sm text-gray-500 mt-1 font-extralight">
-                                {notification.message}
-                              </div>
-                              <div className="text-xs text-gray-400 mt-1 font-extralight">
-                                {formatDate(notification.created_at)}
-                              </div>
-                            </div>
-                            {!notification.is_read && (
-                              <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                            )}
                           </div>
                         </div>
                 </li>
