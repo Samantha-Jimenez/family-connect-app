@@ -3151,3 +3151,42 @@ export const markAllNotificationsAsRead = async (userId: string): Promise<void> 
     throw error;
   }
 };
+
+// Delete a notification
+export const deleteNotification = async (notificationId: string, userId: string): Promise<void> => {
+  try {
+    const params = {
+      TableName: TABLES.NOTIFICATIONS,
+      Key: {
+        notification_id: { S: notificationId }
+      },
+      ConditionExpression: "user_id = :userId",
+      ExpressionAttributeValues: {
+        ":userId": { S: userId }
+      }
+    };
+    
+    await dynamoDB.send(new DeleteItemCommand(params));
+    console.log("✅ Notification deleted successfully!");
+  } catch (error) {
+    console.error("❌ Error deleting notification:", error);
+    throw error;
+  }
+};
+
+// Delete all read notifications for a user
+export const deleteAllReadNotifications = async (userId: string): Promise<void> => {
+  try {
+    const notifications = await getNotificationsByUser(userId);
+    const readNotifications = notifications.filter(n => n.is_read);
+    
+    for (const notification of readNotifications) {
+      await deleteNotification(notification.notification_id, userId);
+    }
+    
+    console.log(`✅ Deleted ${readNotifications.length} read notification(s)!`);
+  } catch (error) {
+    console.error("❌ Error deleting all read notifications:", error);
+    throw error;
+  }
+};
