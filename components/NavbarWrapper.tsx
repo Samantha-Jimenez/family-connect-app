@@ -47,6 +47,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsPerPage, setNotificationsPerPage] = useState(20); // Number of notifications to show initially
   const [isHobbyModalOpen, setIsHobbyModalOpen] = useState(false);
   const [selectedHobby, setSelectedHobby] = useState<string | null>(null);
   const [hobbyMembers, setHobbyMembers] = useState<Array<{ id: string; name: string; profile_photo?: string }>>([]);
@@ -171,6 +172,8 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
       setIsDrawerMounted(true);
       // Reset animation state and trigger it after a brief delay
       setShouldAnimateIn(false);
+      // Reset pagination when drawer opens
+      setNotificationsPerPage(20);
       // Use requestAnimationFrame to ensure DOM is updated before animating
       const frame1 = requestAnimationFrame(() => {
         const frame2 = requestAnimationFrame(() => {
@@ -197,6 +200,8 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
       // Then unmount after animation completes
       const timeout = setTimeout(() => {
         setIsDrawerMounted(false);
+        // Reset pagination when drawer closes
+        setNotificationsPerPage(20);
       }, 500);
       return () => clearTimeout(timeout);
     }
@@ -407,8 +412,9 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                   </div>
                 </div>
               ) : (
-              <ul className="py-2">
-                  {notifications.map((notification, index) => {
+                <>
+                  <ul className="py-2">
+                    {notifications.slice(0, notificationsPerPage).map((notification, index) => {
                     const formatDate = (dateString: string) => {
                       const date = new Date(dateString);
                       const now = new Date();
@@ -659,7 +665,19 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                 </li>
                     );
                   })}
-              </ul>
+                  </ul>
+                  {notifications.length > notificationsPerPage && (
+                    <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                      <button
+                        onClick={() => setNotificationsPerPage(prev => prev + 20)}
+                        className="w-full py-2 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                        aria-label="Load more notifications"
+                      >
+                        Load More ({notifications.length - notificationsPerPage} remaining)
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
