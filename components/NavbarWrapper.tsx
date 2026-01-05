@@ -48,6 +48,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationsPerPage, setNotificationsPerPage] = useState(20); // Number of notifications to show initially
+  const [notificationFilter, setNotificationFilter] = useState<'all' | 'birthday' | 'comments' | 'events' | 'tags'>('all');
   const [isHobbyModalOpen, setIsHobbyModalOpen] = useState(false);
   const [selectedHobby, setSelectedHobby] = useState<string | null>(null);
   const [hobbyMembers, setHobbyMembers] = useState<Array<{ id: string; name: string; profile_photo?: string }>>([]);
@@ -172,8 +173,9 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
       setIsDrawerMounted(true);
       // Reset animation state and trigger it after a brief delay
       setShouldAnimateIn(false);
-      // Reset pagination when drawer opens
+      // Reset pagination and filter when drawer opens
       setNotificationsPerPage(20);
+      setNotificationFilter('all');
       // Use requestAnimationFrame to ensure DOM is updated before animating
       const frame1 = requestAnimationFrame(() => {
         const frame2 = requestAnimationFrame(() => {
@@ -200,8 +202,9 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
       // Then unmount after animation completes
       const timeout = setTimeout(() => {
         setIsDrawerMounted(false);
-        // Reset pagination when drawer closes
+        // Reset pagination and filter when drawer closes
         setNotificationsPerPage(20);
+        setNotificationFilter('all');
       }, 500);
       return () => clearTimeout(timeout);
     }
@@ -364,57 +367,94 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
             aria-modal="true"
             aria-label="Notifications drawer"
           >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-ss-xl	">
-              <h2 className="text-xl font-semibold text-gray-800">Notifications</h2>
-              <div className="flex items-center gap-2">
-                {notifications.some(n => n.is_read) && (
+            <div className="border-b border-gray-200 bg-gray-50 rounded-ss-xl">
+              <div className="flex items-center justify-between px-6 py-4">
+                <h2 className="text-xl font-semibold text-gray-800">Notifications</h2>
+                <div className="flex items-center gap-2">
+                  {notifications.some(n => n.is_read) && (
+                    <button
+                      onClick={async () => {
+                        if (!userData?.userId) return;
+                        try {
+                          await deleteAllReadNotifications(userData.userId);
+                          const [notifs, count] = await Promise.all([
+                            getNotificationsByUser(userData.userId),
+                            getUnreadNotificationCount(userData.userId)
+                          ]);
+                          setNotifications(notifs);
+                          setUnreadCount(count);
+                        } catch (error) {
+                          console.error('Error deleting read notifications:', error);
+                        }
+                      }}
+                      className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-200 transition-colors"
+                      aria-label="Clear all read notifications"
+                      title="Clear all read notifications"
+                    >
+                      Clear read
+                    </button>
+                  )}
                   <button
-                    onClick={async () => {
-                      if (!userData?.userId) return;
-                      try {
-                        await deleteAllReadNotifications(userData.userId);
-                        const [notifs, count] = await Promise.all([
-                          getNotificationsByUser(userData.userId),
-                          getUnreadNotificationCount(userData.userId)
-                        ]);
-                        setNotifications(notifs);
-                        setUnreadCount(count);
-                      } catch (error) {
-                        console.error('Error deleting read notifications:', error);
-                      }
-                    }}
-                    className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-200 transition-colors"
-                    aria-label="Clear all read notifications"
-                    title="Clear all read notifications"
+                    onClick={() => setNotificationOpen(false)}
+                    className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200 transition-colors"
+                    aria-label="Close notifications drawer"
                   >
-                    Clear read
+                    <Icon icon="mdi:close" className="w-6 h-6" />
                   </button>
-                )}
-                <button
-                  onClick={() => setNotificationOpen(false)}
-                  className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200 transition-colors"
-                  aria-label="Close notifications drawer"
-                >
-                  <Icon icon="mdi:close" className="w-6 h-6" />
-                </button>
+                </div>
+              </div>
+              {/* Filter buttons */}
+              <div className="px-6 pb-3 flex gap-2 overflow-x-auto">
+                {(['all', 'birthday', 'comments', 'events', 'tags'] as const).map((filter) => (
+                  <button
+                    key={filter}
+                    onClick={() => {
+                      setNotificationFilter(filter);
+                      setNotificationsPerPage(20); // Reset pagination when filter changes
+                    }}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${
+                      notificationFilter === filter
+                        ? 'bg-plantain-green text-white'
+                        : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-300'
+                    }`}
+                    aria-label={`Filter by ${filter}`}
+                  >
+                    {filter === 'all' ? 'All' : filter === 'comments' ? 'Comments' : filter === 'events' ? 'Events' : filter.charAt(0).toUpperCase() + filter.slice(1)}
+                  </button>
+                ))}
               </div>
             </div>
-            <div className="overflow-y-auto h-[calc(100%-73px)]">
+            <div className="overflow-y-auto h-[calc(100%-130px)]">
               {notificationsLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="text-gray-500">Loading notifications...</div>
                 </div>
-              ) : notifications.length === 0 ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-gray-500 text-center px-6">
-                    <Icon icon="mdi:bell-off-outline" className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>No notifications yet</p>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <ul className="py-2">
-                    {notifications.slice(0, notificationsPerPage).map((notification, index) => {
+              ) : (() => {
+                // Filter notifications based on selected filter
+                const filteredNotifications = notifications.filter(notification => {
+                  if (notificationFilter === 'all') return true;
+                  if (notificationFilter === 'birthday') return notification.type === 'birthday';
+                  if (notificationFilter === 'comments') return notification.type === 'hobby_comment' || notification.type === 'photo_comment';
+                  if (notificationFilter === 'events') return notification.type === 'event_rsvp' || notification.type === 'event_reminder' || notification.type === 'event_cancelled';
+                  if (notificationFilter === 'tags') return notification.type === 'photo_tag';
+                  return true;
+                });
+
+                if (filteredNotifications.length === 0) {
+                  return (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="text-gray-500 text-center px-6">
+                        <Icon icon="mdi:bell-off-outline" className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                        <p>No {notificationFilter === 'all' ? '' : notificationFilter} notifications</p>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <>
+                    <ul className="py-2">
+                      {filteredNotifications.slice(0, notificationsPerPage).map((notification, index) => {
                     const formatDate = (dateString: string) => {
                       const date = new Date(dateString);
                       const now = new Date();
@@ -664,21 +704,22 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                         </div>
                 </li>
                     );
-                  })}
-                  </ul>
-                  {notifications.length > notificationsPerPage && (
-                    <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-                      <button
-                        onClick={() => setNotificationsPerPage(prev => prev + 20)}
-                        className="w-full py-2 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-900 transition-colors"
-                        aria-label="Load more notifications"
-                      >
-                        Load More ({notifications.length - notificationsPerPage} remaining)
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
+                      })}
+                    </ul>
+                    {filteredNotifications.length > notificationsPerPage && (
+                      <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                        <button
+                          onClick={() => setNotificationsPerPage(prev => prev + 20)}
+                          className="w-full py-2 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                          aria-label="Load more notifications"
+                        >
+                          Load More ({filteredNotifications.length - notificationsPerPage} remaining)
+                        </button>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
         </>
