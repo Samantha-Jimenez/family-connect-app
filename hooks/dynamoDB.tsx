@@ -3190,3 +3190,53 @@ export const deleteAllReadNotifications = async (userId: string): Promise<void> 
     throw error;
   }
 };
+
+// Notification preferences types
+export interface NotificationPreferences {
+  disabledTypes: NotificationType[];
+}
+
+// Get notification preferences for a user from DynamoDB
+export const getNotificationPreferencesFromDB = async (userId: string): Promise<NotificationPreferences> => {
+  try {
+    const params = {
+      TableName: TABLES.FAMILY,
+      Key: {
+        family_member_id: { S: userId }
+      }
+    };
+
+    const data = await dynamoDB.send(new GetItemCommand(params));
+
+    if (data.Item?.notification_preferences?.S) {
+      return JSON.parse(data.Item.notification_preferences.S);
+    }
+
+    return { disabledTypes: [] };
+  } catch (error) {
+    console.error("❌ Error fetching notification preferences:", error);
+    return { disabledTypes: [] };
+  }
+};
+
+// Save notification preferences for a user to DynamoDB
+export const saveNotificationPreferencesToDB = async (userId: string, preferences: NotificationPreferences): Promise<void> => {
+  try {
+    const params = {
+      TableName: TABLES.FAMILY,
+      Key: {
+        family_member_id: { S: userId }
+      },
+      UpdateExpression: "SET notification_preferences = :prefs",
+      ExpressionAttributeValues: {
+        ":prefs": { S: JSON.stringify(preferences) }
+      }
+    };
+
+    await dynamoDB.send(new UpdateItemCommand(params));
+    console.log("✅ Notification preferences saved to DynamoDB!");
+  } catch (error) {
+    console.error("❌ Error saving notification preferences:", error);
+    throw error;
+  }
+};
