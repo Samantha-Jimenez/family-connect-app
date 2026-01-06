@@ -31,6 +31,8 @@ import Image from 'next/image';
 import ProjectOverviewModal from './ProjectOverviewModal';
 import HobbyMembersModal from './HobbyMembersModal';
 import PhotoModal from './PhotoModal';
+import NotificationPreferencesModal, { getNotificationPreferences } from './NotificationPreferencesModal';
+import { getNotificationPreferencesFromDB } from '@/hooks/dynamoDB';
 import { Icon } from '@iconify/react';
 import { useRouter } from 'next/navigation';
 
@@ -49,6 +51,8 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationsPerPage, setNotificationsPerPage] = useState(20); // Number of notifications to show initially
   const [notificationFilter, setNotificationFilter] = useState<'all' | 'birthday' | 'comments' | 'events' | 'tags'>('all');
+  const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false);
+  const [notificationPreferences, setNotificationPreferences] = useState<{ disabledTypes: string[] }>({ disabledTypes: [] });
   const [isHobbyModalOpen, setIsHobbyModalOpen] = useState(false);
   const [selectedHobby, setSelectedHobby] = useState<string | null>(null);
   const [hobbyMembers, setHobbyMembers] = useState<Array<{ id: string; name: string; profile_photo?: string }>>([]);
@@ -81,7 +85,12 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
           getUnreadNotificationCount(userData.userId)
         ]);
         setNotifications(notifs);
-        setUnreadCount(count);
+        // Load and filter unread count by preferences
+        const preferences = await getNotificationPreferencesFromDB(userData.userId);
+        setNotificationPreferences(preferences);
+        const visibleNotifications = notifs.filter(n => !preferences.disabledTypes.includes(n.type as any));
+        const visibleUnreadCount = visibleNotifications.filter(n => !n.is_read).length;
+        setUnreadCount(visibleUnreadCount);
       } catch (error) {
         console.error('Error fetching notifications:', error);
       } finally {
@@ -185,9 +194,15 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
       
       // Mark all notifications as read when drawer opens
       if (userData?.userId && unreadCount > 0) {
-        markAllNotificationsAsRead(userData.userId).then(() => {
-          setUnreadCount(0);
+        const userId = userData.userId;
+        markAllNotificationsAsRead(userId).then(async () => {
           setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+          // Reload preferences and recalculate unread count
+          const preferences = await getNotificationPreferencesFromDB(userId);
+          setNotificationPreferences(preferences);
+          const visibleNotifications = notifications.filter(n => !preferences.disabledTypes.includes(n.type as any));
+          const visibleUnreadCount = visibleNotifications.filter(n => !n.is_read).length;
+          setUnreadCount(visibleUnreadCount);
         }).catch(error => {
           console.error('Error marking notifications as read:', error);
         });
@@ -371,6 +386,14 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
               <div className="flex items-center justify-between px-6 py-4">
                 <h2 className="text-xl font-semibold text-gray-800">Notifications</h2>
                 <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsPreferencesModalOpen(true)}
+                    className="text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-200 transition-colors"
+                    aria-label="Notification preferences"
+                    title="Notification preferences"
+                  >
+                    <Icon icon="mdi:cog-outline" className="w-5 h-5" />
+                  </button>
                   {notifications.some(n => n.is_read) && (
                     <button
                       onClick={async () => {
@@ -430,8 +453,13 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                   <div className="text-gray-500">Loading notifications...</div>
                 </div>
               ) : (() => {
-                // Filter notifications based on selected filter
-                const filteredNotifications = notifications.filter(notification => {
+                // Filter notifications based on user preferences first
+                const preferenceFilteredNotifications = notifications.filter(notification => {
+                  return !notificationPreferences.disabledTypes.includes(notification.type as any);
+                });
+                
+                // Then filter based on selected filter
+                const filteredNotifications = preferenceFilteredNotifications.filter(notification => {
                   if (notificationFilter === 'all') return true;
                   if (notificationFilter === 'birthday') return notification.type === 'birthday';
                   if (notificationFilter === 'comments') return notification.type === 'hobby_comment' || notification.type === 'photo_comment';
@@ -762,6 +790,31 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
           onPhotoUpdated={(updatedPhoto) => {
             setSelectedPhoto(updatedPhoto);
           }}
+        />
+      )}
+
+      {/* Notification Preferences Modal */}
+      {userData?.userId && (
+        <NotificationPreferencesModal
+          isOpen={isPreferencesModalOpen}
+          onClose={() => {
+            setIsPreferencesModalOpen(false);
+            // Refresh notifications to apply preferences
+            const userId = userData?.userId;
+            if (userId) {
+              Promise.all([
+                getNotificationsByUser(userId),
+                getNotificationPreferencesFromDB(userId)
+              ]).then(([notifs, preferences]) => {
+                setNotifications(notifs);
+                setNotificationPreferences(preferences);
+                const visibleNotifications = notifs.filter(n => !preferences.disabledTypes.includes(n.type as any));
+                const visibleUnreadCount = visibleNotifications.filter(n => !n.is_read).length;
+                setUnreadCount(visibleUnreadCount);
+              });
+            }
+          }}
+          userId={userData.userId}
         />
       )}
       </div>
