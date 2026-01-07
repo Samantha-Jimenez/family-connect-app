@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { ReturnValue } from "@aws-sdk/client-dynamodb";
+import { getUserFamilyGroup, REAL_FAMILY_GROUP } from '@/utils/demoConfig';
 
 // Set up DynamoDB client
 const dynamoDB = new DynamoDBClient({ 
@@ -90,6 +91,7 @@ export interface FamilyMember {
   use_first_name: boolean;
   use_middle_name: boolean;
   use_nick_name: boolean;
+  family_group?: string; // 'demo' for demo data, 'real' for real family data
   social_media?: {
     platform: string;
     url: string;
@@ -667,9 +669,25 @@ export const addPhotoToAlbum = async (photo_id: string, album_id: string) => {
   }
 };
 
-export const getAllFamilyMembers = async (): Promise<FamilyMember[]> => {
+export const getAllFamilyMembers = async (userId?: string): Promise<FamilyMember[]> => {
   try {
-    const params = {
+    // If userId not provided, try to get current user
+    let currentUserId = userId;
+    if (!currentUserId) {
+      try {
+        const user = await getCurrentUser();
+        currentUserId = user.userId;
+      } catch (error) {
+        // User not authenticated, default to real family group
+        console.log('⚠️ No userId provided and could not get current user, defaulting to real family group');
+      }
+    }
+    
+    // Get the family group for the current user (or default to real if no user)
+    const familyGroup = currentUserId ? getUserFamilyGroup(currentUserId) : REAL_FAMILY_GROUP;
+    console.log('🔍 getAllFamilyMembers - userId:', currentUserId, 'familyGroup:', familyGroup);
+    
+    const params: any = {
       TableName: TABLES.FAMILY,
     };
 
@@ -680,27 +698,41 @@ export const getAllFamilyMembers = async (): Promise<FamilyMember[]> => {
       return [];
     }
 
-    return response.Items.map(item => ({
-      family_member_id: item.family_member_id?.S || '',
-      first_name: item.first_name?.S || '',
-      last_name: item.last_name?.S || '',
-      middle_name: item.middle_name?.S || '',
-      nick_name: item.nick_name?.S || '',
-      email: item.email?.S || '',
-      username: item.username?.S || '',
-      bio: item.bio?.S || '',
-      phone_number: item.phone_number?.S || '',
-      birthday: item.birthday?.S || '',
-      birth_city: item.birth_city?.S || '',
-      birth_state: item.birth_state?.S || '',
-      profile_photo: item.profile_photo?.S || '',
-      current_city: item.current_city?.S || '',
-      current_state: item.current_state?.S || '',
-      death_date: item.death_date?.S || '',
-      use_first_name: item.use_first_name?.BOOL ?? true,
-      use_middle_name: item.use_middle_name?.BOOL ?? false,
-      use_nick_name: item.use_nick_name?.BOOL ?? false,
-    }));
+    // Map and filter by family group
+    // For backward compatibility: if family_group is not set, treat as 'real' data
+    return response.Items
+      .map(item => ({
+        family_member_id: item.family_member_id?.S || '',
+        first_name: item.first_name?.S || '',
+        last_name: item.last_name?.S || '',
+        middle_name: item.middle_name?.S || '',
+        nick_name: item.nick_name?.S || '',
+        email: item.email?.S || '',
+        username: item.username?.S || '',
+        bio: item.bio?.S || '',
+        phone_number: item.phone_number?.S || '',
+        birthday: item.birthday?.S || '',
+        birth_city: item.birth_city?.S || '',
+        birth_state: item.birth_state?.S || '',
+        profile_photo: item.profile_photo?.S || '',
+        current_city: item.current_city?.S || '',
+        current_state: item.current_state?.S || '',
+        death_date: item.death_date?.S || '',
+        use_first_name: item.use_first_name?.BOOL ?? true,
+        use_middle_name: item.use_middle_name?.BOOL ?? false,
+        use_nick_name: item.use_nick_name?.BOOL ?? false,
+        family_group: item.family_group?.S || REAL_FAMILY_GROUP,
+      }))
+      .filter(member => {
+        // Filter by family group
+        // If member has no family_group (existing data), it's real data
+        const memberGroup = member.family_group || REAL_FAMILY_GROUP;
+        const matches = memberGroup === familyGroup;
+        if (!matches) {
+          console.log(`🚫 Filtered out member: ${member.first_name} ${member.last_name} (group: ${memberGroup}, expected: ${familyGroup})`);
+        }
+        return matches;
+      });
   } catch (error) {
     console.error("❌ Error fetching family members:", error);
     return [];
@@ -1057,8 +1089,26 @@ export const addFamilyRelationship = async (
 };
 
 // Function to get relationships for a family member
-export const getFamilyRelationships = async (familyMemberId: string): Promise<FamilyRelationship[]> => {
+export const getFamilyRelationships = async (familyMemberId: string, userId?: string): Promise<FamilyRelationship[]> => {
   try {
+    // Get family member IDs for the user's family group
+    let familyMemberIds: string[] = [];
+    if (userId) {
+      const familyMembers = await getAllFamilyMembers(userId);
+      familyMemberIds = familyMembers.map(m => m.family_member_id);
+    } else {
+      // If no userId provided, try to get current user
+      try {
+        const user = await getCurrentUser();
+        if (user?.userId) {
+          const familyMembers = await getAllFamilyMembers(user.userId);
+          familyMemberIds = familyMembers.map(m => m.family_member_id);
+        }
+      } catch (error) {
+        // User not authenticated, will filter later
+      }
+    }
+    
     const params = {
       TableName: TABLES.RELATIONSHIPS,
       FilterExpression: "source_id = :id OR target_id = :id",
@@ -1074,7 +1124,7 @@ export const getFamilyRelationships = async (familyMemberId: string): Promise<Fa
       return [];
     }
 
-    return response.Items.map(item => ({
+    const relationships = response.Items.map(item => ({
       relationship_id: item.relationship_id?.S || '',
       person_a_id: item.source_id?.S || '',
       person_b_id: item.target_id?.S || '',
@@ -1087,6 +1137,15 @@ export const getFamilyRelationships = async (familyMemberId: string): Promise<Fa
       created_date: item.created_date?.S || '',
       created_by: item.created_by?.S || ''
     }));
+    
+    // Filter by family group if we have family member IDs
+    if (familyMemberIds.length > 0) {
+      return relationships.filter(rel => 
+        familyMemberIds.includes(rel.person_a_id) && familyMemberIds.includes(rel.person_b_id)
+      );
+    }
+    
+    return relationships;
   } catch (error) {
     console.error("❌ Error fetching relationships:", error);
     return [];
@@ -2526,8 +2585,26 @@ export const buildFamilyTreeFromRelationships = async (rootPersonId: string): Pr
 };
 
 // Function to get all relationships (enhanced version)
-export const getAllFamilyRelationships = async (): Promise<FamilyRelationship[]> => {
+export const getAllFamilyRelationships = async (userId?: string): Promise<FamilyRelationship[]> => {
   try {
+    // Get family member IDs for the user's family group
+    let familyMemberIds: string[] = [];
+    if (userId) {
+      const familyMembers = await getAllFamilyMembers(userId);
+      familyMemberIds = familyMembers.map(m => m.family_member_id);
+    } else {
+      // If no userId provided, try to get current user
+      try {
+        const user = await getCurrentUser();
+        if (user?.userId) {
+          const familyMembers = await getAllFamilyMembers(user.userId);
+          familyMemberIds = familyMembers.map(m => m.family_member_id);
+        }
+      } catch (error) {
+        // User not authenticated, will return all relationships
+      }
+    }
+    
     const params = {
       TableName: TABLES.RELATIONSHIPS,
     };
@@ -2539,7 +2616,7 @@ export const getAllFamilyRelationships = async (): Promise<FamilyRelationship[]>
       return [];
     }
 
-    return response.Items.map(item => ({
+    const relationships = response.Items.map(item => ({
       relationship_id: item.relationship_id?.S || '',
       person_a_id: item.source_id?.S || '',
       person_b_id: item.target_id?.S || '',
@@ -2552,6 +2629,15 @@ export const getAllFamilyRelationships = async (): Promise<FamilyRelationship[]>
       created_date: item.created_date?.S || '',
       created_by: item.created_by?.S || ''
     }));
+    
+    // Filter by family group if we have family member IDs
+    if (familyMemberIds.length > 0) {
+      return relationships.filter(rel => 
+        familyMemberIds.includes(rel.person_a_id) && familyMemberIds.includes(rel.person_b_id)
+      );
+    }
+    
+    return relationships;
   } catch (error) {
     console.error("❌ Error fetching all relationships:", error);
     return [];
