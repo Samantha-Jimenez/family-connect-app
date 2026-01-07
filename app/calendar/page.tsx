@@ -65,7 +65,7 @@ export default function Calendar() {
   useEffect(() => {
     const fetchFamilyEvents = async () => {
       try {
-        const familyMembers = await getAllFamilyMembers();
+        const familyMembers = await getAllFamilyMembers(user?.userId);
         const generatedEvents: CalendarEvent[] = [];
 
         familyMembers.forEach((member: FamilyMember) => {
@@ -232,7 +232,7 @@ export default function Calendar() {
       // Send notifications to all family members if requested
       if (notifyMembers) {
         try {
-          const familyMembers = await getAllFamilyMembers();
+          const familyMembers = await getAllFamilyMembers(user?.userId);
           const creatorName = await getUserNameById(userId);
           const creatorDisplayName = creatorName 
             ? `${creatorName.firstName} ${creatorName.lastName}` 

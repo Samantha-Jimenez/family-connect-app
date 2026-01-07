@@ -8,6 +8,7 @@ import {
   suggestPossibleRelationships,
   getAllFamilyMembers 
 } from '@/hooks/dynamoDB';
+import { getCurrentUser } from 'aws-amplify/auth';
 import LoadSpinner from './LoadSpinner';
 
 interface EnhancedRelationshipFormProps {
@@ -77,7 +78,8 @@ export default function EnhancedRelationshipForm({ onRelationshipCreated, showTo
   useEffect(() => {
     const fetchFamilyMembers = async () => {
       try {
-        const members = await getAllFamilyMembers();
+        const user = await getCurrentUser();
+        const members = await getAllFamilyMembers(user?.userId);
         setFamilyMembers(members);
       } catch (error) {
         console.error('Error fetching family members:', error);

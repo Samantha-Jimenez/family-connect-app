@@ -720,7 +720,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                             if (notification.related_id && notification.type === 'birthday') {
                               try {
                                 // Get the member's birthday to calculate the correct event ID
-                                const allMembers = await getAllFamilyMembers();
+                                const allMembers = await getAllFamilyMembers(user?.userId);
                                 const member = allMembers.find(m => m.family_member_id === notification.related_id);
                                 
                                 if (member?.birthday) {
