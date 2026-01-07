@@ -2,8 +2,10 @@
 import React, { useState, useEffect } from "react";
 import Link from 'next/link';
 import { familyTreeData } from './familyTreeData';
+import { demoFamilyTreeData } from './demoFamilyTreeData';
 import { getAllFamilyMembers, buildFamilyTreeFromRelationships, FamilyTreeNode } from "@/hooks/dynamoDB";
 import { FamilyMember as FamilyMemberType } from "@/hooks/dynamoDB";
+import { isDemoUser } from "@/utils/demoConfig";
 
 // Helper function to get the preferred display name
 const getDisplayName = (member: FamilyMemberType): string => {
@@ -400,6 +402,7 @@ const FamilyTree = () => {
   const [rootPersonId, setRootPersonId] = useState<string>('');
   const [familyMembers, setFamilyMembers] = useState<FamilyMemberType[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [currentTreeData, setCurrentTreeData] = useState<typeof familyTreeData | typeof demoFamilyTreeData>(familyTreeData);
 
   useEffect(() => {
     // Check if user is admin
@@ -409,20 +412,32 @@ const FamilyTree = () => {
 
         const fetchMembers = async () => {
           try {
-            const membersFromDB = await getAllFamilyMembers();
+            const membersFromDB = await getAllFamilyMembers(user?.userId);
             setFamilyMembers(membersFromDB);
             
+            // Determine which tree data to use based on user type
+            const isDemo = user?.userId ? isDemoUser(user.userId) : false;
+            const treeDataToUse = isDemo ? demoFamilyTreeData : familyTreeData;
+            setCurrentTreeData(treeDataToUse);
             
             // Update static tree data with full member data (including preferences)
-            updateFamilyTreeData(membersFromDB, familyTreeData as FamilyMemberProps);
+            updateFamilyTreeData(membersFromDB, treeDataToUse as FamilyMemberProps);
         
-        // Set default root person (look for Cynthia first, otherwise use first member)
+        // Set default root person
+        // For demo: look for John, for real: look for Cynthia, otherwise use first member
         if (membersFromDB.length > 0) {
-          const cynthia = membersFromDB.find(member => 
-            member.first_name?.toLowerCase().includes('cynthia') || 
-            member.first_name?.toLowerCase().includes('cindy')
-          );
-          setRootPersonId(cynthia ? cynthia.family_member_id : membersFromDB[0].family_member_id);
+          let rootPerson;
+          if (isDemo) {
+            rootPerson = membersFromDB.find(member => 
+              member.first_name?.toLowerCase().includes('john')
+            );
+          } else {
+            rootPerson = membersFromDB.find(member => 
+              member.first_name?.toLowerCase().includes('cynthia') || 
+              member.first_name?.toLowerCase().includes('cindy')
+            );
+          }
+          setRootPersonId(rootPerson ? rootPerson.family_member_id : membersFromDB[0].family_member_id);
         }
         
         setInitialized(true);
@@ -592,7 +607,7 @@ const FamilyTree = () => {
                     </div>
                   ) : (
                     <FamilyMember
-                      member={familyTreeData as FamilyMemberProps}
+                      member={currentTreeData as FamilyMemberProps}
                       expandedChildIndex={expandedChildIndex}
                       setExpandedChildIndex={setExpandedChildIndex}
                     />
