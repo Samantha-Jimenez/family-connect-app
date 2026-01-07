@@ -53,6 +53,8 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
   const [notificationFilter, setNotificationFilter] = useState<'all' | 'birthday' | 'comments' | 'events' | 'tags'>('all');
   const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false);
   const [notificationPreferences, setNotificationPreferences] = useState<{ disabledTypes: string[] }>({ disabledTypes: [] });
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedNotificationIds, setSelectedNotificationIds] = useState<Set<string>>(new Set());
   const [isHobbyModalOpen, setIsHobbyModalOpen] = useState(false);
   const [selectedHobby, setSelectedHobby] = useState<string | null>(null);
   const [hobbyMembers, setHobbyMembers] = useState<Array<{ id: string; name: string; profile_photo?: string }>>([]);
@@ -182,9 +184,11 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
       setIsDrawerMounted(true);
       // Reset animation state and trigger it after a brief delay
       setShouldAnimateIn(false);
-      // Reset pagination and filter when drawer opens
+      // Reset pagination, filter, and selection when drawer opens
       setNotificationsPerPage(20);
       setNotificationFilter('all');
+      setIsSelectionMode(false);
+      setSelectedNotificationIds(new Set());
       // Use requestAnimationFrame to ensure DOM is updated before animating
       const frame1 = requestAnimationFrame(() => {
         const frame2 = requestAnimationFrame(() => {
@@ -217,9 +221,11 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
       // Then unmount after animation completes
       const timeout = setTimeout(() => {
         setIsDrawerMounted(false);
-        // Reset pagination and filter when drawer closes
+        // Reset pagination, filter, and selection when drawer closes
         setNotificationsPerPage(20);
         setNotificationFilter('all');
+        setIsSelectionMode(false);
+        setSelectedNotificationIds(new Set());
       }, 500);
       return () => clearTimeout(timeout);
     }
@@ -384,16 +390,44 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
           >
             <div className="border-b border-gray-200 bg-gray-50 rounded-ss-xl">
               <div className="flex items-center justify-between px-6 py-4">
-                <h2 className="text-xl font-semibold text-gray-800">Notifications</h2>
+                <h2 className="text-xl font-semibold text-gray-800">
+                  {isSelectionMode ? `${selectedNotificationIds.size} selected` : 'Notifications'}
+                </h2>
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setIsPreferencesModalOpen(true)}
-                    className="text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-200 transition-colors"
-                    aria-label="Notification preferences"
-                    title="Notification preferences"
-                  >
-                    <Icon icon="mdi:cog-outline" className="w-5 h-5" />
-                  </button>
+                  {isSelectionMode ? (
+                    <>
+                      <button
+                        onClick={() => {
+                          setIsSelectionMode(false);
+                          setSelectedNotificationIds(new Set());
+                        }}
+                        className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-200 transition-colors"
+                        aria-label="Cancel selection"
+                        title="Cancel selection"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => setIsSelectionMode(true)}
+                        className="text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-200 transition-colors"
+                        aria-label="Select notifications"
+                        title="Select notifications"
+                      >
+                        <Icon icon="mdi:checkbox-multiple-outline" className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => setIsPreferencesModalOpen(true)}
+                        className="text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-200 transition-colors"
+                        aria-label="Notification preferences"
+                        title="Notification preferences"
+                      >
+                        <Icon icon="mdi:cog-outline" className="w-5 h-5" />
+                      </button>
+                    </>
+                  )}
                   {notifications.some(n => n.is_read) && (
                     <button
                       onClick={async () => {
@@ -479,10 +513,99 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                   );
                 }
 
+                const displayedNotifications = filteredNotifications.slice(0, notificationsPerPage);
+
                 return (
                   <>
+                    {/* Bulk action bar when in selection mode */}
+                    {isSelectionMode && selectedNotificationIds.size > 0 && (
+                      <div className="px-6 py-3 border-b border-gray-200 bg-blue-50 flex items-center justify-between sticky top-0 z-10">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              const filteredIds = displayedNotifications.map((n: Notification) => n.notification_id);
+                              const allSelected = filteredIds.length > 0 && filteredIds.every((id: string) => selectedNotificationIds.has(id));
+                              if (allSelected) {
+                                setSelectedNotificationIds(new Set());
+                              } else {
+                                setSelectedNotificationIds(new Set(filteredIds));
+                              }
+                            }}
+                            className="text-xs text-gray-600 hover:text-gray-800 px-2 py-1 rounded hover:bg-gray-200 transition-colors"
+                          >
+                            {(() => {
+                              const filteredIds = displayedNotifications.map((n: Notification) => n.notification_id);
+                              const allSelected = filteredIds.length > 0 && filteredIds.every((id: string) => selectedNotificationIds.has(id));
+                              return allSelected ? 'Deselect all' : 'Select all';
+                            })()}
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={async () => {
+                              if (!userData?.userId) return;
+                              try {
+                                const selectedIds = Array.from(selectedNotificationIds);
+                                const unreadSelected = notifications.filter(n => selectedIds.includes(n.notification_id) && !n.is_read);
+                                for (const notification of unreadSelected) {
+                                  await markNotificationAsRead(notification.notification_id, userData.userId);
+                                }
+                                const [notifs, count] = await Promise.all([
+                                  getNotificationsByUser(userData.userId),
+                                  getUnreadNotificationCount(userData.userId)
+                                ]);
+                                setNotifications(notifs);
+                                const preferences = await getNotificationPreferencesFromDB(userData.userId);
+                                setNotificationPreferences(preferences);
+                                const visibleNotifications = notifs.filter(n => !preferences.disabledTypes.includes(n.type as any));
+                                const visibleUnreadCount = visibleNotifications.filter(n => !n.is_read).length;
+                                setUnreadCount(visibleUnreadCount);
+                                setSelectedNotificationIds(new Set());
+                                setIsSelectionMode(false);
+                              } catch (error) {
+                                console.error('Error marking selected notifications as read:', error);
+                              }
+                            }}
+                            className="text-xs text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded transition-colors"
+                            aria-label="Mark selected as read"
+                          >
+                            Mark read ({selectedNotificationIds.size})
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (!userData?.userId) return;
+                              if (!confirm(`Delete ${selectedNotificationIds.size} notification(s)?`)) return;
+                              try {
+                                const selectedIds = Array.from(selectedNotificationIds);
+                                for (const notificationId of selectedIds) {
+                                  await deleteNotification(notificationId, userData.userId);
+                                }
+                                const [notifs, count] = await Promise.all([
+                                  getNotificationsByUser(userData.userId),
+                                  getUnreadNotificationCount(userData.userId)
+                                ]);
+                                setNotifications(notifs);
+                                const preferences = await getNotificationPreferencesFromDB(userData.userId);
+                                setNotificationPreferences(preferences);
+                                const visibleNotifications = notifs.filter(n => !preferences.disabledTypes.includes(n.type as any));
+                                const visibleUnreadCount = visibleNotifications.filter(n => !n.is_read).length;
+                                setUnreadCount(visibleUnreadCount);
+                                setSelectedNotificationIds(new Set());
+                                setIsSelectionMode(false);
+                              } catch (error) {
+                                console.error('Error deleting selected notifications:', error);
+                              }
+                            }}
+                            className="text-xs text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded transition-colors"
+                            aria-label="Delete selected"
+                          >
+                            Delete ({selectedNotificationIds.size})
+                          </button>
+                        </div>
+                      </div>
+                    )}
                     <ul className="py-2">
-                      {filteredNotifications.slice(0, notificationsPerPage).map((notification, index) => {
+                      {displayedNotifications.map((notification, index) => {
                     const formatDate = (dateString: string) => {
                       const date = new Date(dateString);
                       const now = new Date();
@@ -559,11 +682,12 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                         <div 
                           className={`block px-6 py-3 text-sm hover:bg-gray-50 border-b border-gray-200 transition-colors group ${
                             !notification.is_read ? 'bg-blue-50' : 'bg-white'
-                          }`}
+                          } ${selectedNotificationIds.has(notification.notification_id) ? 'bg-blue-100' : ''}`}
                         >
                           <div
-                            className="cursor-pointer"
+                            className={isSelectionMode ? "" : "cursor-pointer"}
                             onClick={async () => {
+                              if (isSelectionMode) return; // Don't navigate when in selection mode
                             if (!notification.is_read && userData?.userId) {
                               try {
                                 await markNotificationAsRead(notification.notification_id, userData.userId);
@@ -688,7 +812,28 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                             }}
                           >
                             <div className="flex items-start gap-3">
-                              <div className={`mt-0.5 ${!notification.is_read ? 'text-blue-500' : 'text-gray-400'}`}>
+                              {isSelectionMode && (
+                                <div className="mt-0.5 flex-shrink-0">
+                                  <label className="flex items-center cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedNotificationIds.has(notification.notification_id)}
+                                      onChange={(e) => {
+                                        const newSelected = new Set(selectedNotificationIds);
+                                        if (e.target.checked) {
+                                          newSelected.add(notification.notification_id);
+                                        } else {
+                                          newSelected.delete(notification.notification_id);
+                                        }
+                                        setSelectedNotificationIds(newSelected);
+                                      }}
+                                      className="w-4 h-4 text-plantain-green border-gray-300 rounded focus:ring-plantain-green focus:ring-2"
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+                                  </label>
+                                </div>
+                              )}
+                              <div className={`mt-0.5 flex-shrink-0 ${!notification.is_read ? 'text-blue-500' : 'text-gray-400'}`}>
                                 <Icon icon={getNotificationIcon(notification.type, notification.title, notification.metadata)} className="w-5 h-5" />
                               </div>
                               <div className="flex-1 min-w-0">
