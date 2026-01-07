@@ -144,24 +144,53 @@ export default function Calendar() {
   }, []);
 
   useEffect(() => {
-    // Combine DEFAULT_EVENTS, familyEvents, and user-created events
-    const baseEvents = [...DEFAULT_EVENTS, ...familyEvents];
-    
-    // Initialize events with base events if events are empty
-    if (events.length === 0) {
-      setEvents(baseEvents);
-    } else {
+    const filterAndCombineEvents = async () => {
+      if (!user?.userId) return;
+      
+      // Get current user's family group and family member IDs
+      const familyMembers = await getAllFamilyMembers(user.userId);
+      const familyMemberIds = new Set(familyMembers.map(m => m.family_member_id));
+      
+      // Combine DEFAULT_EVENTS and familyEvents
+      // familyEvents are already filtered (generated from filtered family members)
+      const baseEvents = [...DEFAULT_EVENTS, ...familyEvents];
+      
+      // Filter baseEvents by family group (for any events that might have userId)
+      const filteredBaseEvents = baseEvents.filter((event: CalendarEvent) => {
+        const eventUserId = event.userId || event.extendedProps?.userId;
+        if (!eventUserId) {
+          return true; // System events (holidays, etc.) - show to everyone
+        }
+        // Check if the event creator is in the user's family group
+        return familyMemberIds.has(eventUserId);
+      });
+      
+      // Get current events from context and filter them
+      const currentEvents = events || [];
+      const filteredContextEvents = currentEvents.filter((event: CalendarEvent) => {
+        const eventUserId = event.userId || event.extendedProps?.userId;
+        if (!eventUserId) {
+          return true; // System events - show to everyone
+        }
+        return familyMemberIds.has(eventUserId);
+      });
+      
       // Combine all events, ensuring no duplicates based on id
-      const combinedEvents = [...events, ...baseEvents].filter((event, index, self) =>
+      const combinedEvents = [...filteredContextEvents, ...filteredBaseEvents].filter((event, index, self) =>
         index === self.findIndex((e) => e.id === event.id)
       );
 
       // Only update state if combinedEvents is different from current events
-      if (JSON.stringify(combinedEvents) !== JSON.stringify(events)) {
+      const currentEventsStr = JSON.stringify(currentEvents.sort((a, b) => (a.id || '').localeCompare(b.id || '')));
+      const combinedEventsStr = JSON.stringify(combinedEvents.sort((a, b) => (a.id || '').localeCompare(b.id || '')));
+      
+      if (currentEventsStr !== combinedEventsStr) {
         setEvents(combinedEvents);
       }
-    }
-  }, [familyEvents]);
+    };
+    
+    filterAndCombineEvents();
+  }, [familyEvents, user?.userId]);
 
   useEffect(() => {
     if (eventIdFromQuery && events.length > 0) {

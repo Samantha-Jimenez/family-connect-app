@@ -4,7 +4,8 @@ import { useAuth } from '@/context/AuthContext'; // Import your auth context
 import { v4 as uuidv4 } from 'uuid';
 import { DEFAULT_EVENTS } from '@/app/calendar/calendarData'; // Ensure this import is correct
 import { PutItemCommand } from "@aws-sdk/client-dynamodb"; // Import PutItemCommand
-import { getUserRSVPs, saveRSVPToDynamoDB } from '@/hooks/dynamoDB'; // Import the new function and saveRSVPToDynamoDB
+import { getUserRSVPs, saveRSVPToDynamoDB, getAllFamilyMembers } from '@/hooks/dynamoDB'; // Import the new function and saveRSVPToDynamoDB
+import { getUserFamilyGroup, isDemoUser } from '@/utils/demoConfig';
 
 export interface CalendarEvent {
   id?: string;
@@ -52,6 +53,7 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
 
   // Define addEvent inside the provider
   const addEvent = (title: string, start: string, end?: string, allDay?: boolean, location?: string, createdBy?: string, description?: string) => {
+    const eventUserId = user?.userId || createdBy;
     setEvents((prevEvents: CalendarEvent[]) => [
       ...prevEvents,
       {
@@ -63,12 +65,14 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
         location,
         createdBy,
         description,
+        userId: eventUserId, // Store the creator's userId for filtering
         // Apply default green colors for non-birthday events
         backgroundColor: '#C8D5B9', // Green background
         borderColor: '#2E6E49',    // Darker green border
         textColor: '#000000',       // Black text
         extendedProps: {
-          category: 'appointment' as const // Default category for user-created events
+          category: 'appointment' as const, // Default category for user-created events
+          userId: eventUserId // Also store in extendedProps for compatibility
         }
       },
     ]);
@@ -76,12 +80,33 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
 
   // Load saved events after initial render
   useEffect(() => {
-    const savedEvents = localStorage.getItem('calendarEvents');
-    if (savedEvents) {
-      const parsedEvents = JSON.parse(savedEvents);
+    const loadAndFilterEvents = async () => {
+      if (!user?.userId) return;
       
-      // Update existing events with new color scheme
-      const updatedEvents = parsedEvents.map((event: CalendarEvent) => {
+      const savedEvents = localStorage.getItem('calendarEvents');
+      if (savedEvents) {
+        const parsedEvents = JSON.parse(savedEvents);
+        
+        // Get current user's family group and family member IDs
+        const userFamilyGroup = getUserFamilyGroup(user.userId);
+        const familyMembers = await getAllFamilyMembers(user.userId);
+        const familyMemberIds = new Set(familyMembers.map(m => m.family_member_id));
+        
+        // Filter events by family group
+        const filteredEvents = parsedEvents.filter((event: CalendarEvent) => {
+          // Events without userId/extendedProps.userId are system events (like holidays) - show to all
+          const eventUserId = event.userId || event.extendedProps?.userId;
+          if (!eventUserId) {
+            // System events (holidays, etc.) - show to everyone
+            return true;
+          }
+          
+          // Check if the event creator is in the user's family group
+          return familyMemberIds.has(eventUserId);
+        });
+        
+        // Update existing events with new color scheme
+        const updatedEvents = filteredEvents.map((event: CalendarEvent) => {
         // Update birthday events to new color scheme
         if (event.extendedProps?.category === 'birthday') {
           return {
@@ -116,9 +141,12 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
       });
       
       setEvents(updatedEvents);
-    }
-    setIsInitialized(true);
-  }, []);
+      }
+      setIsInitialized(true);
+    };
+    
+    loadAndFilterEvents();
+  }, [user?.userId]);
 
   // Save to localStorage whenever events change, but only after initialization
   useEffect(() => {
