@@ -34,7 +34,7 @@ export default function TaggedPhotosCard({ userId }: { userId: string }) {
         throw new Error("User not authenticated");
       }
 
-      const response = await fetch('/api/photos');
+      const response = await fetch(`/api/photos?userId=${encodeURIComponent(userId)}&taggedUserId=${encodeURIComponent(userId)}`);
       const data = await response.json();
       // Filter photos where the current user is tagged
       const filteredPhotos = data.photos.filter((photo: PhotoData) => {

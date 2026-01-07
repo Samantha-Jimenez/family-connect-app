@@ -53,7 +53,8 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
   useEffect(() => {
     const loadFamilyMembers = async () => {
       try {
-        const members = await getAllFamilyMembers();
+        const user = await getCurrentUser();
+        const members = await getAllFamilyMembers(user?.userId);
         setFamilyMembers(members);
       } catch (error) {
         console.error('Error loading family members:', error);
