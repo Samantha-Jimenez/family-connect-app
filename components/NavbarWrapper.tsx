@@ -390,8 +390,14 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
           >
             <div className="border-b border-gray-200 bg-gray-50 rounded-ss-xl">
               <div className="flex items-center justify-between px-6 py-4">
-                <h2 className="text-xl font-semibold text-gray-800">
-                  {isSelectionMode ? `${selectedNotificationIds.size} selected` : 'Notifications'}
+                <h2 className="text-xl font-semibold text-gray-800 transition-all duration-300">
+                  {isSelectionMode ? (
+                    <span className="animate-[fadeIn_0.2s_ease-out]">
+                      {selectedNotificationIds.size} selected
+                    </span>
+                  ) : (
+                    'Notifications'
+                  )}
                 </h2>
                 <div className="flex items-center gap-2">
                   {isSelectionMode ? (
@@ -401,7 +407,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                           setIsSelectionMode(false);
                           setSelectedNotificationIds(new Set());
                         }}
-                        className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-200 transition-colors"
+                        className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-200 transition-all duration-200 hover:scale-105 active:scale-95"
                         aria-label="Cancel selection"
                         title="Cancel selection"
                       >
@@ -412,11 +418,11 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                     <>
                       <button
                         onClick={() => setIsSelectionMode(true)}
-                        className="text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-200 transition-colors"
+                        className="text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-200 transition-all duration-200 hover:scale-110 active:scale-95"
                         aria-label="Select notifications"
                         title="Select notifications"
                       >
-                        <Icon icon="mdi:checkbox-multiple-outline" className="w-5 h-5" />
+                        <Icon icon="mdi:checkbox-multiple-outline" className="w-5 h-5 transition-transform duration-200" />
                       </button>
                       <button
                         onClick={() => setIsPreferencesModalOpen(true)}
@@ -519,7 +525,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                   <>
                     {/* Bulk action bar when in selection mode */}
                     {isSelectionMode && selectedNotificationIds.size > 0 && (
-                      <div className="px-6 py-3 border-b border-gray-200 bg-blue-50 flex items-center justify-between sticky top-0 z-10">
+                      <div className="px-6 py-3 border-b border-gray-200 bg-blue-50 flex items-center justify-between sticky top-0 z-10 animate-[slideDown_0.3s_ease-out]">
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => {
@@ -566,7 +572,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                                 console.error('Error marking selected notifications as read:', error);
                               }
                             }}
-                            className="text-xs text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded transition-colors"
+                            className="text-xs text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm hover:shadow-md"
                             aria-label="Mark selected as read"
                           >
                             Mark read ({selectedNotificationIds.size})
@@ -596,7 +602,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                                 console.error('Error deleting selected notifications:', error);
                               }
                             }}
-                            className="text-xs text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded transition-colors"
+                            className="text-xs text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm hover:shadow-md"
                             aria-label="Delete selected"
                           >
                             Delete ({selectedNotificationIds.size})
@@ -678,11 +684,18 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                     };
 
                     return (
-                      <li key={notification.notification_id}>
+                      <li 
+                        key={notification.notification_id}
+                        className="animate-[notificationEnter_0.3s_ease-out]"
+                        style={{
+                          animationDelay: `${index * 0.03}s`,
+                          animationFillMode: 'both'
+                        }}
+                      >
                         <div 
-                          className={`block px-6 py-3 text-sm hover:bg-gray-50 border-b border-gray-200 transition-colors group ${
+                          className={`block px-6 py-3 text-sm hover:bg-gray-50 border-b border-gray-200 transition-all duration-300 group ${
                             !notification.is_read ? 'bg-blue-50' : 'bg-white'
-                          } ${selectedNotificationIds.has(notification.notification_id) ? 'bg-blue-100' : ''}`}
+                          } ${selectedNotificationIds.has(notification.notification_id) ? 'bg-blue-100 shadow-sm' : ''}`}
                         >
                           <div
                             className={isSelectionMode ? "" : "cursor-pointer"}
@@ -813,7 +826,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                           >
                             <div className="flex items-start gap-3">
                               {isSelectionMode && (
-                                <div className="mt-0.5 flex-shrink-0">
+                                <div className="mt-0.5 flex-shrink-0 animate-[checkboxAppear_0.2s_ease-out]">
                                   <label className="flex items-center cursor-pointer">
                                     <input
                                       type="checkbox"
@@ -827,20 +840,24 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                                         }
                                         setSelectedNotificationIds(newSelected);
                                       }}
-                                      className="w-4 h-4 text-plantain-green border-gray-300 rounded focus:ring-plantain-green focus:ring-2"
+                                      className={`w-4 h-4 text-plantain-green border-gray-300 rounded focus:ring-plantain-green focus:ring-2 transition-all duration-200 ${
+                                        selectedNotificationIds.has(notification.notification_id) 
+                                          ? 'scale-110 ring-2 ring-plantain-green ring-offset-1' 
+                                          : ''
+                                      }`}
                                       onClick={(e) => e.stopPropagation()}
                                     />
                                   </label>
                                 </div>
                               )}
-                              <div className={`mt-0.5 flex-shrink-0 ${!notification.is_read ? 'text-blue-500' : 'text-gray-400'}`}>
+                              <div className={`mt-0.5 flex-shrink-0 transition-all duration-200 ${!notification.is_read ? 'text-blue-500' : 'text-gray-400'} ${selectedNotificationIds.has(notification.notification_id) ? 'scale-110' : ''}`}>
                                 <Icon icon={getNotificationIcon(notification.type, notification.title, notification.metadata)} className="w-5 h-5" />
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <div className={`font-medium ${!notification.is_read ? 'text-gray-900' : 'text-gray-700'}`}>
+                              <div className="flex-1 min-w-0 transition-all duration-200">
+                                <div className={`font-medium transition-colors duration-200 ${!notification.is_read ? 'text-gray-900' : 'text-gray-700'} ${selectedNotificationIds.has(notification.notification_id) ? 'font-semibold' : ''}`}>
                                   {notification.title}
                                 </div>
-                                <div className="text-sm text-gray-500 mt-1 font-extralight">
+                                <div className="text-sm text-gray-500 mt-1 font-extralight transition-colors duration-200">
                                   {notification.message}
                                 </div>
                                 <div className="text-xs text-gray-400 mt-1 font-extralight">
@@ -848,7 +865,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                                 </div>
                               </div>
                               {!notification.is_read && (
-                                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                                <div className={`w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0 transition-all duration-200 ${selectedNotificationIds.has(notification.notification_id) ? 'scale-125' : ''}`}></div>
                               )}
                               <button
                                 onClick={async (e) => {
@@ -866,7 +883,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                                     console.error('Error deleting notification:', error);
                                   }
                                 }}
-                                className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-200 transition-all ml-auto flex-shrink-0"
+                                className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-200 transition-all duration-200 ml-auto flex-shrink-0 hover:scale-110"
                                 aria-label="Delete notification"
                                 title="Delete notification"
                               >
