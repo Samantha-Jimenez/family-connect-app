@@ -4,8 +4,8 @@ import { useAuth } from '@/context/AuthContext'; // Import your auth context
 import { v4 as uuidv4 } from 'uuid';
 import { DEFAULT_EVENTS } from '@/app/calendar/calendarData'; // Ensure this import is correct
 import { PutItemCommand } from "@aws-sdk/client-dynamodb"; // Import PutItemCommand
-import { getUserRSVPs, saveRSVPToDynamoDB, getAllFamilyMembers } from '@/hooks/dynamoDB'; // Import the new function and saveRSVPToDynamoDB
-import { getUserFamilyGroup, isDemoUser } from '@/utils/demoConfig';
+import { getUserRSVPs, saveRSVPToDynamoDB, getAllFamilyMembers, getEventsFromDynamoDB, saveEventToDynamoDB, deleteEventFromDynamoDB } from '@/hooks/dynamoDB'; // Import the new function and saveRSVPToDynamoDB
+import { getUserFamilyGroup, isDemoUser, REAL_FAMILY_GROUP, DEMO_USER_IDS } from '@/utils/demoConfig';
 
 export interface CalendarEvent {
   id?: string;
@@ -83,17 +83,62 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
     const loadAndFilterEvents = async () => {
       if (!user?.userId) return;
       
-      const savedEvents = localStorage.getItem('calendarEvents');
-      if (savedEvents) {
-        const parsedEvents = JSON.parse(savedEvents);
+      try {
+        // Load events from DynamoDB first (for cross-device persistence) - do this in parallel with localStorage
+        console.log('📅 Loading events from DynamoDB...');
+        const [dynamoEvents, savedEvents] = await Promise.all([
+          getEventsFromDynamoDB(user.userId).catch(err => {
+            console.error('❌ Error loading from DynamoDB:', err);
+            return [];
+          }),
+          Promise.resolve(localStorage.getItem('calendarEvents'))
+        ]);
+        
+        console.log('📅 Loaded', dynamoEvents.length, 'events from DynamoDB');
+        
+        // Parse localStorage events (for backward compatibility and offline support)
+        const localEvents = savedEvents ? JSON.parse(savedEvents) : [];
+        console.log('📅 Loaded', localEvents.length, 'events from localStorage');
+        
+        // Merge events: DynamoDB takes precedence, then localStorage
+        // Use a Map to deduplicate by event ID
+        const eventsMap = new Map<string, CalendarEvent>();
+        
+        // Add DynamoDB events first (these are the source of truth)
+        dynamoEvents.forEach(event => {
+          if (event.id) {
+            eventsMap.set(event.id, {
+              ...event,
+              extendedProps: {
+                category: event.category,
+                userId: event.userId,
+                location: event.location,
+                rrule: event.rrule
+              }
+            });
+          }
+        });
+        
+        // Add localStorage events (only if not already in map - for backward compatibility)
+        localEvents.forEach((event: CalendarEvent) => {
+          if (event.id && !eventsMap.has(event.id)) {
+            eventsMap.set(event.id, event);
+          }
+        });
+        
+        const allEvents = Array.from(eventsMap.values());
+        console.log('📅 Total merged events:', allEvents.length);
         
         // Get current user's family group and family member IDs
         const userFamilyGroup = getUserFamilyGroup(user.userId);
+        const isUserDemo = isDemoUser(user.userId);
         const familyMembers = await getAllFamilyMembers(user.userId);
         const familyMemberIds = new Set(familyMembers.map(m => m.family_member_id));
         
+        console.log('👤 Current user:', user.userId, 'Family group:', userFamilyGroup, 'Is demo:', isUserDemo);
+        
         // Filter events by family group
-        const filteredEvents = parsedEvents.filter((event: CalendarEvent) => {
+        const filteredEvents = allEvents.filter((event: CalendarEvent) => {
           // Events without userId/extendedProps.userId are system events (like holidays) - show to all
           const eventUserId = event.userId || event.extendedProps?.userId;
           if (!eventUserId) {
@@ -101,9 +146,19 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
             return true;
           }
           
-          // Check if the event creator is in the user's family group
-          return familyMemberIds.has(eventUserId);
+          // Check if the event was created by a demo user
+          const isEventFromDemoUser = isDemoUser(eventUserId) || DEMO_USER_IDS.includes(eventUserId);
+          
+          if (isUserDemo) {
+            // Demo users: only show events created by demo users or events in their family group
+            return isEventFromDemoUser || familyMemberIds.has(eventUserId);
+          } else {
+            // Real family members: show all events EXCEPT those created by demo users
+            return !isEventFromDemoUser;
+          }
         });
+        
+        console.log('📅 Filtered events:', filteredEvents.length, 'events');
         
         // Update existing events with new color scheme
         const updatedEvents = filteredEvents.map((event: CalendarEvent) => {
@@ -140,9 +195,20 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
         return event;
       });
       
+      // Save merged events to localStorage for faster future loads
+      localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
       setEvents(updatedEvents);
-      }
       setIsInitialized(true);
+      } catch (error) {
+        console.error('❌ Error loading events:', error);
+        // Fallback to localStorage only if DynamoDB fails
+        const savedEvents = localStorage.getItem('calendarEvents');
+        if (savedEvents) {
+          const parsedEvents = JSON.parse(savedEvents);
+          setEvents(parsedEvents);
+          setIsInitialized(true);
+        }
+      }
     };
     
     loadAndFilterEvents();

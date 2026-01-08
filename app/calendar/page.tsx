@@ -15,7 +15,8 @@ import { useAuth } from '@/context/AuthContext';
 import { EventApi } from '@fullcalendar/core';
 import { DEFAULT_EVENTS } from './calendarData'; // Import your default events
 import { useSearchParams } from 'next/navigation';
-import { getAllFamilyMembers, FamilyMember, sendEventCancellationNotifications, createNotification, getUserNameById } from '@/hooks/dynamoDB';
+import { getAllFamilyMembers, FamilyMember, sendEventCancellationNotifications, createNotification, getUserNameById, saveEventToDynamoDB, deleteEventFromDynamoDB } from '@/hooks/dynamoDB';
+import { getUserFamilyGroup, isDemoUser, DEMO_USER_IDS } from '@/utils/demoConfig';
 
 interface CalendarEvent {
   id?: string;
@@ -140,14 +141,18 @@ export default function Calendar() {
       }
     };
 
-    fetchFamilyEvents();
-  }, []);
+    if (user?.userId) {
+      fetchFamilyEvents();
+    }
+  }, [user?.userId]);
 
   useEffect(() => {
     const filterAndCombineEvents = async () => {
       if (!user?.userId) return;
       
       // Get current user's family group and family member IDs
+      const userFamilyGroup = getUserFamilyGroup(user.userId);
+      const isUserDemo = isDemoUser(user.userId);
       const familyMembers = await getAllFamilyMembers(user.userId);
       const familyMemberIds = new Set(familyMembers.map(m => m.family_member_id));
       
@@ -161,32 +166,47 @@ export default function Calendar() {
         if (!eventUserId) {
           return true; // System events (holidays, etc.) - show to everyone
         }
-        // Check if the event creator is in the user's family group
-        return familyMemberIds.has(eventUserId);
-      });
-      
-      // Get current events from context and filter them
-      const currentEvents = events || [];
-      const filteredContextEvents = currentEvents.filter((event: CalendarEvent) => {
-        const eventUserId = event.userId || event.extendedProps?.userId;
-        if (!eventUserId) {
-          return true; // System events - show to everyone
+        
+        // Check if the event was created by a demo user
+        const isEventFromDemoUser = isDemoUser(eventUserId) || DEMO_USER_IDS.includes(eventUserId);
+        
+        if (isUserDemo) {
+          // Demo users: only show events created by demo users or events in their family group
+          return isEventFromDemoUser || familyMemberIds.has(eventUserId);
+        } else {
+          // Real family members: show all events EXCEPT those created by demo users
+          return !isEventFromDemoUser;
         }
-        return familyMemberIds.has(eventUserId);
       });
       
-      // Combine all events, ensuring no duplicates based on id
-      const combinedEvents = [...filteredContextEvents, ...filteredBaseEvents].filter((event, index, self) =>
-        index === self.findIndex((e) => e.id === event.id)
-      );
+      // Get current events from context (which already has DynamoDB events loaded and filtered)
+      // Combine with birthday/memorial events generated from family members
+      setEvents(currentEvents => {
+        const contextEvents = currentEvents || [];
+        console.log('🔄 filterAndCombineEvents - combining', contextEvents.length, 'context events with', filteredBaseEvents.length, 'base events (birthdays/memorials)');
+        
+        // Combine all events, ensuring no duplicates based on id
+        // Birthday/memorial events take precedence if there's a duplicate (they're generated fresh)
+        const combinedEvents = [...filteredBaseEvents, ...contextEvents].filter((event, index, self) =>
+          index === self.findIndex((e) => e.id === event.id)
+        );
 
-      // Only update state if combinedEvents is different from current events
-      const currentEventsStr = JSON.stringify(currentEvents.sort((a, b) => (a.id || '').localeCompare(b.id || '')));
-      const combinedEventsStr = JSON.stringify(combinedEvents.sort((a, b) => (a.id || '').localeCompare(b.id || '')));
-      
-      if (currentEventsStr !== combinedEventsStr) {
-        setEvents(combinedEvents);
-      }
+        console.log('🔄 filterAndCombineEvents - combined to', combinedEvents.length, 'total events');
+
+        // Only update state if combinedEvents is different from current events
+        const currentEventsStr = JSON.stringify(contextEvents.sort((a: CalendarEvent, b: CalendarEvent) => (a.id || '').localeCompare(b.id || '')));
+        const combinedEventsStr = JSON.stringify(combinedEvents.sort((a: CalendarEvent, b: CalendarEvent) => (a.id || '').localeCompare(b.id || '')));
+        
+        if (currentEventsStr !== combinedEventsStr) {
+          // Save to localStorage when updating
+          console.log('💾 filterAndCombineEvents - saving', combinedEvents.length, 'events to localStorage');
+          localStorage.setItem('calendarEvents', JSON.stringify(combinedEvents));
+          return combinedEvents;
+        }
+        
+        console.log('⏭️ filterAndCombineEvents - no changes, skipping update');
+        return currentEvents;
+      });
     };
     
     filterAndCombineEvents();
@@ -249,14 +269,47 @@ export default function Calendar() {
       borderColor: '#2E6E49',    // Darker green border
       textColor: '#000000',       // Black text
       extendedProps: {
-        category: 'appointment' as const // Default category for user-created events
+        category: 'appointment' as const, // Default category for user-created events
+        userId: userId // Also store in extendedProps for consistency with filtering logic
       }
     };
 
     // Check if the event already exists based on title and start time
     const eventExists = events.some(event => event.title === newEvent.title && event.start === newEvent.start);
     if (!eventExists) {
-      setEvents(currentEvents => [...currentEvents, newEvent]);
+      // Update events state
+      setEvents(currentEvents => {
+        const updatedEvents = [...currentEvents, newEvent];
+        // Immediately save to localStorage for quick access
+        console.log('💾 Saving new event to localStorage:', newEvent.title, 'userId:', newEvent.userId);
+        localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
+        console.log('✅ Saved', updatedEvents.length, 'events to localStorage');
+        return updatedEvents;
+      });
+
+      // Save to DynamoDB for cross-device persistence
+      try {
+        await saveEventToDynamoDB({
+          id: newEvent.id!,
+          title: newEvent.title,
+          start: newEvent.start,
+          end: newEvent.end,
+          allDay: newEvent.allDay,
+          backgroundColor: newEvent.backgroundColor,
+          borderColor: newEvent.borderColor,
+          textColor: newEvent.textColor,
+          location: newEvent.location,
+          description: newEvent.description,
+          userId: newEvent.userId,
+          createdBy: newEvent.userId,
+          category: newEvent.extendedProps?.category,
+          rrule: (newEvent.extendedProps as any)?.rrule
+        }, user?.userId);
+        console.log('✅ Event saved to DynamoDB for cross-device persistence');
+      } catch (error) {
+        console.error('❌ Error saving event to DynamoDB:', error);
+        // Don't fail the event creation if DynamoDB save fails
+      }
 
       // Send notifications to all family members if requested
       if (notifyMembers) {
@@ -308,16 +361,53 @@ export default function Calendar() {
     }
   };
 
-  const handleEditEvent = (title: string, start: string, userId: string, end?: string, allDay?: boolean, location?: string, description?: string) => {
+  const handleEditEvent = async (title: string, start: string, userId: string, end?: string, allDay?: boolean, location?: string, description?: string) => {
     if (!selectedEvent?.id) return;
     
-    setEvents(currentEvents =>
-      currentEvents.map(event =>
-        event.id === selectedEvent.id
-          ? { ...event, title, start, end, allDay, location, userId, description }
-          : event
-      )
-    );
+    const updatedEvent = {
+      ...selectedEvent,
+      title,
+      start,
+      end,
+      allDay,
+      location,
+      userId,
+      description
+    };
+    
+    // Update state and localStorage
+    setEvents(currentEvents => {
+      const updatedEvents = currentEvents.map(event =>
+        event.id === selectedEvent.id ? updatedEvent : event
+      );
+      localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
+      return updatedEvents;
+    });
+    
+    // Update in DynamoDB
+    try {
+      await saveEventToDynamoDB({
+        id: selectedEvent.id,
+        title,
+        start,
+        end,
+        allDay,
+        backgroundColor: selectedEvent.backgroundColor,
+        borderColor: selectedEvent.borderColor,
+        textColor: selectedEvent.textColor,
+        location,
+        description,
+        userId,
+        createdBy: selectedEvent.userId || userId,
+        category: selectedEvent.extendedProps?.category,
+        rrule: selectedEvent.extendedProps?.rrule
+      }, user?.userId);
+      console.log('✅ Event updated in DynamoDB');
+    } catch (error) {
+      console.error('❌ Error updating event in DynamoDB:', error);
+      // Don't block edit if DynamoDB update fails
+    }
+    
     setIsModalOpen(false);
   };
 
@@ -335,9 +425,21 @@ export default function Calendar() {
       // Don't block deletion if notification sending fails
     }
     
-    setEvents(currentEvents =>
-      currentEvents.filter(event => event.id !== selectedEvent.id)
-    );
+    // Delete from DynamoDB
+    try {
+      await deleteEventFromDynamoDB(eventId);
+      console.log('✅ Event deleted from DynamoDB');
+    } catch (error) {
+      console.error('❌ Error deleting event from DynamoDB:', error);
+      // Don't block deletion if DynamoDB delete fails
+    }
+    
+    // Update state and localStorage
+    setEvents(currentEvents => {
+      const updatedEvents = currentEvents.filter(event => event.id !== selectedEvent.id);
+      localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
+      return updatedEvents;
+    });
     setIsModalOpen(false);
   };
 

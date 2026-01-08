@@ -29,7 +29,7 @@ const TABLES = {
   PHOTOS: "Photos",
   ALBUMS: "Albums",
   RELATIONSHIPS: "Relationships",
-  // EVENTS: "Events",
+  EVENTS: "Events",
   EVENT_RSVP: "EventRSVPs",
   HOBBY_COMMENTS: "HobbyComments",
   NOTIFICATIONS: "Notifications"
@@ -2293,6 +2293,162 @@ export async function getUserRSVPs(userId: string): Promise<{ eventId: string; s
     return [];
   }
 }
+
+// Calendar Event Functions for DynamoDB persistence
+export interface CalendarEventData {
+  id: string;
+  title: string;
+  start: string;
+  end?: string;
+  allDay?: boolean;
+  backgroundColor?: string;
+  borderColor?: string;
+  textColor?: string;
+  location?: string;
+  description?: string;
+  userId?: string;
+  createdBy?: string;
+  category?: 'birthday' | 'holiday' | 'family-event' | 'appointment';
+  rrule?: {
+    freq: 'daily' | 'weekly' | 'monthly' | 'yearly';
+    interval?: number;
+    byweekday?: number[];
+    until?: string;
+  };
+}
+
+export const saveEventToDynamoDB = async (event: CalendarEventData, userId?: string): Promise<void> => {
+  try {
+    const eventUserId = event.userId || userId || '';
+    const familyGroup = userId ? getUserFamilyGroup(userId) : REAL_FAMILY_GROUP;
+    
+    const item: Record<string, any> = {
+      event_id: { S: event.id },
+      title: { S: event.title },
+      start: { S: event.start },
+      user_id: { S: eventUserId },
+      family_group: { S: familyGroup },
+      created_at: { S: new Date().toISOString() }
+    };
+
+    if (event.end) item.end = { S: event.end };
+    if (event.allDay !== undefined) item.all_day = { BOOL: event.allDay };
+    if (event.backgroundColor) item.background_color = { S: event.backgroundColor };
+    if (event.borderColor) item.border_color = { S: event.borderColor };
+    if (event.textColor) item.text_color = { S: event.textColor };
+    if (event.location) item.location = { S: event.location };
+    if (event.description) item.description = { S: event.description };
+    if (event.createdBy) item.created_by = { S: event.createdBy };
+    if (event.category) item.category = { S: event.category };
+    if (event.rrule) {
+      item.rrule = {
+        M: {
+          freq: { S: event.rrule.freq },
+          ...(event.rrule.interval && { interval: { N: String(event.rrule.interval) } }),
+          ...(event.rrule.byweekday && { byweekday: { L: event.rrule.byweekday.map(d => ({ N: String(d) })) } }),
+          ...(event.rrule.until && { until: { S: event.rrule.until } })
+        }
+      };
+    }
+
+    const command = new PutItemCommand({
+      TableName: TABLES.EVENTS,
+      Item: item
+    });
+
+    await dynamoDB.send(command);
+    console.log('✅ Event saved to DynamoDB:', event.id);
+  } catch (error) {
+    console.error('❌ Error saving event to DynamoDB:', error);
+    throw error;
+  }
+};
+
+export const getEventsFromDynamoDB = async (userId?: string): Promise<CalendarEventData[]> => {
+  try {
+    const userFamilyGroup = userId ? getUserFamilyGroup(userId) : REAL_FAMILY_GROUP;
+    
+    // For real family members, get all events except demo ones
+    // For demo users, only get demo events
+    const params: any = {
+      TableName: TABLES.EVENTS,
+    };
+
+    const command = new ScanCommand(params);
+    const response = await dynamoDB.send(command);
+
+    if (!response.Items) {
+      return [];
+    }
+
+    const events = response.Items
+      .map(item => {
+        try {
+          const event: CalendarEventData = {
+            id: item.event_id?.S || '',
+            title: item.title?.S || '',
+            start: item.start?.S || '',
+            userId: item.user_id?.S,
+            createdBy: item.created_by?.S,
+            category: item.category?.S as any,
+          };
+
+          if (item.end?.S) event.end = item.end.S;
+          if (item.all_day?.BOOL !== undefined) event.allDay = item.all_day.BOOL;
+          if (item.background_color?.S) event.backgroundColor = item.background_color.S;
+          if (item.border_color?.S) event.borderColor = item.border_color.S;
+          if (item.text_color?.S) event.textColor = item.text_color.S;
+          if (item.location?.S) event.location = item.location.S;
+          if (item.description?.S) event.description = item.description.S;
+          if (item.rrule?.M) {
+            const rrule = item.rrule.M;
+            event.rrule = {
+              freq: rrule.freq?.S as any,
+              interval: rrule.interval?.N ? parseInt(rrule.interval.N) : undefined,
+              byweekday: rrule.byweekday?.L ? rrule.byweekday.L.map((d: any) => parseInt(d.N)) : undefined,
+              until: rrule.until?.S
+            };
+          }
+
+          // Filter by family group
+          const eventFamilyGroup = item.family_group?.S || REAL_FAMILY_GROUP;
+          if (userFamilyGroup === 'demo') {
+            // Demo users only see demo events
+            return eventFamilyGroup === 'demo' ? event : null;
+          } else {
+            // Real family members see all events except demo ones
+            return eventFamilyGroup !== 'demo' ? event : null;
+          }
+        } catch (error) {
+          console.error('Error parsing event:', error);
+          return null;
+        }
+      })
+      .filter((event): event is CalendarEventData => event !== null);
+
+    return events;
+  } catch (error) {
+    console.error('❌ Error fetching events from DynamoDB:', error);
+    return [];
+  }
+};
+
+export const deleteEventFromDynamoDB = async (eventId: string): Promise<void> => {
+  try {
+    const command = new DeleteItemCommand({
+      TableName: TABLES.EVENTS,
+      Key: {
+        event_id: { S: eventId }
+      }
+    });
+
+    await dynamoDB.send(command);
+    console.log('✅ Event deleted from DynamoDB:', eventId);
+  } catch (error) {
+    console.error('❌ Error deleting event from DynamoDB:', error);
+    throw error;
+  }
+};
 
 // Add this function near other user update functions
 export const setUserCTAVisible = async (userId: string, visible: boolean) => {
