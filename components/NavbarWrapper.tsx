@@ -62,6 +62,8 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
   const [photoUploaderName, setPhotoUploaderName] = useState<string | null>(null);
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
   const [isPhotoEditing, setIsPhotoEditing] = useState(false);
+  const [showDemoInfo, setShowDemoInfo] = useState(false);
+  const [copiedField, setCopiedField] = useState<'username' | 'password' | null>(null);
 
   useEffect(() => {
     async function fetchFamilyMembers() {
@@ -256,9 +258,91 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
               <br/> Don't have an account yet? Create one and join the family online.
             </h3>
             <h3 className="font-light mt-8 text-slate-500">
-              Aren't a family member? Don't worry, an app overview page is on its way!
-              {/* <button onClick={() => setIsProjectOverviewOpen(true)} className="text-lighter-brown hover:text-highlight-brown font-medium hover:underline ml-1">View project overview.</button> */}
+              Aren't a family member?{' '}
+              <button 
+                onClick={() => setShowDemoInfo(!showDemoInfo)} 
+                className="text-lighter-brown hover:text-highlight-brown font-medium hover:underline ml-1 transition-colors"
+              >
+                Don't worry!
+              </button>
             </h3>
+            <div 
+              className={`overflow-hidden transition-all duration-300 ease-out ${
+                showDemoInfo ? 'max-h-96 opacity-100 mt-4' : 'max-h-0 opacity-0 mt-0'
+              }`}
+            >
+              <div>
+                <p className="text-sm text-slate-500 mb-3">
+                  Explore the demo version with these credentials:
+                </p>
+                <div className="space-y-2 ml-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-slate-600">Username:</span>
+                    <button
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText('DemoUser');
+                          setCopiedField('username');
+                          setTimeout(() => setCopiedField(null), 2000);
+                        } catch (err) {
+                          console.error('Failed to copy:', err);
+                        }
+                      }}
+                      className={`text-sm px-3 py-1.5 rounded transition-all cursor-pointer font-mono flex items-center gap-1.5 ${
+                        copiedField === 'username'
+                          ? 'bg-green-100 text-green-700'
+                          : 'text-slate-700 bg-slate-100 hover:bg-slate-200'
+                      }`}
+                      title="Click to copy"
+                    >
+                      {copiedField === 'username' ? (
+                        <>
+                          <Icon icon="mdi:check" className="w-4 h-4" />
+                          <span>Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>DemoUser</span>
+                          <Icon icon="mdi:content-copy" className="w-3.5 h-3.5 opacity-70" />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-slate-600">Password:</span>
+                    <button
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText('Dem0User!');
+                          setCopiedField('password');
+                          setTimeout(() => setCopiedField(null), 2000);
+                        } catch (err) {
+                          console.error('Failed to copy:', err);
+                        }
+                      }}
+                      className={`text-sm px-3 py-1.5 rounded transition-all cursor-pointer font-mono flex items-center gap-1.5 ${
+                        copiedField === 'password'
+                          ? 'bg-green-100 text-green-700'
+                          : 'text-slate-700 bg-slate-100 hover:bg-slate-200'
+                      }`}
+                      title="Click to copy"
+                    >
+                      {copiedField === 'password' ? (
+                        <>
+                          <Icon icon="mdi:check" className="w-4 h-4" />
+                          <span>Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Dem0User!</span>
+                          <Icon icon="mdi:content-copy" className="w-3.5 h-3.5 opacity-70" />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="w-full mb-12">
