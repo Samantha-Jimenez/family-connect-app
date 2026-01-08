@@ -10,6 +10,7 @@ import {
 } from '@/hooks/dynamoDB';
 import { getCurrentUser } from 'aws-amplify/auth';
 import LoadSpinner from './LoadSpinner';
+import { DEMO_FAMILY_GROUP, REAL_FAMILY_GROUP } from '@/utils/demoConfig';
 
 interface EnhancedRelationshipFormProps {
   onRelationshipCreated?: () => void;
@@ -62,6 +63,8 @@ const GENDER_SPECIFIC_RELATIONSHIPS = {
 
 export default function EnhancedRelationshipForm({ onRelationshipCreated, showToast }: EnhancedRelationshipFormProps) {
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
+  const [allFamilyMembers, setAllFamilyMembers] = useState<FamilyMember[]>([]);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const [selectedPersonA, setSelectedPersonA] = useState<string>('');
   const [selectedPersonB, setSelectedPersonB] = useState<string>('');
   const [selectedRelationshipType, setSelectedRelationshipType] = useState<RelationshipType>('sibling');
@@ -75,20 +78,50 @@ export default function EnhancedRelationshipForm({ onRelationshipCreated, showTo
   const [validationResult, setValidationResult] = useState<{ valid: boolean; error?: string } | null>(null);
   const [genderSpecificRelationship, setGenderSpecificRelationship] = useState<string>('');
 
+  // Fetch all family members once on mount
   useEffect(() => {
-    const fetchFamilyMembers = async () => {
+    const fetchAllFamilyMembers = async () => {
       try {
         const user = await getCurrentUser();
-        const members = await getAllFamilyMembers(user?.userId);
-        setFamilyMembers(members);
+        // Fetch all family members (both real and demo) to enable toggling
+        const allMembers = await getAllFamilyMembers(user?.userId, true);
+        setAllFamilyMembers(allMembers);
       } catch (error) {
         console.error('Error fetching family members:', error);
         showToast?.('Error loading family members', 'error');
       }
     };
 
-    fetchFamilyMembers();
+    fetchAllFamilyMembers();
   }, [showToast]);
+
+  // Filter family members based on toggle state
+  useEffect(() => {
+    const filteredMembers = allFamilyMembers.filter(member => {
+      const memberGroup = member.family_group || REAL_FAMILY_GROUP;
+      return isDemoMode ? memberGroup === DEMO_FAMILY_GROUP : memberGroup === REAL_FAMILY_GROUP;
+    });
+    setFamilyMembers(filteredMembers);
+    
+    // Clear selections when switching modes if they don't belong to the current group
+    setSelectedPersonA(prev => {
+      if (prev) {
+        const personAGroup = allFamilyMembers.find(m => m.family_member_id === prev)?.family_group || REAL_FAMILY_GROUP;
+        const currentGroup = isDemoMode ? DEMO_FAMILY_GROUP : REAL_FAMILY_GROUP;
+        return personAGroup === currentGroup ? prev : '';
+      }
+      return prev;
+    });
+    
+    setSelectedPersonB(prev => {
+      if (prev) {
+        const personBGroup = allFamilyMembers.find(m => m.family_member_id === prev)?.family_group || REAL_FAMILY_GROUP;
+        const currentGroup = isDemoMode ? DEMO_FAMILY_GROUP : REAL_FAMILY_GROUP;
+        return personBGroup === currentGroup ? prev : '';
+      }
+      return prev;
+    });
+  }, [isDemoMode, allFamilyMembers]);
 
   useEffect(() => {
     const fetchSuggestions = async () => {
@@ -251,6 +284,43 @@ export default function EnhancedRelationshipForm({ onRelationshipCreated, showTo
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6 text-gray-800">Create Family Relationship</h2>
+      
+      {/* Toggle between Real and Demo Family Members */}
+      <div className="mb-4 flex items-center gap-3">
+        <span className="text-sm font-medium text-gray-700">Family Group:</span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setIsDemoMode(false);
+              setSelectedPersonA('');
+              setSelectedPersonB('');
+            }}
+            className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
+              !isDemoMode
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            Real
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setIsDemoMode(true);
+              setSelectedPersonA('');
+              setSelectedPersonB('');
+            }}
+            className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
+              isDemoMode
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            Demo
+          </button>
+        </div>
+      </div>
       
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Person Selection */}

@@ -57,6 +57,7 @@ const AdminPage = () => {
   const [sortField, setSortField] = useState<keyof FamilyMember | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isDemoMember, setIsDemoMember] = useState(false);
+  const [isDemoRelationshipsMode, setIsDemoRelationshipsMode] = useState(false);
 
   const sortedFamilyMembers = React.useMemo(() => {
     if (!sortField) return familyMembers;
@@ -338,20 +339,62 @@ const AdminPage = () => {
               />
               <div className="bg-white p-6 rounded-lg shadow-md">
                 <h2 className="text-2xl font-bold mb-6 text-gray-800">Family Member Relationships</h2>
+                
+                {/* Toggle between Real and Demo Family Members */}
+                <div className="mb-4 flex items-center gap-3">
+                  <span className="text-sm font-medium text-gray-700">Family Group:</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsDemoRelationshipsMode(false)}
+                      className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
+                        !isDemoRelationshipsMode
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      Real
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsDemoRelationshipsMode(true)}
+                      className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
+                        isDemoRelationshipsMode
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      Demo
+                    </button>
+                  </div>
+                </div>
+                
                 <div className="space-y-6">
-                  {familyMembers.map((member) => (
-                    <div key={member.family_member_id} className="border rounded-lg p-4">
-                      <EnhancedMemberRelationships
-                        key={`${member.family_member_id}-${relationshipRefreshKey}`}
-                        memberId={member.family_member_id}
-                        familyMembers={familyMembers}
-                        onRelationshipRemoved={() => {
-                          showToast('Relationship removed successfully', 'success');
-                        }}
-                        showToast={showToast}
-                      />
-                    </div>
-                  ))}
+                  {familyMembers
+                    .filter(member => {
+                      const memberGroup = member.family_group || REAL_FAMILY_GROUP;
+                      return isDemoRelationshipsMode 
+                        ? memberGroup === DEMO_FAMILY_GROUP 
+                        : memberGroup === REAL_FAMILY_GROUP;
+                    })
+                    .map((member) => (
+                      <div key={member.family_member_id} className="border rounded-lg p-4">
+                        <EnhancedMemberRelationships
+                          key={`${member.family_member_id}-${relationshipRefreshKey}`}
+                          memberId={member.family_member_id}
+                          familyMembers={familyMembers.filter(m => {
+                            const mGroup = m.family_group || REAL_FAMILY_GROUP;
+                            return isDemoRelationshipsMode 
+                              ? mGroup === DEMO_FAMILY_GROUP 
+                              : mGroup === REAL_FAMILY_GROUP;
+                          })}
+                          onRelationshipRemoved={() => {
+                            showToast('Relationship removed successfully', 'success');
+                          }}
+                          showToast={showToast}
+                        />
+                      </div>
+                    ))}
                 </div>
               </div>
             </div>
