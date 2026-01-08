@@ -5,14 +5,13 @@ export const demoFamilyTreeData = {
     {
       first_name: "Eudora",
       last_name: "Addams",
-      nick_name: "Grandmama",
       children: [
         {
           first_name: "Gomez",
           last_name: "Addams",
-          spouse: { 
-            "first_name": "Morticia", 
-            "last_name": "Addams",
+          spouse: {
+            first_name: "Morticia",
+            last_name: "Addams",
           },
           children: [
             {
@@ -60,7 +59,7 @@ export const demoFamilyTreeData = {
 };
 
 // The Addams Family tree structure:
-// - Unknown Addams (root/parent of Eudora and Sloom)
+// - Goody Addams (root/parent of Eudora and Sloom)
 //   - Eudora 'Grandmama' Addams
 //     - Gomez Addams (with spouse Morticia Addams)
 //       - Wednesday Addams
