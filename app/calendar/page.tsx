@@ -70,23 +70,27 @@ export default function Calendar() {
         const generatedEvents: CalendarEvent[] = [];
 
         familyMembers.forEach((member: FamilyMember) => {
-          // Add birthday events - create events for current and next few years
+          // Add birthday events - create events starting from 2025 onward
           if (member.birthday) {
             // Parse the date string directly to avoid timezone issues
             const dateStr = member.birthday.split('T')[0]; // Get YYYY-MM-DD part
             const [year, month, day] = dateStr.split('-').map(Number);
             
             if (month && day) {
-              // Create birthday events for the next 5 years
+              // Always start from 2025, then generate events for the next 5 years
+              const startYear = 2025;
               const currentYear = new Date().getFullYear();
-              for (let yearOffset = 0; yearOffset < 5; yearOffset++) {
+              // Generate events from 2025 to currentYear + 4 (at least 5 years total)
+              const endYear = Math.max(startYear + 4, currentYear + 4);
+              
+              for (let eventYear = startYear; eventYear <= endYear; eventYear++) {
                 // Format date directly as YYYY-MM-DD to avoid timezone conversion
-                const eventDateStr = `${currentYear + yearOffset}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const eventDateStr = `${eventYear}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 
                 const title = `${member.first_name} ${member.last_name}'s Birthday 🎂`;
                 
                 generatedEvents.push({
-                  id: `birthday-${member.family_member_id}-${currentYear + yearOffset}`,
+                  id: `birthday-${member.family_member_id}-${eventYear}`,
                   title: title,
                   start: eventDateStr,
                   allDay: true,
@@ -103,21 +107,25 @@ export default function Calendar() {
             }
           }
 
-          // Add death date events (memorial dates) - create for current and next few years
+          // Add death date events (memorial dates) - create starting from 2025 onward
           if (member.death_date) {
             // Parse the date string directly to avoid timezone issues
             const dateStr = member.death_date.split('T')[0]; // Get YYYY-MM-DD part
             const [year, month, day] = dateStr.split('-').map(Number);
             
             if (year && month && day) {
-              // Create memorial events for the next 5 years
+              // Always start from 2025, then generate events for the next 5 years
+              const startYear = 2025;
               const currentYear = new Date().getFullYear();
-              for (let yearOffset = 0; yearOffset < 5; yearOffset++) {
+              // Generate events from 2025 to currentYear + 4 (at least 5 years total)
+              const endYear = Math.max(startYear + 4, currentYear + 4);
+              
+              for (let eventYear = startYear; eventYear <= endYear; eventYear++) {
                 // Format date directly as YYYY-MM-DD to avoid timezone conversion
-                const eventDateStr = `${currentYear + yearOffset}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const eventDateStr = `${eventYear}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 
                 generatedEvents.push({
-                  id: `memorial-${member.family_member_id}-${currentYear + yearOffset}`,
+                  id: `memorial-${member.family_member_id}-${eventYear}`,
                   title: `In Memory of ${member.first_name} ${member.last_name} 🕊️`,
                   start: eventDateStr,
                   allDay: true,
@@ -463,9 +471,11 @@ export default function Calendar() {
         headerToolbar={{
           left: 'prev,next today',
           center: 'title',
-          right: 'refreshEvents timeGridWeek,dayGridMonth,multiMonthYear,listYear'
+          right: user?.userId === 'f16b1510-0001-705f-8680-28689883e706' 
+            ? 'refreshEvents timeGridWeek,dayGridMonth,multiMonthYear,listYear'
+            : 'timeGridWeek,dayGridMonth,multiMonthYear,listYear'
         }}
-        customButtons={{
+        customButtons={user?.userId === 'f16b1510-0001-705f-8680-28689883e706' ? {
           refreshEvents: {
             text: '🔄 Refresh',
             click: () => {
@@ -474,7 +484,7 @@ export default function Calendar() {
               window.location.reload();
             }
           }
-        }}
+        } : undefined}
         initialView="dayGridMonth"
         views={{
           // 🗓️ Grid Views
