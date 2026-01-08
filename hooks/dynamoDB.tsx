@@ -669,11 +669,11 @@ export const addPhotoToAlbum = async (photo_id: string, album_id: string) => {
   }
 };
 
-export const getAllFamilyMembers = async (userId?: string): Promise<FamilyMember[]> => {
+export const getAllFamilyMembers = async (userId?: string, includeAllGroups?: boolean): Promise<FamilyMember[]> => {
   try {
     // If userId not provided, try to get current user
     let currentUserId = userId;
-    if (!currentUserId) {
+    if (!currentUserId && !includeAllGroups) {
       try {
         const user = await getCurrentUser();
         currentUserId = user.userId;
@@ -685,7 +685,7 @@ export const getAllFamilyMembers = async (userId?: string): Promise<FamilyMember
     
     // Get the family group for the current user (or default to real if no user)
     const familyGroup = currentUserId ? getUserFamilyGroup(currentUserId) : REAL_FAMILY_GROUP;
-    console.log('🔍 getAllFamilyMembers - userId:', currentUserId, 'familyGroup:', familyGroup);
+    console.log('🔍 getAllFamilyMembers - userId:', currentUserId, 'familyGroup:', familyGroup, 'includeAllGroups:', includeAllGroups);
     
     const params: any = {
       TableName: TABLES.FAMILY,
@@ -698,41 +698,47 @@ export const getAllFamilyMembers = async (userId?: string): Promise<FamilyMember
       return [];
     }
 
-    // Map and filter by family group
+    // Map members
     // For backward compatibility: if family_group is not set, treat as 'real' data
-    return response.Items
-      .map(item => ({
-        family_member_id: item.family_member_id?.S || '',
-        first_name: item.first_name?.S || '',
-        last_name: item.last_name?.S || '',
-        middle_name: item.middle_name?.S || '',
-        nick_name: item.nick_name?.S || '',
-        email: item.email?.S || '',
-        username: item.username?.S || '',
-        bio: item.bio?.S || '',
-        phone_number: item.phone_number?.S || '',
-        birthday: item.birthday?.S || '',
-        birth_city: item.birth_city?.S || '',
-        birth_state: item.birth_state?.S || '',
-        profile_photo: item.profile_photo?.S || '',
-        current_city: item.current_city?.S || '',
-        current_state: item.current_state?.S || '',
-        death_date: item.death_date?.S || '',
-        use_first_name: item.use_first_name?.BOOL ?? true,
-        use_middle_name: item.use_middle_name?.BOOL ?? false,
-        use_nick_name: item.use_nick_name?.BOOL ?? false,
-        family_group: item.family_group?.S || REAL_FAMILY_GROUP,
-      }))
-      .filter(member => {
-        // Filter by family group
-        // If member has no family_group (existing data), it's real data
-        const memberGroup = member.family_group || REAL_FAMILY_GROUP;
-        const matches = memberGroup === familyGroup;
-        if (!matches) {
-          console.log(`🚫 Filtered out member: ${member.first_name} ${member.last_name} (group: ${memberGroup}, expected: ${familyGroup})`);
-        }
-        return matches;
-      });
+    const mappedMembers = response.Items.map(item => ({
+      family_member_id: item.family_member_id?.S || '',
+      first_name: item.first_name?.S || '',
+      last_name: item.last_name?.S || '',
+      middle_name: item.middle_name?.S || '',
+      nick_name: item.nick_name?.S || '',
+      email: item.email?.S || '',
+      username: item.username?.S || '',
+      bio: item.bio?.S || '',
+      phone_number: item.phone_number?.S || '',
+      birthday: item.birthday?.S || '',
+      birth_city: item.birth_city?.S || '',
+      birth_state: item.birth_state?.S || '',
+      profile_photo: item.profile_photo?.S || '',
+      current_city: item.current_city?.S || '',
+      current_state: item.current_state?.S || '',
+      death_date: item.death_date?.S || '',
+      use_first_name: item.use_first_name?.BOOL ?? true,
+      use_middle_name: item.use_middle_name?.BOOL ?? false,
+      use_nick_name: item.use_nick_name?.BOOL ?? false,
+      family_group: item.family_group?.S || REAL_FAMILY_GROUP,
+    }));
+
+    // If includeAllGroups is true, return all members without filtering
+    if (includeAllGroups) {
+      return mappedMembers;
+    }
+
+    // Otherwise, filter by family group
+    return mappedMembers.filter(member => {
+      // Filter by family group
+      // If member has no family_group (existing data), it's real data
+      const memberGroup = member.family_group || REAL_FAMILY_GROUP;
+      const matches = memberGroup === familyGroup;
+      if (!matches) {
+        console.log(`🚫 Filtered out member: ${member.first_name} ${member.last_name} (group: ${memberGroup}, expected: ${familyGroup})`);
+      }
+      return matches;
+    });
   } catch (error) {
     console.error("❌ Error fetching family members:", error);
     return [];
@@ -877,6 +883,7 @@ export const updateFamilyMember = async (
     current_city: string;
     current_state: string;
     death_date: string;
+    family_group?: string;
   }
 ) => {
   try {
@@ -886,7 +893,7 @@ export const updateFamilyMember = async (
         family_member_id: { S: familyMemberId },
       },
       UpdateExpression:
-        "SET first_name = :firstName, last_name = :lastName, middle_name = :middleName, nick_name = :nickName, email = :email, username = :username, bio = :bio, phone_number = :phoneNumber, birthday = :birthday, birth_city = :birth_city, birth_state = :birth_state, profile_photo = :profile_photo, current_city = :current_city, current_state = :current_state, death_date = :death_date",
+        "SET first_name = :firstName, last_name = :lastName, middle_name = :middleName, nick_name = :nickName, email = :email, username = :username, bio = :bio, phone_number = :phoneNumber, birthday = :birthday, birth_city = :birth_city, birth_state = :birth_state, profile_photo = :profile_photo, current_city = :current_city, current_state = :current_state, death_date = :death_date, family_group = :family_group",
       ExpressionAttributeValues: {
         ":firstName": { S: data.firstName },
         ":lastName": { S: data.lastName },
@@ -903,6 +910,7 @@ export const updateFamilyMember = async (
         ":current_city": { S: data.current_city },
         ":current_state": { S: data.current_state },
         ":death_date": { S: data.death_date },
+        ":family_group": { S: data.family_group || REAL_FAMILY_GROUP },
       },
       ReturnValues: "UPDATED_NEW" as ReturnValue,
     };
@@ -1204,7 +1212,8 @@ export const addFamilyMember = async (memberData: {
   profile_photo: string,
   current_city?: string,
   current_state?: string,
-  death_date?: string
+  death_date?: string,
+  family_group?: string
 }) => {
   try {
     const params = {
@@ -1228,7 +1237,8 @@ export const addFamilyMember = async (memberData: {
         death_date: { S: memberData.death_date || '' },
         use_first_name: { BOOL: true },
         use_middle_name: { BOOL: false },
-        use_nick_name: { BOOL: false }
+        use_nick_name: { BOOL: false },
+        family_group: { S: memberData.family_group || REAL_FAMILY_GROUP }
       }
     };
 

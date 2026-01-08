@@ -9,6 +9,7 @@ import AdminRelationships from '@/components/AdminRelationships';
 import EnhancedRelationshipForm from '@/components/EnhancedRelationshipForm';
 import EnhancedMemberRelationships from '@/components/EnhancedMemberRelationships';
 import AdminRelationshipCheck from '@/components/AdminRelationshipCheck';
+import { DEMO_FAMILY_GROUP, REAL_FAMILY_GROUP } from '@/utils/demoConfig';
 
 const initialFormData = {
   firstName: '',
@@ -55,6 +56,7 @@ const AdminPage = () => {
   const [relationshipRefreshKey, setRelationshipRefreshKey] = useState<number>(Date.now());
   const [sortField, setSortField] = useState<keyof FamilyMember | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [isDemoMember, setIsDemoMember] = useState(false);
 
   const sortedFamilyMembers = React.useMemo(() => {
     if (!sortField) return familyMembers;
@@ -78,7 +80,8 @@ const AdminPage = () => {
 
   const fetchFamilyMembers = async () => {
     try {
-      const members = await getAllFamilyMembers();
+      // Fetch all members (both real and demo) for admin view
+      const members = await getAllFamilyMembers(undefined, true);
       setFamilyMembers(members);
     } catch (error) {
       console.error("Error fetching family members:", error);
@@ -155,12 +158,14 @@ const AdminPage = () => {
       if (selectedImage) {
         profilePhotoKey = await uploadImage(selectedImage);
       }
-      await addFamilyMember({ ...formData, profile_photo: profilePhotoKey });
+      const familyGroup = isDemoMember ? DEMO_FAMILY_GROUP : REAL_FAMILY_GROUP;
+      await addFamilyMember({ ...formData, profile_photo: profilePhotoKey, family_group: familyGroup });
       showToast('Family member added successfully!', 'success');
       setFormData(initialFormData);
       setSelectedImage(null);
       setImagePreview(null);
       setUploadProgress(0);
+      setIsDemoMember(false);
       fetchFamilyMembers();
     } catch (error) {
       showToast('Error adding family member.', 'error');
@@ -318,7 +323,7 @@ const AdminPage = () => {
           </a>
         </div>
         <div className="mt-4">
-          {activeTab === 'members' && <AdminMembers familyMembers={sortedFamilyMembers} handleAddFamilyMember={handleAddFamilyMember} formData={formData} handleInputChange={handleInputChange} imagePreview={imagePreview} handleImageChange={handleImageChange} isUploading={isUploading} uploadProgress={uploadProgress} handleClearImage={handleClearImage} editingMemberId={editingMemberId} setEditingMemberId={setEditingMemberId} editFormData={editFormData} setEditFormData={setEditFormData} handleEditInputChange={handleEditInputChange} handleUpdateMember={handleUpdateMember} handleEditImageChange={handleEditImageChange} editImagePreview={editImagePreview} editIsUploading={editIsUploading} editUploadProgress={editUploadProgress} sortField={sortField} sortDirection={sortDirection} handleSort={handleSort} />}
+          {activeTab === 'members' && <AdminMembers familyMembers={sortedFamilyMembers} handleAddFamilyMember={handleAddFamilyMember} formData={formData} handleInputChange={handleInputChange} imagePreview={imagePreview} handleImageChange={handleImageChange} isUploading={isUploading} uploadProgress={uploadProgress} handleClearImage={handleClearImage} editingMemberId={editingMemberId} setEditingMemberId={setEditingMemberId} editFormData={editFormData} setEditFormData={setEditFormData} handleEditInputChange={handleEditInputChange} handleUpdateMember={handleUpdateMember} handleEditImageChange={handleEditImageChange} editImagePreview={editImagePreview} editIsUploading={editIsUploading} editUploadProgress={editUploadProgress} sortField={sortField} sortDirection={sortDirection} handleSort={handleSort} isDemoMember={isDemoMember} setIsDemoMember={setIsDemoMember} />}
           {activeTab === 'relationships' && <AdminRelationships familyMembers={familyMembers} handleCreateRelationship={handleCreateRelationship} selectedSourceMemberId={selectedSourceMemberId} setSelectedSourceMemberId={setSelectedSourceMemberId} selectedTargetMemberId={selectedTargetMemberId} setSelectedTargetMemberId={setSelectedTargetMemberId} relationshipType={relationshipType} setRelationshipType={setRelationshipType} />}
           {activeTab === 'enhanced-relationships' && (
             <div className="space-y-8">
