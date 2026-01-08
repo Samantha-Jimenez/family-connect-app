@@ -424,12 +424,18 @@ const FamilyTree = () => {
             updateFamilyTreeData(membersFromDB, treeDataToUse as FamilyMemberProps);
         
         // Set default root person
-        // For demo: look for John, for real: look for Cynthia, otherwise use first member
+        // For demo: look for Eudora/Grandmama, Gomez, Wednesday, Fester, Sloom, or Itt, for real: look for Cynthia, otherwise use first member
         if (membersFromDB.length > 0) {
           let rootPerson;
           if (isDemo) {
             rootPerson = membersFromDB.find(member => 
-              member.first_name?.toLowerCase().includes('john')
+              member.first_name?.toLowerCase().includes('eudora') ||
+              member.nick_name?.toLowerCase().includes('grandmama') ||
+              member.first_name?.toLowerCase().includes('gomez') ||
+              member.first_name?.toLowerCase().includes('wednesday') ||
+              member.first_name?.toLowerCase().includes('fester') ||
+              member.first_name?.toLowerCase().includes('sloom') ||
+              member.first_name?.toLowerCase().includes('itt')
             );
           } else {
             rootPerson = membersFromDB.find(member => 
