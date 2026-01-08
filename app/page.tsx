@@ -6,7 +6,7 @@ import TaggedPhotosCard from "@/components/TaggedPhotosCard";
 import Panel from "@/components/Panel";
 import CallToAction from "@/components/CallToAction";
 import UploadedPhotosCard from "@/components/UploadedPhotosCard";
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { ToastProvider } from '../context/ToastContext';
 import { UserProvider } from '../context/UserContext';
 import { useAuthenticator } from '@aws-amplify/ui-react';
@@ -33,7 +33,6 @@ const HomePage = () => {
   const [isConfigured, setIsConfigured] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('uploads');
   const [showDemoNotice, setShowDemoNotice] = useState(false);
-  const lastShownUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     try {
@@ -46,23 +45,22 @@ const HomePage = () => {
     }
   }, []);
 
-  // Show demo notice modal for demo users on each login
+  // Show demo notice modal for demo users once per login session
   useEffect(() => {
     if (user?.userId && isDemoUser(user.userId)) {
-      // If this is a new login (different userId or ref was reset), show the modal
-      if (lastShownUserIdRef.current !== user.userId) {
-        lastShownUserIdRef.current = user.userId;
+      const sessionKey = `demoNoticeShown_${user.userId}`;
+      const hasShownInSession = sessionStorage.getItem(sessionKey);
+      
+      // Only show if it hasn't been shown in this session
+      if (!hasShownInSession) {
         // Small delay to ensure page is loaded
         setTimeout(() => {
           setShowDemoNotice(true);
         }, 500);
       }
     } else {
-      // If user is not a demo user or logged out, reset the ref so modal shows on next login
-      if (lastShownUserIdRef.current !== null) {
-        lastShownUserIdRef.current = null;
-        setShowDemoNotice(false);
-      }
+      // If user is not a demo user or logged out, hide the modal
+      setShowDemoNotice(false);
     }
   }, [user?.userId]);
 
@@ -76,7 +74,11 @@ const HomePage = () => {
 
   const handleCloseDemoNotice = () => {
     setShowDemoNotice(false);
-    // Don't persist - will show again on next login
+    // Mark as shown in sessionStorage so it won't show again until logout
+    if (user?.userId) {
+      const sessionKey = `demoNoticeShown_${user.userId}`;
+      sessionStorage.setItem(sessionKey, 'true');
+    }
   };
 
   return (
