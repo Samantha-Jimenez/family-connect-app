@@ -55,6 +55,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
   const [notificationPreferences, setNotificationPreferences] = useState<{ disabledTypes: string[] }>({ disabledTypes: [] });
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedNotificationIds, setSelectedNotificationIds] = useState<Set<string>>(new Set());
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [isHobbyModalOpen, setIsHobbyModalOpen] = useState(false);
   const [selectedHobby, setSelectedHobby] = useState<string | null>(null);
   const [hobbyMembers, setHobbyMembers] = useState<Array<{ id: string; name: string; profile_photo?: string }>>([]);
@@ -184,11 +185,12 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
       setIsDrawerMounted(true);
       // Reset animation state and trigger it after a brief delay
       setShouldAnimateIn(false);
-      // Reset pagination, filter, and selection when drawer opens
+      // Reset pagination, filter, selection, and expanded groups when drawer opens
       setNotificationsPerPage(20);
       setNotificationFilter('all');
       setIsSelectionMode(false);
       setSelectedNotificationIds(new Set());
+      setExpandedGroups(new Set());
       // Use requestAnimationFrame to ensure DOM is updated before animating
       const frame1 = requestAnimationFrame(() => {
         const frame2 = requestAnimationFrame(() => {
@@ -221,11 +223,12 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
       // Then unmount after animation completes
       const timeout = setTimeout(() => {
         setIsDrawerMounted(false);
-        // Reset pagination, filter, and selection when drawer closes
+        // Reset pagination, filter, selection, and expanded groups when drawer closes
         setNotificationsPerPage(20);
         setNotificationFilter('all');
         setIsSelectionMode(false);
         setSelectedNotificationIds(new Set());
+        setExpandedGroups(new Set());
       }, 500);
       return () => clearTimeout(timeout);
     }
@@ -457,14 +460,14 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                       Clear read
                     </button>
                   )}
-                  <button
-                    onClick={() => setNotificationOpen(false)}
-                    className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200 transition-colors"
-                    aria-label="Close notifications drawer"
-                  >
-                    <Icon icon="mdi:close" className="w-6 h-6" />
-                  </button>
-                </div>
+              <button
+                onClick={() => setNotificationOpen(false)}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200 transition-colors"
+                aria-label="Close notifications drawer"
+              >
+                <Icon icon="mdi:close" className="w-6 h-6" />
+              </button>
+            </div>
               </div>
               {/* Filter buttons */}
               <div className="px-6 pb-3 flex gap-2 overflow-x-auto">
@@ -510,16 +513,66 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
 
                 if (filteredNotifications.length === 0) {
                   return (
-                    <div className="flex items-center justify-center py-12">
-                      <div className="text-gray-500 text-center px-6">
-                        <Icon icon="mdi:bell-off-outline" className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-gray-500 text-center px-6">
+                    <Icon icon="mdi:bell-off-outline" className="w-12 h-12 mx-auto mb-2 opacity-50" />
                         <p>No {notificationFilter === 'all' ? '' : notificationFilter} notifications</p>
                       </div>
                     </div>
                   );
                 }
 
-                const displayedNotifications = filteredNotifications.slice(0, notificationsPerPage);
+                // Group notifications by type and related_id
+                const groupNotifications = (notifs: Notification[]): Array<{ groupKey: string; notifications: Notification[]; isRead: boolean; oldestDate: string }> => {
+                  const groups = new Map<string, Notification[]>();
+                  const now = new Date();
+                  const GROUPING_TIME_WINDOW = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+                  notifs.forEach(notification => {
+                    // Create a group key based on type and related_id
+                    const relatedId = notification.related_id || 'no-related-id';
+                    const groupKey = `${notification.type}-${relatedId}`;
+                    
+                    // Only group notifications from the last 24 hours
+                    const notificationDate = new Date(notification.created_at);
+                    const timeDiff = now.getTime() - notificationDate.getTime();
+                    
+                    if (timeDiff <= GROUPING_TIME_WINDOW && notification.type !== 'birthday' && notification.type !== 'event_reminder') {
+                      // Group these notifications
+                      if (!groups.has(groupKey)) {
+                        groups.set(groupKey, []);
+                      }
+                      groups.get(groupKey)!.push(notification);
+                    } else {
+                      // Don't group this notification - show individually
+                      const individualKey = `individual-${notification.notification_id}`;
+                      groups.set(individualKey, [notification]);
+                    }
+                  });
+
+                  // Convert groups to array and sort
+                  return Array.from(groups.entries())
+                    .map(([groupKey, notifications]) => {
+                      const sorted = notifications.sort((a, b) => 
+                        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                      );
+                      const isRead = sorted.every(n => n.is_read);
+                      const oldestDate = sorted[sorted.length - 1].created_at;
+                      return { groupKey, notifications: sorted, isRead, oldestDate };
+                    })
+                    .sort((a, b) => new Date(b.oldestDate).getTime() - new Date(a.oldestDate).getTime());
+                };
+
+                const groupedNotifications = groupNotifications(filteredNotifications);
+                const displayedGroups = groupedNotifications.slice(0, notificationsPerPage);
+
+                const getAllNotificationIdsFromGroups = (groups: typeof displayedGroups): string[] => {
+                  const ids: string[] = [];
+                  groups.forEach(group => {
+                    group.notifications.forEach(n => ids.push(n.notification_id));
+                  });
+                  return ids;
+                };
 
                 return (
                   <>
@@ -529,19 +582,19 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => {
-                              const filteredIds = displayedNotifications.map((n: Notification) => n.notification_id);
-                              const allSelected = filteredIds.length > 0 && filteredIds.every((id: string) => selectedNotificationIds.has(id));
+                              const allIds = getAllNotificationIdsFromGroups(displayedGroups);
+                              const allSelected = allIds.length > 0 && allIds.every((id: string) => selectedNotificationIds.has(id));
                               if (allSelected) {
                                 setSelectedNotificationIds(new Set());
                               } else {
-                                setSelectedNotificationIds(new Set(filteredIds));
+                                setSelectedNotificationIds(new Set(allIds));
                               }
                             }}
                             className="text-xs text-gray-600 hover:text-gray-800 px-2 py-1 rounded hover:bg-gray-200 transition-colors"
                           >
                             {(() => {
-                              const filteredIds = displayedNotifications.map((n: Notification) => n.notification_id);
-                              const allSelected = filteredIds.length > 0 && filteredIds.every((id: string) => selectedNotificationIds.has(id));
+                              const allIds = getAllNotificationIdsFromGroups(displayedGroups);
+                              const allSelected = allIds.length > 0 && allIds.every((id: string) => selectedNotificationIds.has(id));
                               return allSelected ? 'Deselect all' : 'Select all';
                             })()}
                           </button>
@@ -607,28 +660,29 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                           >
                             Delete ({selectedNotificationIds.size})
                           </button>
-                        </div>
-                      </div>
+                  </div>
+                </div>
                     )}
-                    <ul className="py-2">
-                      {displayedNotifications.map((notification, index) => {
-                    const formatDate = (dateString: string) => {
-                      const date = new Date(dateString);
-                      const now = new Date();
-                      const diffTime = now.getTime() - date.getTime();
-                      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                      const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
-                      const diffMinutes = Math.floor(diffTime / (1000 * 60));
-                      
-                      if (diffMinutes < 1) return 'Just now';
-                      if (diffMinutes < 60) return `${diffMinutes}m ago`;
-                      if (diffHours < 24) return `${diffHours}h ago`;
-                      if (diffDays === 1) return 'Yesterday';
-                      if (diffDays < 7) return `${diffDays}d ago`;
-                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
-                    };
+              <ul className="py-2">
+                      {displayedGroups.map((group, groupIndex) => {
+                        // Helper functions (available to both individual and group rendering)
+                        const formatDate = (dateString: string) => {
+                          const date = new Date(dateString);
+                          const now = new Date();
+                          const diffTime = now.getTime() - date.getTime();
+                          const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                          const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+                          const diffMinutes = Math.floor(diffTime / (1000 * 60));
+                          
+                          if (diffMinutes < 1) return 'Just now';
+                          if (diffMinutes < 60) return `${diffMinutes}m ago`;
+                          if (diffHours < 24) return `${diffHours}h ago`;
+                          if (diffDays === 1) return 'Yesterday';
+                          if (diffDays < 7) return `${diffDays}d ago`;
+                          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+                        };
 
-                    const getNotificationIcon = (type: string, title?: string, metadata?: Record<string, any>) => {
+                        const getNotificationIcon = (type: string, title?: string, metadata?: Record<string, any>) => {
                       switch (type) {
                         case 'birthday':
                           return 'mdi:cake-variant';
@@ -681,11 +735,16 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                         default:
                           return 'mdi:bell';
                       }
-                    };
+                        };
 
-                    return (
-                      <li 
-                        key={notification.notification_id}
+                        // If group has only one notification, display it individually
+                        if (group.notifications.length === 1) {
+                          const notification = group.notifications[0];
+                          const index = groupIndex;
+
+                          return (
+                            <li 
+                              key={notification.notification_id}
                         className="animate-[notificationEnter_0.3s_ease-out]"
                         style={{
                           animationDelay: `${index * 0.03}s`,
@@ -699,7 +758,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                         >
                           <div
                             className={isSelectionMode ? "" : "cursor-pointer"}
-                            onClick={async () => {
+                          onClick={async () => {
                               if (isSelectionMode) return; // Don't navigate when in selection mode
                             if (!notification.is_read && userData?.userId) {
                               try {
@@ -822,9 +881,9 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                                 console.error('Error navigating to calendar:', error);
                               }
                             }
-                            }}
-                          >
-                            <div className="flex items-start gap-3">
+                          }}
+                        >
+                          <div className="flex items-start gap-3">
                               {isSelectionMode && (
                                 <div className="mt-0.5 flex-shrink-0 animate-[checkboxAppear_0.2s_ease-out]">
                                   <label className="flex items-center cursor-pointer">
@@ -851,20 +910,20 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                                 </div>
                               )}
                               <div className={`mt-0.5 flex-shrink-0 transition-all duration-200 ${!notification.is_read ? 'text-blue-500' : 'text-gray-400'} ${selectedNotificationIds.has(notification.notification_id) ? 'scale-110' : ''}`}>
-                                <Icon icon={getNotificationIcon(notification.type, notification.title, notification.metadata)} className="w-5 h-5" />
-                              </div>
+                              <Icon icon={getNotificationIcon(notification.type, notification.title, notification.metadata)} className="w-5 h-5" />
+                            </div>
                               <div className="flex-1 min-w-0 transition-all duration-200">
                                 <div className={`font-medium transition-colors duration-200 ${!notification.is_read ? 'text-gray-900' : 'text-gray-700'} ${selectedNotificationIds.has(notification.notification_id) ? 'font-semibold' : ''}`}>
-                                  {notification.title}
-                                </div>
-                                <div className="text-sm text-gray-500 mt-1 font-extralight transition-colors duration-200">
-                                  {notification.message}
-                                </div>
-                                <div className="text-xs text-gray-400 mt-1 font-extralight">
-                                  {formatDate(notification.created_at)}
-                                </div>
+                                {notification.title}
                               </div>
-                              {!notification.is_read && (
+                                <div className="text-sm text-gray-500 mt-1 font-extralight transition-colors duration-200">
+                                {notification.message}
+                              </div>
+                              <div className="text-xs text-gray-400 mt-1 font-extralight">
+                                {formatDate(notification.created_at)}
+                              </div>
+                            </div>
+                            {!notification.is_read && (
                                 <div className={`w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0 transition-all duration-200 ${selectedNotificationIds.has(notification.notification_id) ? 'scale-125' : ''}`}></div>
                               )}
                               <button
@@ -893,10 +952,340 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                           </div>
                         </div>
                 </li>
-                    );
+                        );
+                        }
+
+                        // Display as a group (multiple notifications)
+                        const isExpanded = expandedGroups.has(group.groupKey);
+                        const allInGroupSelected = group.notifications.every(n => selectedNotificationIds.has(n.notification_id));
+                        const someInGroupSelected = group.notifications.some(n => selectedNotificationIds.has(n.notification_id));
+                        
+                        // Get group title and message
+                        const getGroupTitle = () => {
+                          const count = group.notifications.length;
+                          const firstNotification = group.notifications[0];
+                          
+                          if (firstNotification.type === 'photo_comment') {
+                            return `${count} new comment${count > 1 ? 's' : ''} on a photo`;
+                          }
+                          if (firstNotification.type === 'hobby_comment') {
+                            return `${count} new comment${count > 1 ? 's' : ''} in ${firstNotification.related_id}`;
+                          }
+                          if (firstNotification.type === 'photo_tag') {
+                            return `${count} new photo tag${count > 1 ? 's' : ''}`;
+                          }
+                          if (firstNotification.type === 'event_rsvp') {
+                            return `${count} new RSVP${count > 1 ? 's' : ''}`;
+                          }
+                          return `${count} new ${firstNotification.type.replace('_', ' ')} notification${count > 1 ? 's' : ''}`;
+                        };
+
+                        const getGroupMessage = () => {
+                          const firstNotification = group.notifications[0];
+                          const uniqueAuthors = new Set<string>();
+                          group.notifications.forEach(n => {
+                            // Try to extract author from message (format: "Author commented: ...")
+                            const match = n.message.match(/^([^:]+):/);
+                            if (match) {
+                              uniqueAuthors.add(match[1]);
+                            }
+                          });
+                          
+                          if (uniqueAuthors.size === 0) {
+                            return firstNotification.message;
+                          }
+                          
+                          const authors = Array.from(uniqueAuthors);
+                          if (authors.length === 1 && group.notifications.length > 1) {
+                            return `${authors[0]} and ${group.notifications.length - 1} other${group.notifications.length - 1 > 1 ? 's' : ''}`;
+                          } else if (authors.length <= 3) {
+                            return `${authors.slice(0, -1).join(', ')}, and ${authors[authors.length - 1]}`;
+                          } else {
+                            return `${authors.slice(0, 2).join(', ')}, and ${authors.length - 2} other${authors.length - 2 > 1 ? 's' : ''}`;
+                          }
+                        };
+
+                        return (
+                          <li 
+                            key={group.groupKey}
+                            className="animate-[notificationEnter_0.3s_ease-out]"
+                            style={{
+                              animationDelay: `${groupIndex * 0.03}s`,
+                              animationFillMode: 'both'
+                            }}
+                          >
+                            <div 
+                              className={`block px-6 py-3 text-sm hover:bg-gray-50 border-b border-gray-200 transition-all duration-300 group ${
+                                !group.isRead ? 'bg-blue-50' : 'bg-white'
+                              } ${someInGroupSelected ? 'bg-blue-100 shadow-sm' : ''}`}
+                            >
+                              <div
+                                className={isSelectionMode ? "" : "cursor-pointer"}
+                                onClick={async () => {
+                                  if (isSelectionMode) return;
+                                  // Toggle expansion
+                                  const newExpanded = new Set(expandedGroups);
+                                  if (newExpanded.has(group.groupKey)) {
+                                    newExpanded.delete(group.groupKey);
+                                  } else {
+                                    newExpanded.add(group.groupKey);
+                                  }
+                                  setExpandedGroups(newExpanded);
+                                }}
+                              >
+                                <div className="flex items-start gap-3">
+                                  {isSelectionMode && (
+                                    <div className="mt-0.5 flex-shrink-0 animate-[checkboxAppear_0.2s_ease-out]">
+                                      <label className="flex items-center cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                                        <input
+                                          type="checkbox"
+                                          checked={allInGroupSelected}
+                                          ref={(input) => {
+                                            if (input) {
+                                              input.indeterminate = someInGroupSelected && !allInGroupSelected;
+                                            }
+                                          }}
+                                          onChange={(e) => {
+                                            const newSelected = new Set(selectedNotificationIds);
+                                            if (e.target.checked) {
+                                              group.notifications.forEach(n => newSelected.add(n.notification_id));
+                                            } else {
+                                              group.notifications.forEach(n => newSelected.delete(n.notification_id));
+                                            }
+                                            setSelectedNotificationIds(newSelected);
+                                          }}
+                                          className={`w-4 h-4 text-plantain-green border-gray-300 rounded focus:ring-plantain-green focus:ring-2 transition-all duration-200 ${
+                                            allInGroupSelected || someInGroupSelected
+                                              ? 'scale-110 ring-2 ring-plantain-green ring-offset-1' 
+                                              : ''
+                                          }`}
+                                          onClick={(e) => e.stopPropagation()}
+                                        />
+                                      </label>
+                                    </div>
+                                  )}
+                                  <div className={`mt-0.5 flex-shrink-0 transition-all duration-200 ${!group.isRead ? 'text-blue-500' : 'text-gray-400'} ${someInGroupSelected ? 'scale-110' : ''}`}>
+                                    <Icon icon={getNotificationIcon(group.notifications[0].type, group.notifications[0].title, group.notifications[0].metadata)} className="w-5 h-5" />
+                                  </div>
+                                  <div className="flex-1 min-w-0 transition-all duration-200">
+                                    <div className="flex items-center gap-2">
+                                      <div className={`font-medium transition-colors duration-200 ${!group.isRead ? 'text-gray-900' : 'text-gray-700'} ${someInGroupSelected ? 'font-semibold' : ''}`}>
+                                        {getGroupTitle()}
+                                      </div>
+                                      {!isExpanded && (
+                                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium animate-[pulseSelect_0.3s_ease-out]">
+                                          {group.notifications.length}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="text-sm text-gray-500 mt-1 font-extralight transition-colors duration-200">
+                                      {getGroupMessage()}
+                                    </div>
+                                    <div className="text-xs text-gray-400 mt-1 font-extralight">
+                                      {formatDate(group.oldestDate)}
+                                    </div>
+                                  </div>
+                                  {!group.isRead && (
+                                    <div className={`w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0 transition-all duration-200 ${someInGroupSelected ? 'scale-125' : ''}`}></div>
+                                  )}
+                                  {!isSelectionMode && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const newExpanded = new Set(expandedGroups);
+                                        if (newExpanded.has(group.groupKey)) {
+                                          newExpanded.delete(group.groupKey);
+                                        } else {
+                                          newExpanded.add(group.groupKey);
+                                        }
+                                        setExpandedGroups(newExpanded);
+                                      }}
+                                      className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200 transition-all duration-200 flex-shrink-0 hover:scale-110"
+                                      aria-label={isExpanded ? "Collapse group" : "Expand group"}
+                                      title={isExpanded ? "Collapse group" : "Expand group"}
+                                    >
+                                      <Icon icon={isExpanded ? "mdi:chevron-up" : "mdi:chevron-down"} className="w-5 h-5" />
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      if (!userData?.userId) return;
+                                      if (!confirm(`Delete ${group.notifications.length} notification(s)?`)) return;
+                                      try {
+                                        for (const notification of group.notifications) {
+                                          await deleteNotification(notification.notification_id, userData.userId);
+                                        }
+                                        const [notifs, count] = await Promise.all([
+                                          getNotificationsByUser(userData.userId),
+                                          getUnreadNotificationCount(userData.userId)
+                                        ]);
+                                        setNotifications(notifs);
+                                        const preferences = await getNotificationPreferencesFromDB(userData.userId);
+                                        setNotificationPreferences(preferences);
+                                        const visibleNotifications = notifs.filter(n => !preferences.disabledTypes.includes(n.type as any));
+                                        const visibleUnreadCount = visibleNotifications.filter(n => !n.is_read).length;
+                                        setUnreadCount(visibleUnreadCount);
+                                      } catch (error) {
+                                        console.error('Error deleting notifications:', error);
+                                      }
+                                    }}
+                                    className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-200 transition-all duration-200 flex-shrink-0 hover:scale-110"
+                                    aria-label="Delete group"
+                                    title="Delete group"
+                                  >
+                                    <Icon icon="mdi:delete-outline" className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+                              
+                              {/* Expanded group view */}
+                              {isExpanded && (
+                                <div className="mt-3 ml-8 space-y-2 border-l-2 border-gray-200 pl-4 animate-[slideDown_0.2s_ease-out]">
+                                  {group.notifications.map((notification) => {
+                                    const formatDate = (dateString: string) => {
+                                      const date = new Date(dateString);
+                                      const now = new Date();
+                                      const diffTime = now.getTime() - date.getTime();
+                                      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                                      const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+                                      const diffMinutes = Math.floor(diffTime / (1000 * 60));
+                                      
+                                      if (diffMinutes < 1) return 'Just now';
+                                      if (diffMinutes < 60) return `${diffMinutes}m ago`;
+                                      if (diffHours < 24) return `${diffHours}h ago`;
+                                      if (diffDays === 1) return 'Yesterday';
+                                      if (diffDays < 7) return `${diffDays}d ago`;
+                                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+                                    };
+
+                                    return (
+                                      <div
+                                        key={notification.notification_id}
+                                        className="text-sm py-2 px-3 rounded hover:bg-gray-50 cursor-pointer transition-all duration-200"
+                                        onClick={async () => {
+                                          if (isSelectionMode) return;
+                                          // Handle click on individual notification in group
+                                          if (!notification.is_read && userData?.userId) {
+                                            try {
+                                              await markNotificationAsRead(notification.notification_id, userData.userId);
+                                              setNotifications(prev => 
+                                                prev.map(n => 
+                                                  n.notification_id === notification.notification_id 
+                                                    ? { ...n, is_read: true } 
+                                                    : n
+                                                )
+                                              );
+                                              setUnreadCount(prev => Math.max(0, prev - 1));
+                                            } catch (error) {
+                                              console.error('Error marking notification as read:', error);
+                                            }
+                                          }
+                                          // Navigate based on notification type (same logic as individual notifications)
+                                          if (notification.related_id && notification.type === 'birthday') {
+                                            try {
+                                              const allMembers = await getAllFamilyMembers();
+                                              const member = allMembers.find(m => m.family_member_id === notification.related_id);
+                                              if (member?.birthday) {
+                                                const today = new Date();
+                                                const currentYear = today.getFullYear();
+                                                const dateStr = member.birthday.split('T')[0];
+                                                const [birthYear, month, day] = dateStr.split('-').map(Number);
+                                                if (month && day) {
+                                                  const thisYearBirthday = new Date(currentYear, month - 1, day);
+                                                  const nextBirthdayYear = thisYearBirthday < today ? currentYear + 1 : currentYear;
+                                                  const eventId = `birthday-${notification.related_id}-${nextBirthdayYear}`;
+                                                  setNotificationOpen(false);
+                                                  router.push(`/calendar?eventId=${eventId}`);
+                                                }
+                                              }
+                                            } catch (error) {
+                                              console.error('Error navigating to birthday event:', error);
+                                            }
+                                          }
+                                          if (notification.related_id && notification.type === 'hobby_comment') {
+                                            try {
+                                              const hobbyName = notification.related_id;
+                                              const members = await getFamilyMembersWithHobby(hobbyName);
+                                              setSelectedHobby(hobbyName);
+                                              setHobbyMembers(members);
+                                              setNotificationOpen(false);
+                                              setIsHobbyModalOpen(true);
+                                            } catch (error) {
+                                              console.error('Error opening hobby modal:', error);
+                                            }
+                                          }
+                                          if (notification.related_id && (notification.type === 'photo_comment' || notification.type === 'photo_tag')) {
+                                            try {
+                                              const photoId = notification.related_id;
+                                              const photo = await getPhotoById(photoId);
+                                              if (photo) {
+                                                const uploaderNameData = await getUserNameById(photo.uploaded_by);
+                                                const uploaderName = uploaderNameData 
+                                                  ? `${uploaderNameData.firstName} ${uploaderNameData.lastName}` 
+                                                  : null;
+                                                setSelectedPhoto(photo);
+                                                setPhotoUploaderName(uploaderName);
+                                                setIsPhotoEditing(false);
+                                                setNotificationOpen(false);
+                                                setIsPhotoModalOpen(true);
+                                              }
+                                            } catch (error) {
+                                              console.error('Error opening photo modal:', error);
+                                            }
+                                          }
+                                          if (notification.related_id && notification.type === 'event_rsvp') {
+                                            try {
+                                              const eventId = notification.related_id;
+                                              setNotificationOpen(false);
+                                              router.push(`/calendar?eventId=${eventId}`);
+                                            } catch (error) {
+                                              console.error('Error navigating to RSVP event:', error);
+                                            }
+                                          }
+                                          if (notification.related_id && notification.type === 'event_reminder') {
+                                            try {
+                                              const eventId = notification.related_id;
+                                              setNotificationOpen(false);
+                                              router.push(`/calendar?eventId=${eventId}`);
+                                            } catch (error) {
+                                              console.error('Error navigating to event reminder:', error);
+                                            }
+                                          }
+                                          if (notification.type === 'event_cancelled') {
+                                            try {
+                                              setNotificationOpen(false);
+                                              router.push('/calendar');
+                                            } catch (error) {
+                                              console.error('Error navigating to calendar:', error);
+                                            }
+                                          }
+                                        }}
+                                      >
+                                        <div className="flex items-start justify-between">
+                                          <div className="flex-1">
+                                            <div className="text-gray-700 font-medium text-xs">
+                                              {notification.message}
+                                            </div>
+                                            <div className="text-xs text-gray-400 mt-1">
+                                              {formatDate(notification.created_at)}
+                                            </div>
+                                          </div>
+                                          {!notification.is_read && (
+                                            <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          </li>
+                        );
                       })}
-                    </ul>
-                    {filteredNotifications.length > notificationsPerPage && (
+              </ul>
+                    {groupedNotifications.length > notificationsPerPage && !isSelectionMode && (
                       <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
                         <button
                           onClick={() => setNotificationsPerPage(prev => prev + 20)}
