@@ -199,10 +199,10 @@ const UpcomingEvents = () => {
                 }}
               >
                 <div className="flex-1">
-                  <h2 className="text-gray-900 flex items-center justify-between grid grid-cols-[1fr_min-content]">
+                  <div className="text-gray-900 flex items-center justify-between grid grid-cols-[1fr_min-content]">
                     <h2 className="whitespace-normal text-ellipsis overflow-hidden">{event.title}</h2>
                     {getRSVPSymbol(event.id)}
-                  </h2>
+                  </div>
                   <p className={"text-sm text-gray-600"}>
                     {formatDate(event.nextOccurrence!, event.allDay)}
                   </p>
