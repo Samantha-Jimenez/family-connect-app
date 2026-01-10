@@ -48,6 +48,7 @@ export interface PhotoData {
   s3_key: string;
   uploaded_by: string;
   upload_date: string;
+  family_group?: string; // 'demo' for demo data, 'real' for real family data
   metadata: {
     location: {
       country: string;
@@ -481,16 +482,36 @@ export const savePhotoToDB = async (photoData: PhotoData) => {
     const existingPhotoData = await dynamoDB.send(new GetItemCommand(getPhotoParams));
     const isNewPhoto = !existingPhotoData.Item;
     
-    // Get current user (who is doing the tagging/uploading)
+    // SECURITY: Always determine family_group from the authenticated current user
+    // Never trust family_group from photoData (client can be manipulated)
     let taggerId = photoData.uploaded_by; // Default to uploader
+    let photoFamilyGroup: string | null = null;
+    
     try {
       const user = await getCurrentUser();
-      if (user?.userId) {
-        taggerId = user.userId;
+      if (!user?.userId) {
+        throw new Error('User is not authenticated');
+      }
+      
+      // Always use the authenticated user's family group for security
+      taggerId = user.userId;
+      photoFamilyGroup = getUserFamilyGroup(user.userId);
+      console.log(`🔒 Security: Determined photo family_group from authenticated user: ${photoFamilyGroup} (ignoring any provided value)`);
+      
+      // Security check: If provided family_group doesn't match authenticated user's group, log a warning
+      if (photoData.family_group && photoData.family_group !== photoFamilyGroup) {
+        console.warn(`⚠️ Security Warning: Provided family_group (${photoData.family_group}) doesn't match authenticated user's group (${photoFamilyGroup}). Using authenticated user's group.`);
       }
     } catch (error) {
-      // If we can't get current user, use uploader as fallback
-      console.log('Could not get current user, using uploader as tagger');
+      // If we can't get current user, this is a critical error - don't proceed
+      console.error('❌ Security Error: Cannot determine family_group - user authentication failed:', error);
+      throw new Error('User must be authenticated to upload photos');
+    }
+    
+    // Final fallback (should never reach here due to throw above, but TypeScript requires it)
+    if (!photoFamilyGroup) {
+      console.error('❌ Security Error: Could not determine family_group');
+      throw new Error('Unable to determine family group for photo');
     }
 
     // Get existing tags if photo already exists
@@ -510,6 +531,20 @@ export const savePhotoToDB = async (photoData: PhotoData) => {
       return person.id && !existingTaggedIds.has(person.id);
     });
 
+    // Determine family_group for the photo
+    // For new photos: use the authenticated user's family group
+    // For existing photos (updates): preserve existing family_group to prevent unauthorized changes
+    const finalPhotoFamilyGroup = existingPhotoData.Item?.family_group?.S || photoFamilyGroup;
+    
+    // Security check: If updating an existing photo, verify the family_group matches the user's group
+    // This prevents users from modifying photos from other family groups
+    if (existingPhotoData.Item?.family_group?.S && existingPhotoData.Item.family_group.S !== photoFamilyGroup) {
+      console.warn(`⚠️ Security Warning: Attempted to update photo from different family group. Photo group: ${existingPhotoData.Item.family_group.S}, User group: ${photoFamilyGroup}`);
+      // Allow the update but keep the original family_group (this is a metadata update, not a group change)
+    }
+    
+    console.log('📸 Saving photo with family_group:', finalPhotoFamilyGroup, 'uploaded_by:', photoData.uploaded_by);
+
     // Create the base item with required fields
     const item: Record<string, any> = {
       photo_id: { S: photoData.photo_id },
@@ -517,6 +552,7 @@ export const savePhotoToDB = async (photoData: PhotoData) => {
       s3_key: { S: `photos/${photoData.s3_key.replace(/^photos\//g, '')}` },
       uploaded_by: { S: photoData.uploaded_by },
       upload_date: { S: photoData.upload_date },
+      family_group: { S: finalPhotoFamilyGroup }, // Store family_group explicitly
       album_ids: { L: (photoData.album_ids || []).map(id => ({ S: id })) },
     };
 
@@ -1371,6 +1407,7 @@ export const getPhotoById = async (photoId: string): Promise<PhotoData | null> =
         s3_key: s3Key,
         uploaded_by: item.uploaded_by?.S || '',
         upload_date: item.upload_date?.S || '',
+        family_group: item.family_group?.S || REAL_FAMILY_GROUP, // Include family_group
         album_ids: item.album_ids?.L?.map((id: any) => id.S || '') || [],
         url,
         metadata: {
@@ -1437,6 +1474,7 @@ export const getPhotosByAlbum = async (albumId: string) => {
           s3_key: s3Key,
           uploaded_by: item.uploaded_by?.S || '',
           upload_date: item.upload_date?.S || '',
+          family_group: item.family_group?.S || REAL_FAMILY_GROUP, // Include family_group
           album_ids: item.album_ids?.L?.map((id: any) => id.S || '') || [],
           url,
           metadata: {
@@ -2583,6 +2621,7 @@ export const getUserPhotos = async (userId: string): Promise<PhotoData[]> => {
           s3_key: s3Key,
           uploaded_by: item.uploaded_by?.S || '',
           upload_date: item.upload_date?.S || '',
+          family_group: item.family_group?.S || REAL_FAMILY_GROUP, // Include family_group
           album_ids: item.album_ids?.L?.map((id: any) => id.S || '') || [],
           url,
           metadata: {

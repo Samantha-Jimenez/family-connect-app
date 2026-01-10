@@ -158,22 +158,37 @@ export async function GET(request: Request) {
     
     console.log('📸 Total photos before filtering:', response.Items.length);
     
-    // Filter by family group - only show photos uploaded by family members in the user's family group
-    // If no userId provided, show all photos (for backward compatibility, but this should be avoided)
-    const filteredItems = currentUserId && familyMemberIds.length > 0
+    // Filter by family group - only show photos from the user's family group
+    // Primary check: family_group field on photo must match user's family group
+    // Secondary check: if no family_group set, check if uploaded_by matches family member IDs (backward compatibility)
+    const userFamilyGroup = currentUserId ? getUserFamilyGroup(currentUserId) : null;
+    const filteredItems = currentUserId && userFamilyGroup
       ? response.Items.filter(item => {
           const uploadedBy = item.uploaded_by?.S || '';
-          const matches = familyMemberIds.includes(uploadedBy);
-          if (!matches) {
-            console.log(`🚫 Filtered out photo uploaded by: ${uploadedBy} (not in family group)`);
+          const photoFamilyGroup = item.family_group?.S; // Get family_group from photo (may be undefined for old photos)
+          
+          // Primary check: if photo has family_group, it must match user's family group
+          if (photoFamilyGroup) {
+            const matches = photoFamilyGroup === userFamilyGroup;
+            if (!matches) {
+              console.log(`🚫 Filtered out photo - photo_group: ${photoFamilyGroup}, user_group: ${userFamilyGroup}`);
+            }
+            return matches;
           }
-          return matches;
+          
+          // Secondary check: if no family_group set (old photos), check if uploaded_by is in family member IDs
+          // This is for backward compatibility with photos uploaded before family_group was added
+          const uploadedByMatches = familyMemberIds.length > 0 && familyMemberIds.includes(uploadedBy);
+          if (!uploadedByMatches) {
+            console.log(`🚫 Filtered out photo (no family_group, uploaded_by not in family): ${uploadedBy}`);
+          }
+          return uploadedByMatches;
         })
       : currentUserId 
-        ? [] // If userId provided but no family members, return empty
-        : response.Items; // If no userId, return all (backward compatibility)
+        ? [] // If userId provided but no family group determined, return empty
+        : response.Items; // If no userId, return all (backward compatibility, should be avoided)
     
-    console.log('📸 Photos after filtering:', filteredItems.length);
+    console.log('📸 Photos after filtering by family_group:', filteredItems.length);
 
     const bucketName = process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME;
     
@@ -194,6 +209,7 @@ export async function GET(request: Request) {
           s3_key: s3Key,
           uploaded_by: item.uploaded_by.S || '',
           upload_date: item.upload_date?.S || '',
+          family_group: item.family_group?.S || REAL_FAMILY_GROUP, // Include family_group
           metadata: {
             location: item.location?.M ? {
               country: (item.location.M.country?.S || '').trim(),

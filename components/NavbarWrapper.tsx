@@ -35,6 +35,7 @@ import NotificationPreferencesModal, { getNotificationPreferences } from './Noti
 import { getNotificationPreferencesFromDB } from '@/hooks/dynamoDB';
 import { Icon } from '@iconify/react';
 import { useRouter } from 'next/navigation';
+import { DEMO_CREDENTIALS } from '@/utils/demoConfig';
 
 export default function NavbarWrapper({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuthenticator();
@@ -281,7 +282,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                     <button
                       onClick={async () => {
                         try {
-                          await navigator.clipboard.writeText('DemoUser');
+                          await navigator.clipboard.writeText(DEMO_CREDENTIALS.username);
                           setCopiedField('username');
                           setTimeout(() => setCopiedField(null), 2000);
                         } catch (err) {
@@ -302,7 +303,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                         </>
                       ) : (
                         <>
-                          <span>DemoUser</span>
+                          <span>{DEMO_CREDENTIALS.username}</span>
                           <Icon icon="mdi:content-copy" className="w-3.5 h-3.5 opacity-70" />
                         </>
                       )}
@@ -313,7 +314,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                     <button
                       onClick={async () => {
                         try {
-                          await navigator.clipboard.writeText('Dem0User!');
+                          await navigator.clipboard.writeText(DEMO_CREDENTIALS.password);
                           setCopiedField('password');
                           setTimeout(() => setCopiedField(null), 2000);
                         } catch (err) {
@@ -334,7 +335,7 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                         </>
                       ) : (
                         <>
-                          <span>Dem0User!</span>
+                          <span>{DEMO_CREDENTIALS.password}</span>
                           <Icon icon="mdi:content-copy" className="w-3.5 h-3.5 opacity-70" />
                         </>
                       )}
