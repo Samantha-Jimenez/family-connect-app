@@ -15,8 +15,8 @@ import { useAuth } from '@/context/AuthContext';
 import { EventApi } from '@fullcalendar/core';
 import { DEFAULT_EVENTS } from './calendarData'; // Import your default events
 import { useSearchParams } from 'next/navigation';
-import { getAllFamilyMembers, FamilyMember, sendEventCancellationNotifications, createNotification, getUserNameById, saveEventToDynamoDB, deleteEventFromDynamoDB } from '@/hooks/dynamoDB';
-import { getUserFamilyGroup, isDemoUser, DEMO_USER_IDS } from '@/utils/demoConfig';
+import { getAllFamilyMembers, sendEventCancellationNotifications, createNotification, getUserNameById, saveEventToDynamoDB, deleteEventFromDynamoDB } from '@/hooks/dynamoDB';
+import { getUserFamilyGroup, REAL_FAMILY_GROUP } from '@/utils/demoConfig';
 
 interface CalendarEvent {
   id?: string;
@@ -40,6 +40,7 @@ interface CalendarEvent {
     userId?: string;
     location?: string;
     description?: string;
+    familyGroup?: string;
   }
   userId?: string;
   location?: string;
@@ -60,165 +61,9 @@ export default function Calendar() {
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const searchParams = useSearchParams();
   const eventIdFromQuery = searchParams.get('eventId');
-  const [familyEvents, setFamilyEvents] = useState<CalendarEvent[]>([]);
-
-  // Fetch family members and create events from birthdays and death dates
-  useEffect(() => {
-    const fetchFamilyEvents = async () => {
-      try {
-        const familyMembers = await getAllFamilyMembers(user?.userId);
-        const generatedEvents: CalendarEvent[] = [];
-
-        familyMembers.forEach((member: FamilyMember) => {
-          // Add birthday events - create events starting from 2025 onward
-          if (member.birthday) {
-            // Parse the date string directly to avoid timezone issues
-            const dateStr = member.birthday.split('T')[0]; // Get YYYY-MM-DD part
-            const [year, month, day] = dateStr.split('-').map(Number);
-            
-            if (month && day) {
-              // Always start from 2025, then generate events for the next 5 years
-              const startYear = 2025;
-              const currentYear = new Date().getFullYear();
-              // Generate events from 2025 to currentYear + 4 (at least 5 years total)
-              const endYear = Math.max(startYear + 4, currentYear + 4);
-              
-              for (let eventYear = startYear; eventYear <= endYear; eventYear++) {
-                // Format date directly as YYYY-MM-DD to avoid timezone conversion
-                const eventDateStr = `${eventYear}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                
-                const title = `${member.first_name} ${member.last_name}'s Birthday 🎂`;
-                
-                generatedEvents.push({
-                  id: `birthday-${member.family_member_id}-${eventYear}`,
-                  title: title,
-                  start: eventDateStr,
-                  allDay: true,
-                  backgroundColor: '#E8D4B8',
-                  borderColor: '#D2A267',
-                  textColor: '#000000',
-                  extendedProps: {
-                    category: 'birthday',
-                    userId: member.family_member_id,
-                    description: `Happy Birthday to ${member.first_name} ${member.last_name}! 🎉`,
-                  }
-                });
-              }
-            }
-          }
-
-          // Add death date events (memorial dates) - create starting from 2025 onward
-          if (member.death_date) {
-            // Parse the date string directly to avoid timezone issues
-            const dateStr = member.death_date.split('T')[0]; // Get YYYY-MM-DD part
-            const [year, month, day] = dateStr.split('-').map(Number);
-            
-            if (year && month && day) {
-              // Always start from 2025, then generate events for the next 5 years
-              const startYear = 2025;
-              const currentYear = new Date().getFullYear();
-              // Generate events from 2025 to currentYear + 4 (at least 5 years total)
-              const endYear = Math.max(startYear + 4, currentYear + 4);
-              
-              for (let eventYear = startYear; eventYear <= endYear; eventYear++) {
-                // Format date directly as YYYY-MM-DD to avoid timezone conversion
-                const eventDateStr = `${eventYear}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                
-                generatedEvents.push({
-                  id: `memorial-${member.family_member_id}-${eventYear}`,
-                  title: `In Memory of ${member.first_name} ${member.last_name} 🕊️`,
-                  start: eventDateStr,
-                  allDay: true,
-                  backgroundColor: '#6b7280', // Gray color for memorial dates
-                  borderColor: '#4b5563',
-                  textColor: '#ffffff',
-                  extendedProps: {
-                    category: 'family-event',
-                    userId: member.family_member_id,
-                    description: `In loving memory of ${member.first_name} ${member.last_name}. ❤️`,
-                  }
-                });
-              }
-            }
-          }
-        });
-
-        setFamilyEvents(generatedEvents);
-      } catch (error) {
-        console.error('Error fetching family events:', error);
-      }
-    };
-
-    if (user?.userId) {
-      fetchFamilyEvents();
-    }
-  }, [user?.userId]);
-
-  useEffect(() => {
-    const filterAndCombineEvents = async () => {
-      if (!user?.userId) return;
-      
-      // Get current user's family group and family member IDs
-      const userFamilyGroup = getUserFamilyGroup(user.userId);
-      const isUserDemo = isDemoUser(user.userId);
-      const familyMembers = await getAllFamilyMembers(user.userId);
-      const familyMemberIds = new Set(familyMembers.map(m => m.family_member_id));
-      
-      // Combine DEFAULT_EVENTS and familyEvents
-      // familyEvents are already filtered (generated from filtered family members)
-      const baseEvents = [...DEFAULT_EVENTS, ...familyEvents];
-      
-      // Filter baseEvents by family group (for any events that might have userId)
-      const filteredBaseEvents = baseEvents.filter((event: CalendarEvent) => {
-        const eventUserId = event.userId || event.extendedProps?.userId;
-        if (!eventUserId) {
-          return true; // System events (holidays, etc.) - show to everyone
-        }
-        
-        // Check if the event was created by a demo user
-        const isEventFromDemoUser = isDemoUser(eventUserId) || DEMO_USER_IDS.includes(eventUserId);
-        
-        if (isUserDemo) {
-          // Demo users: only show events created by demo users or events in their family group
-          return isEventFromDemoUser || familyMemberIds.has(eventUserId);
-        } else {
-          // Real family members: show all events EXCEPT those created by demo users
-          return !isEventFromDemoUser;
-        }
-      });
-      
-      // Get current events from context (which already has DynamoDB events loaded and filtered)
-      // Combine with birthday/memorial events generated from family members
-      setEvents(currentEvents => {
-        const contextEvents = currentEvents || [];
-        console.log('🔄 filterAndCombineEvents - combining', contextEvents.length, 'context events with', filteredBaseEvents.length, 'base events (birthdays/memorials)');
-        
-        // Combine all events, ensuring no duplicates based on id
-        // Birthday/memorial events take precedence if there's a duplicate (they're generated fresh)
-        const combinedEvents = [...filteredBaseEvents, ...contextEvents].filter((event, index, self) =>
-          index === self.findIndex((e) => e.id === event.id)
-        );
-
-        console.log('🔄 filterAndCombineEvents - combined to', combinedEvents.length, 'total events');
-
-        // Only update state if combinedEvents is different from current events
-        const currentEventsStr = JSON.stringify(contextEvents.sort((a: CalendarEvent, b: CalendarEvent) => (a.id || '').localeCompare(b.id || '')));
-        const combinedEventsStr = JSON.stringify(combinedEvents.sort((a: CalendarEvent, b: CalendarEvent) => (a.id || '').localeCompare(b.id || '')));
-        
-        if (currentEventsStr !== combinedEventsStr) {
-          // Save to localStorage when updating
-          console.log('💾 filterAndCombineEvents - saving', combinedEvents.length, 'events to localStorage');
-          localStorage.setItem('calendarEvents', JSON.stringify(combinedEvents));
-          return combinedEvents;
-        }
-        
-        console.log('⏭️ filterAndCombineEvents - no changes, skipping update');
-        return currentEvents;
-      });
-    };
-    
-    filterAndCombineEvents();
-  }, [familyEvents, user?.userId]);
+  
+  // Events are now loaded and generated in CalendarContext, so we just use them directly
+  // No need to generate birthday events or filter again here since CalendarContext handles it
 
   useEffect(() => {
     if (eventIdFromQuery && events.length > 0) {
@@ -263,6 +108,7 @@ export default function Calendar() {
   };
 
   const handleAddEvent = async (title: string, start: string, userId: string, end?: string, allDay?: boolean, location?: string, description?: string, notifyMembers?: boolean) => {
+    const userFamilyGroup = user?.userId ? getUserFamilyGroup(user.userId) : REAL_FAMILY_GROUP;
     const newEvent = {
       id: crypto.randomUUID(),
       title,
@@ -278,7 +124,8 @@ export default function Calendar() {
       textColor: '#000000',       // Black text
       extendedProps: {
         category: 'appointment' as const, // Default category for user-created events
-        userId: userId // Also store in extendedProps for consistency with filtering logic
+        userId: userId, // Also store in extendedProps for consistency with filtering logic
+        familyGroup: userFamilyGroup // Store family group for filtering
       }
     };
 
