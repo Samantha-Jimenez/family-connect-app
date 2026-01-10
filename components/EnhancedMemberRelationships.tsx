@@ -8,6 +8,7 @@ import {
   removeFamilyRelationship 
 } from '@/hooks/dynamoDB';
 import LoadSpinner from './LoadSpinner';
+import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
 
 interface EnhancedMemberRelationshipsProps {
   memberId: string;
@@ -37,18 +38,77 @@ export default function EnhancedMemberRelationships({
   useEffect(() => {
     const fetchRelationships = async () => {
       try {
-        const memberRelationships = await getFamilyRelationships(memberId);
-        setRelationships(memberRelationships);
+        // Get all relationships directly from DynamoDB to avoid family group filtering
+        // Then filter based on the familyMembers prop (which should already be filtered by toggle)
+        const dynamoDB = new DynamoDBClient({ 
+          region: process.env.NEXT_PUBLIC_AWS_PROJECT_REGION,
+          credentials: {
+            accessKeyId: process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID!,
+            secretAccessKey: process.env.NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY!,
+          }
+        });
+
+        const params = {
+          TableName: "Relationships",
+          FilterExpression: "source_id = :id OR target_id = :id",
+          ExpressionAttributeValues: {
+            ":id": { S: memberId }
+          }
+        };
+
+        const command = new ScanCommand(params);
+        const response = await dynamoDB.send(command);
+
+        if (!response.Items) {
+          setRelationships([]);
+          setLoading(false);
+          return;
+        }
+
+        // Map DynamoDB items to FamilyRelationship format
+        const allRelationships: FamilyRelationship[] = response.Items.map(item => ({
+          relationship_id: item.relationship_id?.S || '',
+          person_a_id: item.source_id?.S || '',
+          person_b_id: item.target_id?.S || '',
+          relationship_type: (item.relationship_type?.S || 'sibling') as any,
+          relationship_subtype: item.relationship_subtype?.S || '',
+          start_date: item.start_date?.S || '',
+          end_date: item.end_date?.S || '',
+          is_active: item.is_active?.BOOL ?? true,
+          notes: item.notes?.S || '',
+          created_date: item.created_date?.S || '',
+          created_by: item.created_by?.S || ''
+        }));
+        
+        // Filter relationships to only include those where both people are in the familyMembers prop
+        // This ensures demo relationships show when checking demo members, and real relationships show when checking real members
+        const familyMemberIds = new Set(familyMembers.map(m => m.family_member_id));
+        const filteredRels = allRelationships.filter(rel => 
+          familyMemberIds.has(rel.person_a_id) && familyMemberIds.has(rel.person_b_id)
+        );
+        
+        setRelationships(filteredRels);
       } catch (error) {
         console.error('Error fetching relationships:', error);
         showToast?.('Error loading relationships', 'error');
+        // Fallback to using getFamilyRelationships if direct DynamoDB fetch fails
+        try {
+          const memberRelationships = await getFamilyRelationships(memberId);
+          const familyMemberIds = new Set(familyMembers.map(m => m.family_member_id));
+          const filteredRels = memberRelationships.filter(rel => 
+            familyMemberIds.has(rel.person_a_id) && familyMemberIds.has(rel.person_b_id)
+          );
+          setRelationships(filteredRels);
+        } catch (fallbackError) {
+          console.error('Fallback also failed:', fallbackError);
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchRelationships();
-  }, [memberId, showToast]);
+  }, [memberId, familyMembers, showToast]);
 
   useEffect(() => {
     // Group relationships by type

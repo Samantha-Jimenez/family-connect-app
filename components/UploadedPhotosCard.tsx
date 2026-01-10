@@ -34,7 +34,7 @@ export default function UploadedPhotosCard({ userId }: { userId: string }) {
       //   throw new Error("User not authenticated");
       // }
 
-      const response = await fetch('/api/photos');
+      const response = await fetch(`/api/photos?userId=${encodeURIComponent(userId)}`);
       const data = await response.json();
       
       // Simplified filtering - just check the uploaded_by field

@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useState, useMemo } from 'react'
 import AdminCreateFamilyMemberForm from './AdminCreateFamilyMemberForm'
 import { FamilyMember } from "@/hooks/dynamoDB";
 import { getFullImageUrl } from '@/utils/imageUtils';
+import { DEMO_FAMILY_GROUP, REAL_FAMILY_GROUP } from '@/utils/demoConfig';
 
 // Define the correct type for form data
 export type AdminFormData = {
@@ -20,6 +21,7 @@ export type AdminFormData = {
   current_city: string;
   current_state: string;
   death_date: string;
+  family_group?: string;
 };
 
 const US_STATES = [
@@ -30,8 +32,22 @@ const US_STATES = [
   'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
 ];
 
-const AdminMembers = ({ familyMembers, handleAddFamilyMember, formData, handleInputChange, imagePreview, handleImageChange, isUploading, uploadProgress, handleClearImage, editingMemberId, setEditingMemberId, editFormData, setEditFormData, handleEditInputChange, handleUpdateMember, handleEditImageChange, editImagePreview, editIsUploading, editUploadProgress, sortField, sortDirection, handleSort }: { familyMembers: FamilyMember[], handleAddFamilyMember: (e: React.FormEvent<HTMLFormElement>) => void, formData: AdminFormData, handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void, imagePreview: string | null, handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void, isUploading: boolean, uploadProgress: number, handleClearImage: () => void, editingMemberId: string | null, setEditingMemberId: (id: string | null) => void, editFormData: AdminFormData, setEditFormData: (formData: AdminFormData) => void, handleEditInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void, handleUpdateMember: (e: React.FormEvent<HTMLFormElement>) => void, handleEditImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void, editImagePreview: string | null, editIsUploading: boolean, editUploadProgress: number, sortField: keyof FamilyMember | null, sortDirection: 'asc' | 'desc', handleSort: (field: keyof FamilyMember) => void }) => {
+const AdminMembers = ({ familyMembers, handleAddFamilyMember, formData, handleInputChange, imagePreview, handleImageChange, isUploading, uploadProgress, handleClearImage, editingMemberId, setEditingMemberId, editFormData, setEditFormData, handleEditInputChange, handleUpdateMember, handleEditImageChange, editImagePreview, editIsUploading, editUploadProgress, sortField, sortDirection, handleSort, isDemoMember, setIsDemoMember }: { familyMembers: FamilyMember[], handleAddFamilyMember: (e: React.FormEvent<HTMLFormElement>) => void, formData: AdminFormData, handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void, imagePreview: string | null, handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void, isUploading: boolean, uploadProgress: number, handleClearImage: () => void, editingMemberId: string | null, setEditingMemberId: (id: string | null) => void, editFormData: AdminFormData, setEditFormData: (formData: AdminFormData) => void, handleEditInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void, handleUpdateMember: (e: React.FormEvent<HTMLFormElement>) => void, handleEditImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void, editImagePreview: string | null, editIsUploading: boolean, editUploadProgress: number, sortField: keyof FamilyMember | null, sortDirection: 'asc' | 'desc', handleSort: (field: keyof FamilyMember) => void, isDemoMember: boolean, setIsDemoMember: (value: boolean) => void }) => {
   
+  const [showDemoMembers, setShowDemoMembers] = useState(false);
+
+  // Filter members based on the toggle
+  const filteredMembers = useMemo(() => {
+    return familyMembers.filter(member => {
+      const memberGroup = member.family_group || REAL_FAMILY_GROUP;
+      if (showDemoMembers) {
+        return memberGroup === DEMO_FAMILY_GROUP;
+      } else {
+        return memberGroup === REAL_FAMILY_GROUP;
+      }
+    });
+  }, [familyMembers, showDemoMembers]);
+
   const renderSortableHeader = (field: keyof FamilyMember, label: string) => {
     const isActive = sortField === field;
     return (
@@ -65,10 +81,39 @@ const AdminMembers = ({ familyMembers, handleAddFamilyMember, formData, handleIn
             isUploading={isUploading}
             uploadProgress={uploadProgress}
             handleClearImage={handleClearImage}
+            isDemoMember={isDemoMember}
+            setIsDemoMember={setIsDemoMember}
         />
 
         <div className="mt-8">
-          <h2 className="text-2xl font-bold text-center mb-4 text-gray-800">Family Members</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-gray-800">Family Members</h2>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-600">Show:</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowDemoMembers(false)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    !showDemoMembers
+                      ? 'bg-yellow-800/80 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Real Members
+                </button>
+                <button
+                  onClick={() => setShowDemoMembers(true)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    showDemoMembers
+                      ? 'bg-yellow-800/80 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Demo Members
+                </button>
+              </div>
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="table w-full bg-white shadow-md rounded-lg">
               <thead className="bg-gray-200">
@@ -83,7 +128,7 @@ const AdminMembers = ({ familyMembers, handleAddFamilyMember, formData, handleIn
                 </tr>
               </thead>
               <tbody>
-                {familyMembers.map(member => (
+                {filteredMembers.map(member => (
                   <React.Fragment key={member.family_member_id}>
                     <tr
                       className="hover:bg-gray-100 cursor-pointer"
@@ -108,6 +153,7 @@ const AdminMembers = ({ familyMembers, handleAddFamilyMember, formData, handleIn
                             current_city: member.current_city,
                             current_state: member.current_state,
                             death_date: member.death_date,
+                            family_group: member.family_group || REAL_FAMILY_GROUP,
                           });
                         }
                       }}
@@ -395,6 +441,25 @@ const AdminMembers = ({ familyMembers, handleAddFamilyMember, formData, handleIn
                                 <label htmlFor="edit_death_date" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Death Date (MM/DD/YYYY)</label>
                               </div>
 
+                            </div>
+
+                            <div className="mb-4 flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                id="edit_isDemoMember"
+                                checked={editFormData.family_group === DEMO_FAMILY_GROUP}
+                                onChange={(e) => {
+                                  const newFamilyGroup = e.target.checked ? DEMO_FAMILY_GROUP : REAL_FAMILY_GROUP;
+                                  setEditFormData({
+                                    ...editFormData,
+                                    family_group: newFamilyGroup,
+                                  });
+                                }}
+                                className="checkbox checkbox-sm"
+                              />
+                              <label htmlFor="edit_isDemoMember" className="text-sm font-medium text-gray-700 cursor-pointer">
+                                Demo Family Member
+                              </label>
                             </div>
 
                             <button type="submit" className="text-white bg-[#914F2F] hover:bg-[#914F2F]/90 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full px-5 py-2.5 text-center mt-2">

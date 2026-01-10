@@ -145,7 +145,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
 
     const loadFamilyMembers = async () => {
       try {
-        const members = await getAllFamilyMembers();
+        const members = await getAllFamilyMembers(user?.userId);
         setFamilyMembers(members.map(member => {
           // Determine preferred first name based on user settings
           let preferredFirstName = member.first_name;

@@ -53,7 +53,8 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
   useEffect(() => {
     const loadFamilyMembers = async () => {
       try {
-        const members = await getAllFamilyMembers();
+        const user = await getCurrentUser();
+        const members = await getAllFamilyMembers(user?.userId);
         setFamilyMembers(members);
       } catch (error) {
         console.error('Error loading family members:', error);
@@ -151,6 +152,8 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
       console.log('Generated S3 URL:', s3Url); // Debug log
 
       // Save to DynamoDB
+      // Note: family_group will be automatically determined from the authenticated user in savePhotoToDB
+      // We don't pass it here for security (prevents client-side manipulation)
       await savePhotoToDB({
         photo_id: `photo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         s3_key: result.key,

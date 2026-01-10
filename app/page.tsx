@@ -15,6 +15,8 @@ import AlbumsCard from "@/components/AlbumsCard";
 import { CalendarProvider } from '@/context/CalendarContext';
 import Calendar from '@/app/calendar/page';
 import LoadSpinner from '@/components/LoadSpinner';
+import DemoNoticeModal from '@/components/DemoNoticeModal';
+import { isDemoUser } from '@/utils/demoConfig';
 
 // Move Amplify configuration into a try-catch block
 try {
@@ -30,6 +32,7 @@ const HomePage = () => {
   const { user } = useAuthenticator();
   const [isConfigured, setIsConfigured] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('uploads');
+  const [showDemoNotice, setShowDemoNotice] = useState(false);
 
   useEffect(() => {
     try {
@@ -42,6 +45,25 @@ const HomePage = () => {
     }
   }, []);
 
+  // Show demo notice modal for demo users once per login session
+  useEffect(() => {
+    if (user?.userId && isDemoUser(user.userId)) {
+      const sessionKey = `demoNoticeShown_${user.userId}`;
+      const hasShownInSession = sessionStorage.getItem(sessionKey);
+      
+      // Only show if it hasn't been shown in this session
+      if (!hasShownInSession) {
+        // Small delay to ensure page is loaded
+        setTimeout(() => {
+          setShowDemoNotice(true);
+        }, 500);
+      }
+    } else {
+      // If user is not a demo user or logged out, hide the modal
+      setShowDemoNotice(false);
+    }
+  }, [user?.userId]);
+
   if (!isConfigured) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -50,11 +72,24 @@ const HomePage = () => {
     );
   }
 
+  const handleCloseDemoNotice = () => {
+    setShowDemoNotice(false);
+    // Mark as shown in sessionStorage so it won't show again until logout
+    if (user?.userId) {
+      const sessionKey = `demoNoticeShown_${user.userId}`;
+      sessionStorage.setItem(sessionKey, 'true');
+    }
+  };
+
   return (
     <AuthProvider>
       <ToastProvider>
         <UserProvider>
           <CalendarProvider>
+            <DemoNoticeModal 
+              isOpen={showDemoNotice} 
+              onClose={handleCloseDemoNotice}
+            />
             <div className="min-h-screen bg-gray-100 p-2 sm:p-6 opacity-0 animate-[fadeIn_0.6s_ease-in_forwards]">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_14rem] xl:grid-cols-[1fr_1fr_16rem] gap-4 max-w-7xl mx-auto">
                 <div className="col-span-1 sm:col-span-2 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.2s' }}>

@@ -8,26 +8,34 @@ import {
   getFamilyRelationships,
 } from "@/hooks/dynamoDB";
 import LoadSpinner from "./LoadSpinner";
+import { DEMO_FAMILY_GROUP, REAL_FAMILY_GROUP } from "@/utils/demoConfig";
+import { getCurrentUser } from "aws-amplify/auth";
+import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
 
 const AdminRelationshipCheck: React.FC = () => {
   const [members, setMembers] = useState<FamilyMember[]>([]);
+  const [allFamilyMembers, setAllFamilyMembers] = useState<FamilyMember[]>([]);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string>("");
   const [relationships, setRelationships] = useState<FamilyRelationship[]>([]);
   const [loadingMembers, setLoadingMembers] = useState<boolean>(false);
   const [loadingRelationships, setLoadingRelationships] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
+  // Fetch all family members once on mount
   useEffect(() => {
-    const fetchMembers = async () => {
+    const fetchAllMembers = async () => {
       setLoadingMembers(true);
       setError("");
       try {
-        const all = await getAllFamilyMembers();
+        const user = await getCurrentUser();
+        // Fetch all family members (both real and demo) to enable toggling
+        const all = await getAllFamilyMembers(user?.userId, true);
         // Sort by name for easier selection
         const sorted = [...all].sort((a, b) =>
           `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`)
         );
-        setMembers(sorted);
+        setAllFamilyMembers(sorted);
       } catch (e) {
         console.error("Error loading family members", e);
         setError("Error loading family members");
@@ -35,8 +43,30 @@ const AdminRelationshipCheck: React.FC = () => {
         setLoadingMembers(false);
       }
     };
-    fetchMembers();
+    fetchAllMembers();
   }, []);
+
+  // Filter family members based on toggle state
+  useEffect(() => {
+    const filteredMembers = allFamilyMembers.filter(member => {
+      const memberGroup = member.family_group || REAL_FAMILY_GROUP;
+      return isDemoMode ? memberGroup === DEMO_FAMILY_GROUP : memberGroup === REAL_FAMILY_GROUP;
+    });
+    setMembers(filteredMembers);
+    
+    // Clear selection if selected member doesn't belong to current group
+    setSelectedMemberId(prev => {
+      if (prev) {
+        const selectedMember = allFamilyMembers.find(m => m.family_member_id === prev);
+        if (selectedMember) {
+          const memberGroup = selectedMember.family_group || REAL_FAMILY_GROUP;
+          const currentGroup = isDemoMode ? DEMO_FAMILY_GROUP : REAL_FAMILY_GROUP;
+          return memberGroup === currentGroup ? prev : '';
+        }
+      }
+      return prev;
+    });
+  }, [isDemoMode, allFamilyMembers]);
 
   useEffect(() => {
     const fetchRelationships = async () => {
@@ -47,17 +77,75 @@ const AdminRelationshipCheck: React.FC = () => {
       setLoadingRelationships(true);
       setError("");
       try {
-        const rels = await getFamilyRelationships(selectedMemberId);
-        setRelationships(rels);
+        // Get all relationships directly from DynamoDB to avoid family group filtering
+        // Then filter based on the current toggle state (demo vs real)
+        const dynamoDB = new DynamoDBClient({ 
+          region: process.env.NEXT_PUBLIC_AWS_PROJECT_REGION,
+          credentials: {
+            accessKeyId: process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID!,
+            secretAccessKey: process.env.NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY!,
+          }
+        });
+
+        const params = {
+          TableName: "Relationships",
+          FilterExpression: "source_id = :id OR target_id = :id",
+          ExpressionAttributeValues: {
+            ":id": { S: selectedMemberId }
+          }
+        };
+
+        const command = new ScanCommand(params);
+        const response = await dynamoDB.send(command);
+
+        if (!response.Items) {
+          setRelationships([]);
+          return;
+        }
+
+        // Map DynamoDB items to FamilyRelationship format
+        const allRelationships: FamilyRelationship[] = response.Items.map(item => ({
+          relationship_id: item.relationship_id?.S || '',
+          person_a_id: item.source_id?.S || '',
+          person_b_id: item.target_id?.S || '',
+          relationship_type: (item.relationship_type?.S || 'sibling') as any,
+          relationship_subtype: item.relationship_subtype?.S || '',
+          start_date: item.start_date?.S || '',
+          end_date: item.end_date?.S || '',
+          is_active: item.is_active?.BOOL ?? true,
+          notes: item.notes?.S || '',
+          created_date: item.created_date?.S || '',
+          created_by: item.created_by?.S || ''
+        }));
+        
+        // Filter relationships to only include those where both people are in the current toggle group
+        // This ensures demo relationships show when toggle is on demo, and real relationships show when toggle is on real
+        const currentGroupMemberIds = new Set(members.map(m => m.family_member_id));
+        const filteredRels = allRelationships.filter(rel => 
+          currentGroupMemberIds.has(rel.person_a_id) && currentGroupMemberIds.has(rel.person_b_id)
+        );
+        
+        setRelationships(filteredRels);
       } catch (e) {
         console.error("Error loading relationships", e);
         setError("Error loading relationships");
+        // Fallback to using getFamilyRelationships if direct DynamoDB fetch fails
+        try {
+          const rels = await getFamilyRelationships(selectedMemberId);
+          const currentGroupMemberIds = new Set(members.map(m => m.family_member_id));
+          const filteredRels = rels.filter(rel => 
+            currentGroupMemberIds.has(rel.person_a_id) && currentGroupMemberIds.has(rel.person_b_id)
+          );
+          setRelationships(filteredRels);
+        } catch (fallbackError) {
+          console.error("Fallback also failed:", fallbackError);
+        }
       } finally {
         setLoadingRelationships(false);
       }
     };
     fetchRelationships();
-  }, [selectedMemberId]);
+  }, [selectedMemberId, members]);
 
   const relatedMemberIds = useMemo(() => {
     const ids = new Set<string>();
@@ -86,6 +174,41 @@ const AdminRelationshipCheck: React.FC = () => {
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6 text-gray-800">Relationship Coverage Checker</h2>
+
+      {/* Toggle between Real and Demo Family Members */}
+      <div className="mb-4 flex items-center gap-3">
+        <span className="text-sm font-medium text-gray-700">Family Group:</span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setIsDemoMode(false);
+              setSelectedMemberId("");
+            }}
+            className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
+              !isDemoMode
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            Real
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setIsDemoMode(true);
+              setSelectedMemberId("");
+            }}
+            className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
+              isDemoMode
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            Demo
+          </button>
+        </div>
+      </div>
 
       {/* Selector */}
       <div className="mb-6">

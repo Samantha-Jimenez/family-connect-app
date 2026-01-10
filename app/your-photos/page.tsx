@@ -27,7 +27,7 @@ export default function YourPhotos() {
         throw new Error("User not authenticated");
       }
 
-      const response = await fetch('/api/photos');
+      const response = await fetch(`/api/photos?userId=${encodeURIComponent(user.userId)}`);
       const data = await response.json();
       
       const filteredPhotos = data.photos.filter((photo: Photo) => 

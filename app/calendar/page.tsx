@@ -15,7 +15,8 @@ import { useAuth } from '@/context/AuthContext';
 import { EventApi } from '@fullcalendar/core';
 import { DEFAULT_EVENTS } from './calendarData'; // Import your default events
 import { useSearchParams } from 'next/navigation';
-import { getAllFamilyMembers, FamilyMember, sendEventCancellationNotifications, createNotification, getUserNameById } from '@/hooks/dynamoDB';
+import { getAllFamilyMembers, sendEventCancellationNotifications, createNotification, getUserNameById, saveEventToDynamoDB, deleteEventFromDynamoDB } from '@/hooks/dynamoDB';
+import { getUserFamilyGroup, REAL_FAMILY_GROUP } from '@/utils/demoConfig';
 
 interface CalendarEvent {
   id?: string;
@@ -39,6 +40,7 @@ interface CalendarEvent {
     userId?: string;
     location?: string;
     description?: string;
+    familyGroup?: string;
   }
   userId?: string;
   location?: string;
@@ -59,109 +61,9 @@ export default function Calendar() {
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const searchParams = useSearchParams();
   const eventIdFromQuery = searchParams.get('eventId');
-  const [familyEvents, setFamilyEvents] = useState<CalendarEvent[]>([]);
-
-  // Fetch family members and create events from birthdays and death dates
-  useEffect(() => {
-    const fetchFamilyEvents = async () => {
-      try {
-        const familyMembers = await getAllFamilyMembers();
-        const generatedEvents: CalendarEvent[] = [];
-
-        familyMembers.forEach((member: FamilyMember) => {
-          // Add birthday events - create events for current and next few years
-          if (member.birthday) {
-            // Parse the date string directly to avoid timezone issues
-            const dateStr = member.birthday.split('T')[0]; // Get YYYY-MM-DD part
-            const [year, month, day] = dateStr.split('-').map(Number);
-            
-            if (month && day) {
-              // Create birthday events for the next 5 years
-              const currentYear = new Date().getFullYear();
-              for (let yearOffset = 0; yearOffset < 5; yearOffset++) {
-                // Format date directly as YYYY-MM-DD to avoid timezone conversion
-                const eventDateStr = `${currentYear + yearOffset}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                
-                const title = `${member.first_name} ${member.last_name}'s Birthday 🎂`;
-                
-                generatedEvents.push({
-                  id: `birthday-${member.family_member_id}-${currentYear + yearOffset}`,
-                  title: title,
-                  start: eventDateStr,
-                  allDay: true,
-                  backgroundColor: '#E8D4B8',
-                  borderColor: '#D2A267',
-                  textColor: '#000000',
-                  extendedProps: {
-                    category: 'birthday',
-                    userId: member.family_member_id,
-                    description: `Happy Birthday to ${member.first_name} ${member.last_name}! 🎉`,
-                  }
-                });
-              }
-            }
-          }
-
-          // Add death date events (memorial dates) - create for current and next few years
-          if (member.death_date) {
-            // Parse the date string directly to avoid timezone issues
-            const dateStr = member.death_date.split('T')[0]; // Get YYYY-MM-DD part
-            const [year, month, day] = dateStr.split('-').map(Number);
-            
-            if (year && month && day) {
-              // Create memorial events for the next 5 years
-              const currentYear = new Date().getFullYear();
-              for (let yearOffset = 0; yearOffset < 5; yearOffset++) {
-                // Format date directly as YYYY-MM-DD to avoid timezone conversion
-                const eventDateStr = `${currentYear + yearOffset}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                
-                generatedEvents.push({
-                  id: `memorial-${member.family_member_id}-${currentYear + yearOffset}`,
-                  title: `In Memory of ${member.first_name} ${member.last_name} 🕊️`,
-                  start: eventDateStr,
-                  allDay: true,
-                  backgroundColor: '#6b7280', // Gray color for memorial dates
-                  borderColor: '#4b5563',
-                  textColor: '#ffffff',
-                  extendedProps: {
-                    category: 'family-event',
-                    userId: member.family_member_id,
-                    description: `In loving memory of ${member.first_name} ${member.last_name}. ❤️`,
-                  }
-                });
-              }
-            }
-          }
-        });
-
-        setFamilyEvents(generatedEvents);
-      } catch (error) {
-        console.error('Error fetching family events:', error);
-      }
-    };
-
-    fetchFamilyEvents();
-  }, []);
-
-  useEffect(() => {
-    // Combine DEFAULT_EVENTS, familyEvents, and user-created events
-    const baseEvents = [...DEFAULT_EVENTS, ...familyEvents];
-    
-    // Initialize events with base events if events are empty
-    if (events.length === 0) {
-      setEvents(baseEvents);
-    } else {
-      // Combine all events, ensuring no duplicates based on id
-      const combinedEvents = [...events, ...baseEvents].filter((event, index, self) =>
-        index === self.findIndex((e) => e.id === event.id)
-      );
-
-      // Only update state if combinedEvents is different from current events
-      if (JSON.stringify(combinedEvents) !== JSON.stringify(events)) {
-        setEvents(combinedEvents);
-      }
-    }
-  }, [familyEvents]);
+  
+  // Events are now loaded and generated in CalendarContext, so we just use them directly
+  // No need to generate birthday events or filter again here since CalendarContext handles it
 
   useEffect(() => {
     if (eventIdFromQuery && events.length > 0) {
@@ -206,6 +108,7 @@ export default function Calendar() {
   };
 
   const handleAddEvent = async (title: string, start: string, userId: string, end?: string, allDay?: boolean, location?: string, description?: string, notifyMembers?: boolean) => {
+    const userFamilyGroup = user?.userId ? getUserFamilyGroup(user.userId) : REAL_FAMILY_GROUP;
     const newEvent = {
       id: crypto.randomUUID(),
       title,
@@ -220,19 +123,53 @@ export default function Calendar() {
       borderColor: '#2E6E49',    // Darker green border
       textColor: '#000000',       // Black text
       extendedProps: {
-        category: 'appointment' as const // Default category for user-created events
+        category: 'appointment' as const, // Default category for user-created events
+        userId: userId, // Also store in extendedProps for consistency with filtering logic
+        familyGroup: userFamilyGroup // Store family group for filtering
       }
     };
 
     // Check if the event already exists based on title and start time
     const eventExists = events.some(event => event.title === newEvent.title && event.start === newEvent.start);
     if (!eventExists) {
-      setEvents(currentEvents => [...currentEvents, newEvent]);
+      // Update events state
+      setEvents(currentEvents => {
+        const updatedEvents = [...currentEvents, newEvent];
+        // Immediately save to localStorage for quick access
+        console.log('💾 Saving new event to localStorage:', newEvent.title, 'userId:', newEvent.userId);
+        localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
+        console.log('✅ Saved', updatedEvents.length, 'events to localStorage');
+        return updatedEvents;
+      });
+
+      // Save to DynamoDB for cross-device persistence
+      try {
+        await saveEventToDynamoDB({
+          id: newEvent.id!,
+          title: newEvent.title,
+          start: newEvent.start,
+          end: newEvent.end,
+          allDay: newEvent.allDay,
+          backgroundColor: newEvent.backgroundColor,
+          borderColor: newEvent.borderColor,
+          textColor: newEvent.textColor,
+          location: newEvent.location,
+          description: newEvent.description,
+          userId: newEvent.userId,
+          createdBy: newEvent.userId,
+          category: newEvent.extendedProps?.category,
+          rrule: (newEvent.extendedProps as any)?.rrule
+        }, user?.userId);
+        console.log('✅ Event saved to DynamoDB for cross-device persistence');
+      } catch (error) {
+        console.error('❌ Error saving event to DynamoDB:', error);
+        // Don't fail the event creation if DynamoDB save fails
+      }
 
       // Send notifications to all family members if requested
       if (notifyMembers) {
         try {
-          const familyMembers = await getAllFamilyMembers();
+          const familyMembers = await getAllFamilyMembers(user?.userId);
           const creatorName = await getUserNameById(userId);
           const creatorDisplayName = creatorName 
             ? `${creatorName.firstName} ${creatorName.lastName}` 
@@ -279,16 +216,53 @@ export default function Calendar() {
     }
   };
 
-  const handleEditEvent = (title: string, start: string, userId: string, end?: string, allDay?: boolean, location?: string, description?: string) => {
+  const handleEditEvent = async (title: string, start: string, userId: string, end?: string, allDay?: boolean, location?: string, description?: string) => {
     if (!selectedEvent?.id) return;
     
-    setEvents(currentEvents =>
-      currentEvents.map(event =>
-        event.id === selectedEvent.id
-          ? { ...event, title, start, end, allDay, location, userId, description }
-          : event
-      )
-    );
+    const updatedEvent = {
+      ...selectedEvent,
+      title,
+      start,
+      end,
+      allDay,
+      location,
+      userId,
+      description
+    };
+    
+    // Update state and localStorage
+    setEvents(currentEvents => {
+      const updatedEvents = currentEvents.map(event =>
+        event.id === selectedEvent.id ? updatedEvent : event
+      );
+      localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
+      return updatedEvents;
+    });
+    
+    // Update in DynamoDB
+    try {
+      await saveEventToDynamoDB({
+        id: selectedEvent.id,
+        title,
+        start,
+        end,
+        allDay,
+        backgroundColor: selectedEvent.backgroundColor,
+        borderColor: selectedEvent.borderColor,
+        textColor: selectedEvent.textColor,
+        location,
+        description,
+        userId,
+        createdBy: selectedEvent.userId || userId,
+        category: selectedEvent.extendedProps?.category,
+        rrule: selectedEvent.extendedProps?.rrule
+      }, user?.userId);
+      console.log('✅ Event updated in DynamoDB');
+    } catch (error) {
+      console.error('❌ Error updating event in DynamoDB:', error);
+      // Don't block edit if DynamoDB update fails
+    }
+    
     setIsModalOpen(false);
   };
 
@@ -306,9 +280,21 @@ export default function Calendar() {
       // Don't block deletion if notification sending fails
     }
     
-    setEvents(currentEvents =>
-      currentEvents.filter(event => event.id !== selectedEvent.id)
-    );
+    // Delete from DynamoDB
+    try {
+      await deleteEventFromDynamoDB(eventId);
+      console.log('✅ Event deleted from DynamoDB');
+    } catch (error) {
+      console.error('❌ Error deleting event from DynamoDB:', error);
+      // Don't block deletion if DynamoDB delete fails
+    }
+    
+    // Update state and localStorage
+    setEvents(currentEvents => {
+      const updatedEvents = currentEvents.filter(event => event.id !== selectedEvent.id);
+      localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
+      return updatedEvents;
+    });
     setIsModalOpen(false);
   };
 
@@ -332,9 +318,11 @@ export default function Calendar() {
         headerToolbar={{
           left: 'prev,next today',
           center: 'title',
-          right: 'refreshEvents timeGridWeek,dayGridMonth,multiMonthYear,listYear'
+          right: user?.userId === 'f16b1510-0001-705f-8680-28689883e706' 
+            ? 'refreshEvents timeGridWeek,dayGridMonth,multiMonthYear,listYear'
+            : 'timeGridWeek,dayGridMonth,multiMonthYear,listYear'
         }}
-        customButtons={{
+        customButtons={user?.userId === 'f16b1510-0001-705f-8680-28689883e706' ? {
           refreshEvents: {
             text: '🔄 Refresh',
             click: () => {
@@ -343,7 +331,7 @@ export default function Calendar() {
               window.location.reload();
             }
           }
-        }}
+        } : undefined}
         initialView="dayGridMonth"
         views={{
           // 🗓️ Grid Views

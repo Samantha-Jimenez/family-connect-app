@@ -1,6 +1,6 @@
 import React, { useRef } from 'react'
 
-const AdminCreateFamilyMemberForm = ({ handleAddFamilyMember, formData, handleInputChange, imagePreview, handleImageChange, isUploading, uploadProgress, handleClearImage }: { handleAddFamilyMember: (e: React.FormEvent<HTMLFormElement>) => void, formData: any, handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void, imagePreview: string | null, handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void, isUploading: boolean, uploadProgress: number, handleClearImage: () => void }) => {
+const AdminCreateFamilyMemberForm = ({ handleAddFamilyMember, formData, handleInputChange, imagePreview, handleImageChange, isUploading, uploadProgress, handleClearImage, isDemoMember, setIsDemoMember }: { handleAddFamilyMember: (e: React.FormEvent<HTMLFormElement>) => void, formData: any, handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void, imagePreview: string | null, handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void, isUploading: boolean, uploadProgress: number, handleClearImage: () => void, isDemoMember: boolean, setIsDemoMember: (value: boolean) => void }) => {
     const US_STATES = [
         'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
         'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
@@ -14,6 +14,18 @@ const AdminCreateFamilyMemberForm = ({ handleAddFamilyMember, formData, handleIn
     <div>
       <div className="mt-8 bg-white shadow-lg p-8 rounded-lg mx-auto space-y-4">
       <h2 className="text-2xl font-bold text-center mb-8 text-gray-800">Create Family Member</h2>
+        <div className="mb-4 flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="isDemoMember"
+            checked={isDemoMember}
+            onChange={(e) => setIsDemoMember(e.target.checked)}
+            className="checkbox checkbox-sm"
+          />
+          <label htmlFor="isDemoMember" className="text-sm font-medium text-gray-700 cursor-pointer">
+            Create as Demo Family Member
+          </label>
+        </div>
         <form onSubmit={handleAddFamilyMember} className="space-y-4">
           <div className="grid md:grid-cols-4 md:gap-6">
             <div className="relative z-0 w-full mb-5 group">

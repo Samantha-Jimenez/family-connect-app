@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { ReturnValue } from "@aws-sdk/client-dynamodb";
+import { getUserFamilyGroup, REAL_FAMILY_GROUP } from '@/utils/demoConfig';
 
 // Set up DynamoDB client
 const dynamoDB = new DynamoDBClient({ 
@@ -28,7 +29,7 @@ const TABLES = {
   PHOTOS: "Photos",
   ALBUMS: "Albums",
   RELATIONSHIPS: "Relationships",
-  // EVENTS: "Events",
+  EVENTS: "Events",
   EVENT_RSVP: "EventRSVPs",
   HOBBY_COMMENTS: "HobbyComments",
   NOTIFICATIONS: "Notifications"
@@ -47,6 +48,7 @@ export interface PhotoData {
   s3_key: string;
   uploaded_by: string;
   upload_date: string;
+  family_group?: string; // 'demo' for demo data, 'real' for real family data
   metadata: {
     location: {
       country: string;
@@ -90,6 +92,7 @@ export interface FamilyMember {
   use_first_name: boolean;
   use_middle_name: boolean;
   use_nick_name: boolean;
+  family_group?: string; // 'demo' for demo data, 'real' for real family data
   social_media?: {
     platform: string;
     url: string;
@@ -479,16 +482,36 @@ export const savePhotoToDB = async (photoData: PhotoData) => {
     const existingPhotoData = await dynamoDB.send(new GetItemCommand(getPhotoParams));
     const isNewPhoto = !existingPhotoData.Item;
     
-    // Get current user (who is doing the tagging/uploading)
+    // SECURITY: Always determine family_group from the authenticated current user
+    // Never trust family_group from photoData (client can be manipulated)
     let taggerId = photoData.uploaded_by; // Default to uploader
+    let photoFamilyGroup: string | null = null;
+    
     try {
       const user = await getCurrentUser();
-      if (user?.userId) {
-        taggerId = user.userId;
+      if (!user?.userId) {
+        throw new Error('User is not authenticated');
+      }
+      
+      // Always use the authenticated user's family group for security
+      taggerId = user.userId;
+      photoFamilyGroup = getUserFamilyGroup(user.userId);
+      console.log(`🔒 Security: Determined photo family_group from authenticated user: ${photoFamilyGroup} (ignoring any provided value)`);
+      
+      // Security check: If provided family_group doesn't match authenticated user's group, log a warning
+      if (photoData.family_group && photoData.family_group !== photoFamilyGroup) {
+        console.warn(`⚠️ Security Warning: Provided family_group (${photoData.family_group}) doesn't match authenticated user's group (${photoFamilyGroup}). Using authenticated user's group.`);
       }
     } catch (error) {
-      // If we can't get current user, use uploader as fallback
-      console.log('Could not get current user, using uploader as tagger');
+      // If we can't get current user, this is a critical error - don't proceed
+      console.error('❌ Security Error: Cannot determine family_group - user authentication failed:', error);
+      throw new Error('User must be authenticated to upload photos');
+    }
+    
+    // Final fallback (should never reach here due to throw above, but TypeScript requires it)
+    if (!photoFamilyGroup) {
+      console.error('❌ Security Error: Could not determine family_group');
+      throw new Error('Unable to determine family group for photo');
     }
 
     // Get existing tags if photo already exists
@@ -508,6 +531,20 @@ export const savePhotoToDB = async (photoData: PhotoData) => {
       return person.id && !existingTaggedIds.has(person.id);
     });
 
+    // Determine family_group for the photo
+    // For new photos: use the authenticated user's family group
+    // For existing photos (updates): preserve existing family_group to prevent unauthorized changes
+    const finalPhotoFamilyGroup = existingPhotoData.Item?.family_group?.S || photoFamilyGroup;
+    
+    // Security check: If updating an existing photo, verify the family_group matches the user's group
+    // This prevents users from modifying photos from other family groups
+    if (existingPhotoData.Item?.family_group?.S && existingPhotoData.Item.family_group.S !== photoFamilyGroup) {
+      console.warn(`⚠️ Security Warning: Attempted to update photo from different family group. Photo group: ${existingPhotoData.Item.family_group.S}, User group: ${photoFamilyGroup}`);
+      // Allow the update but keep the original family_group (this is a metadata update, not a group change)
+    }
+    
+    console.log('📸 Saving photo with family_group:', finalPhotoFamilyGroup, 'uploaded_by:', photoData.uploaded_by);
+
     // Create the base item with required fields
     const item: Record<string, any> = {
       photo_id: { S: photoData.photo_id },
@@ -515,6 +552,7 @@ export const savePhotoToDB = async (photoData: PhotoData) => {
       s3_key: { S: `photos/${photoData.s3_key.replace(/^photos\//g, '')}` },
       uploaded_by: { S: photoData.uploaded_by },
       upload_date: { S: photoData.upload_date },
+      family_group: { S: finalPhotoFamilyGroup }, // Store family_group explicitly
       album_ids: { L: (photoData.album_ids || []).map(id => ({ S: id })) },
     };
 
@@ -667,9 +705,25 @@ export const addPhotoToAlbum = async (photo_id: string, album_id: string) => {
   }
 };
 
-export const getAllFamilyMembers = async (): Promise<FamilyMember[]> => {
+export const getAllFamilyMembers = async (userId?: string, includeAllGroups?: boolean): Promise<FamilyMember[]> => {
   try {
-    const params = {
+    // If userId not provided, try to get current user
+    let currentUserId = userId;
+    if (!currentUserId && !includeAllGroups) {
+      try {
+        const user = await getCurrentUser();
+        currentUserId = user.userId;
+      } catch (error) {
+        // User not authenticated, default to real family group
+        console.log('⚠️ No userId provided and could not get current user, defaulting to real family group');
+      }
+    }
+    
+    // Get the family group for the current user (or default to real if no user)
+    const familyGroup = currentUserId ? getUserFamilyGroup(currentUserId) : REAL_FAMILY_GROUP;
+    console.log('🔍 getAllFamilyMembers - userId:', currentUserId, 'familyGroup:', familyGroup, 'includeAllGroups:', includeAllGroups);
+    
+    const params: any = {
       TableName: TABLES.FAMILY,
     };
 
@@ -680,7 +734,9 @@ export const getAllFamilyMembers = async (): Promise<FamilyMember[]> => {
       return [];
     }
 
-    return response.Items.map(item => ({
+    // Map members
+    // For backward compatibility: if family_group is not set, treat as 'real' data
+    const mappedMembers = response.Items.map(item => ({
       family_member_id: item.family_member_id?.S || '',
       first_name: item.first_name?.S || '',
       last_name: item.last_name?.S || '',
@@ -700,7 +756,25 @@ export const getAllFamilyMembers = async (): Promise<FamilyMember[]> => {
       use_first_name: item.use_first_name?.BOOL ?? true,
       use_middle_name: item.use_middle_name?.BOOL ?? false,
       use_nick_name: item.use_nick_name?.BOOL ?? false,
+      family_group: item.family_group?.S || REAL_FAMILY_GROUP,
     }));
+
+    // If includeAllGroups is true, return all members without filtering
+    if (includeAllGroups) {
+      return mappedMembers;
+    }
+
+    // Otherwise, filter by family group
+    return mappedMembers.filter(member => {
+      // Filter by family group
+      // If member has no family_group (existing data), it's real data
+      const memberGroup = member.family_group || REAL_FAMILY_GROUP;
+      const matches = memberGroup === familyGroup;
+      if (!matches) {
+        console.log(`🚫 Filtered out member: ${member.first_name} ${member.last_name} (group: ${memberGroup}, expected: ${familyGroup})`);
+      }
+      return matches;
+    });
   } catch (error) {
     console.error("❌ Error fetching family members:", error);
     return [];
@@ -845,6 +919,7 @@ export const updateFamilyMember = async (
     current_city: string;
     current_state: string;
     death_date: string;
+    family_group?: string;
   }
 ) => {
   try {
@@ -854,7 +929,7 @@ export const updateFamilyMember = async (
         family_member_id: { S: familyMemberId },
       },
       UpdateExpression:
-        "SET first_name = :firstName, last_name = :lastName, middle_name = :middleName, nick_name = :nickName, email = :email, username = :username, bio = :bio, phone_number = :phoneNumber, birthday = :birthday, birth_city = :birth_city, birth_state = :birth_state, profile_photo = :profile_photo, current_city = :current_city, current_state = :current_state, death_date = :death_date",
+        "SET first_name = :firstName, last_name = :lastName, middle_name = :middleName, nick_name = :nickName, email = :email, username = :username, bio = :bio, phone_number = :phoneNumber, birthday = :birthday, birth_city = :birth_city, birth_state = :birth_state, profile_photo = :profile_photo, current_city = :current_city, current_state = :current_state, death_date = :death_date, family_group = :family_group",
       ExpressionAttributeValues: {
         ":firstName": { S: data.firstName },
         ":lastName": { S: data.lastName },
@@ -871,6 +946,7 @@ export const updateFamilyMember = async (
         ":current_city": { S: data.current_city },
         ":current_state": { S: data.current_state },
         ":death_date": { S: data.death_date },
+        ":family_group": { S: data.family_group || REAL_FAMILY_GROUP },
       },
       ReturnValues: "UPDATED_NEW" as ReturnValue,
     };
@@ -1057,8 +1133,26 @@ export const addFamilyRelationship = async (
 };
 
 // Function to get relationships for a family member
-export const getFamilyRelationships = async (familyMemberId: string): Promise<FamilyRelationship[]> => {
+export const getFamilyRelationships = async (familyMemberId: string, userId?: string): Promise<FamilyRelationship[]> => {
   try {
+    // Get family member IDs for the user's family group
+    let familyMemberIds: string[] = [];
+    if (userId) {
+      const familyMembers = await getAllFamilyMembers(userId);
+      familyMemberIds = familyMembers.map(m => m.family_member_id);
+    } else {
+      // If no userId provided, try to get current user
+      try {
+        const user = await getCurrentUser();
+        if (user?.userId) {
+          const familyMembers = await getAllFamilyMembers(user.userId);
+          familyMemberIds = familyMembers.map(m => m.family_member_id);
+        }
+      } catch (error) {
+        // User not authenticated, will filter later
+      }
+    }
+    
     const params = {
       TableName: TABLES.RELATIONSHIPS,
       FilterExpression: "source_id = :id OR target_id = :id",
@@ -1074,7 +1168,7 @@ export const getFamilyRelationships = async (familyMemberId: string): Promise<Fa
       return [];
     }
 
-    return response.Items.map(item => ({
+    const relationships = response.Items.map(item => ({
       relationship_id: item.relationship_id?.S || '',
       person_a_id: item.source_id?.S || '',
       person_b_id: item.target_id?.S || '',
@@ -1087,6 +1181,15 @@ export const getFamilyRelationships = async (familyMemberId: string): Promise<Fa
       created_date: item.created_date?.S || '',
       created_by: item.created_by?.S || ''
     }));
+    
+    // Filter by family group if we have family member IDs
+    if (familyMemberIds.length > 0) {
+      return relationships.filter(rel => 
+        familyMemberIds.includes(rel.person_a_id) && familyMemberIds.includes(rel.person_b_id)
+      );
+    }
+    
+    return relationships;
   } catch (error) {
     console.error("❌ Error fetching relationships:", error);
     return [];
@@ -1145,7 +1248,8 @@ export const addFamilyMember = async (memberData: {
   profile_photo: string,
   current_city?: string,
   current_state?: string,
-  death_date?: string
+  death_date?: string,
+  family_group?: string
 }) => {
   try {
     const params = {
@@ -1169,7 +1273,8 @@ export const addFamilyMember = async (memberData: {
         death_date: { S: memberData.death_date || '' },
         use_first_name: { BOOL: true },
         use_middle_name: { BOOL: false },
-        use_nick_name: { BOOL: false }
+        use_nick_name: { BOOL: false },
+        family_group: { S: memberData.family_group || REAL_FAMILY_GROUP }
       }
     };
 
@@ -1302,6 +1407,7 @@ export const getPhotoById = async (photoId: string): Promise<PhotoData | null> =
         s3_key: s3Key,
         uploaded_by: item.uploaded_by?.S || '',
         upload_date: item.upload_date?.S || '',
+        family_group: item.family_group?.S || REAL_FAMILY_GROUP, // Include family_group
         album_ids: item.album_ids?.L?.map((id: any) => id.S || '') || [],
         url,
         metadata: {
@@ -1368,6 +1474,7 @@ export const getPhotosByAlbum = async (albumId: string) => {
           s3_key: s3Key,
           uploaded_by: item.uploaded_by?.S || '',
           upload_date: item.upload_date?.S || '',
+          family_group: item.family_group?.S || REAL_FAMILY_GROUP, // Include family_group
           album_ids: item.album_ids?.L?.map((id: any) => id.S || '') || [],
           url,
           metadata: {
@@ -2225,6 +2332,162 @@ export async function getUserRSVPs(userId: string): Promise<{ eventId: string; s
   }
 }
 
+// Calendar Event Functions for DynamoDB persistence
+export interface CalendarEventData {
+  id: string;
+  title: string;
+  start: string;
+  end?: string;
+  allDay?: boolean;
+  backgroundColor?: string;
+  borderColor?: string;
+  textColor?: string;
+  location?: string;
+  description?: string;
+  userId?: string;
+  createdBy?: string;
+  category?: 'birthday' | 'holiday' | 'family-event' | 'appointment';
+  rrule?: {
+    freq: 'daily' | 'weekly' | 'monthly' | 'yearly';
+    interval?: number;
+    byweekday?: number[];
+    until?: string;
+  };
+}
+
+export const saveEventToDynamoDB = async (event: CalendarEventData, userId?: string): Promise<void> => {
+  try {
+    const eventUserId = event.userId || userId || '';
+    const familyGroup = userId ? getUserFamilyGroup(userId) : REAL_FAMILY_GROUP;
+    
+    const item: Record<string, any> = {
+      event_id: { S: event.id },
+      title: { S: event.title },
+      start: { S: event.start },
+      user_id: { S: eventUserId },
+      family_group: { S: familyGroup },
+      created_at: { S: new Date().toISOString() }
+    };
+
+    if (event.end) item.end = { S: event.end };
+    if (event.allDay !== undefined) item.all_day = { BOOL: event.allDay };
+    if (event.backgroundColor) item.background_color = { S: event.backgroundColor };
+    if (event.borderColor) item.border_color = { S: event.borderColor };
+    if (event.textColor) item.text_color = { S: event.textColor };
+    if (event.location) item.location = { S: event.location };
+    if (event.description) item.description = { S: event.description };
+    if (event.createdBy) item.created_by = { S: event.createdBy };
+    if (event.category) item.category = { S: event.category };
+    if (event.rrule) {
+      item.rrule = {
+        M: {
+          freq: { S: event.rrule.freq },
+          ...(event.rrule.interval && { interval: { N: String(event.rrule.interval) } }),
+          ...(event.rrule.byweekday && { byweekday: { L: event.rrule.byweekday.map(d => ({ N: String(d) })) } }),
+          ...(event.rrule.until && { until: { S: event.rrule.until } })
+        }
+      };
+    }
+
+    const command = new PutItemCommand({
+      TableName: TABLES.EVENTS,
+      Item: item
+    });
+
+    await dynamoDB.send(command);
+    console.log('✅ Event saved to DynamoDB:', event.id);
+  } catch (error) {
+    console.error('❌ Error saving event to DynamoDB:', error);
+    throw error;
+  }
+};
+
+export const getEventsFromDynamoDB = async (userId?: string): Promise<CalendarEventData[]> => {
+  try {
+    const userFamilyGroup = userId ? getUserFamilyGroup(userId) : REAL_FAMILY_GROUP;
+    
+    // For real family members, get all events except demo ones
+    // For demo users, only get demo events
+    const params: any = {
+      TableName: TABLES.EVENTS,
+    };
+
+    const command = new ScanCommand(params);
+    const response = await dynamoDB.send(command);
+
+    if (!response.Items) {
+      return [];
+    }
+
+    const events = response.Items
+      .map(item => {
+        try {
+          const event: CalendarEventData = {
+            id: item.event_id?.S || '',
+            title: item.title?.S || '',
+            start: item.start?.S || '',
+            userId: item.user_id?.S,
+            createdBy: item.created_by?.S,
+            category: item.category?.S as any,
+          };
+
+          if (item.end?.S) event.end = item.end.S;
+          if (item.all_day?.BOOL !== undefined) event.allDay = item.all_day.BOOL;
+          if (item.background_color?.S) event.backgroundColor = item.background_color.S;
+          if (item.border_color?.S) event.borderColor = item.border_color.S;
+          if (item.text_color?.S) event.textColor = item.text_color.S;
+          if (item.location?.S) event.location = item.location.S;
+          if (item.description?.S) event.description = item.description.S;
+          if (item.rrule?.M) {
+            const rrule = item.rrule.M;
+            event.rrule = {
+              freq: rrule.freq?.S as any,
+              interval: rrule.interval?.N ? parseInt(rrule.interval.N) : undefined,
+              byweekday: rrule.byweekday?.L ? rrule.byweekday.L.map((d: any) => parseInt(d.N)) : undefined,
+              until: rrule.until?.S
+            };
+          }
+
+          // Filter by family group
+          const eventFamilyGroup = item.family_group?.S || REAL_FAMILY_GROUP;
+          if (userFamilyGroup === 'demo') {
+            // Demo users only see demo events
+            return eventFamilyGroup === 'demo' ? event : null;
+          } else {
+            // Real family members see all events except demo ones
+            return eventFamilyGroup !== 'demo' ? event : null;
+          }
+        } catch (error) {
+          console.error('Error parsing event:', error);
+          return null;
+        }
+      })
+      .filter((event): event is CalendarEventData => event !== null);
+
+    return events;
+  } catch (error) {
+    console.error('❌ Error fetching events from DynamoDB:', error);
+    return [];
+  }
+};
+
+export const deleteEventFromDynamoDB = async (eventId: string): Promise<void> => {
+  try {
+    const command = new DeleteItemCommand({
+      TableName: TABLES.EVENTS,
+      Key: {
+        event_id: { S: eventId }
+      }
+    });
+
+    await dynamoDB.send(command);
+    console.log('✅ Event deleted from DynamoDB:', eventId);
+  } catch (error) {
+    console.error('❌ Error deleting event from DynamoDB:', error);
+    throw error;
+  }
+};
+
 // Add this function near other user update functions
 export const setUserCTAVisible = async (userId: string, visible: boolean) => {
   try {
@@ -2358,6 +2621,7 @@ export const getUserPhotos = async (userId: string): Promise<PhotoData[]> => {
           s3_key: s3Key,
           uploaded_by: item.uploaded_by?.S || '',
           upload_date: item.upload_date?.S || '',
+          family_group: item.family_group?.S || REAL_FAMILY_GROUP, // Include family_group
           album_ids: item.album_ids?.L?.map((id: any) => id.S || '') || [],
           url,
           metadata: {
@@ -2526,8 +2790,26 @@ export const buildFamilyTreeFromRelationships = async (rootPersonId: string): Pr
 };
 
 // Function to get all relationships (enhanced version)
-export const getAllFamilyRelationships = async (): Promise<FamilyRelationship[]> => {
+export const getAllFamilyRelationships = async (userId?: string): Promise<FamilyRelationship[]> => {
   try {
+    // Get family member IDs for the user's family group
+    let familyMemberIds: string[] = [];
+    if (userId) {
+      const familyMembers = await getAllFamilyMembers(userId);
+      familyMemberIds = familyMembers.map(m => m.family_member_id);
+    } else {
+      // If no userId provided, try to get current user
+      try {
+        const user = await getCurrentUser();
+        if (user?.userId) {
+          const familyMembers = await getAllFamilyMembers(user.userId);
+          familyMemberIds = familyMembers.map(m => m.family_member_id);
+        }
+      } catch (error) {
+        // User not authenticated, will return all relationships
+      }
+    }
+    
     const params = {
       TableName: TABLES.RELATIONSHIPS,
     };
@@ -2539,7 +2821,7 @@ export const getAllFamilyRelationships = async (): Promise<FamilyRelationship[]>
       return [];
     }
 
-    return response.Items.map(item => ({
+    const relationships = response.Items.map(item => ({
       relationship_id: item.relationship_id?.S || '',
       person_a_id: item.source_id?.S || '',
       person_b_id: item.target_id?.S || '',
@@ -2552,6 +2834,15 @@ export const getAllFamilyRelationships = async (): Promise<FamilyRelationship[]>
       created_date: item.created_date?.S || '',
       created_by: item.created_by?.S || ''
     }));
+    
+    // Filter by family group if we have family member IDs
+    if (familyMemberIds.length > 0) {
+      return relationships.filter(rel => 
+        familyMemberIds.includes(rel.person_a_id) && familyMemberIds.includes(rel.person_b_id)
+      );
+    }
+    
+    return relationships;
   } catch (error) {
     console.error("❌ Error fetching all relationships:", error);
     return [];

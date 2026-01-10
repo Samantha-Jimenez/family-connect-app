@@ -45,6 +45,13 @@ export default function Navbar({
   const toggleMobileMenu = () => setMobileMenuOpen((v) => !v);
 
   const handleSignOut = () => {
+    // Clear demo notice session storage so it shows again on next login
+    // Clear all demo notice keys (in case there are multiple demo users)
+    Object.keys(sessionStorage).forEach(key => {
+      if (key.startsWith('demoNoticeShown_')) {
+        sessionStorage.removeItem(key);
+      }
+    });
     signOut();
     router.push('/');
   };

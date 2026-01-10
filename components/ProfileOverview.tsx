@@ -24,8 +24,8 @@ const ProfileOverview = ({ userId }: { userId: string }) => {
       setLoading(true);
       try {
         const [rels, members] = await Promise.all([
-          getFamilyRelationships(userId),
-          getAllFamilyMembers(),
+          getFamilyRelationships(userId, userId),
+          getAllFamilyMembers(userId),
         ]);
         setRelationships(rels);
         setFamilyMembers(members);

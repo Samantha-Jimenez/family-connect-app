@@ -481,7 +481,9 @@ const Photos = () => {
   const fetchPhotos = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/photos');
+      const user = await getCurrentUser();
+      const userId = user?.userId || '';
+      const response = await fetch(`/api/photos?userId=${encodeURIComponent(userId)}`);
       const data = await response.json();
 
       if (data.error) {
@@ -526,8 +528,9 @@ const Photos = () => {
   const fetchPhotosByTaggedUser = async (id: string) => {
     try {
       setLoading(true);
-
-      const response = await fetch('/api/photos');
+      const user = await getCurrentUser();
+      const userId = user?.userId || '';
+      const response = await fetch(`/api/photos?userId=${encodeURIComponent(userId)}&taggedUserId=${encodeURIComponent(id)}`);
       const data = await response.json();
 
       const filteredPhotos = data.photos.filter((photo: PhotoData) => {
@@ -544,7 +547,8 @@ const Photos = () => {
 
   const fetchFamilyMembers = async () => {
     try {
-      const members = await getAllFamilyMembers();
+      const user = await getCurrentUser();
+      const members = await getAllFamilyMembers(user?.userId);
       const formattedMembers = members.map(member => ({
         family_member_id: member.family_member_id,
         first_name: member.first_name,
