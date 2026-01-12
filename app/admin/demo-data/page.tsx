@@ -2,13 +2,132 @@
 import React, { useEffect, useState, useRef, ChangeEvent } from 'react';
 import { useAuthenticator } from "@aws-amplify/ui-react";
 import { getAllFamilyMembers, adminSavePhotoAsDemoMember, addCommentToPhoto, getProfilePhotoById, PhotoData, FamilyMember, adminUpdateMemberHobbies, getAllHobbies, addCommentToHobby, getCommentsForHobby, getUserData, adminUpdateMemberSocialMedia, adminUpdateMemberPets, adminUpdateMemberLanguages } from "@/hooks/dynamoDB";
-import { DEMO_FAMILY_GROUP } from '@/utils/demoConfig';
+import { DEMO_FAMILY_GROUP, DEMO_USER_IDS } from '@/utils/demoConfig';
 import { useToast } from '@/context/ToastContext';
 import Select from 'react-select';
+import CreatableSelect from 'react-select/creatable';
 import Image from 'next/image';
 import { getFullImageUrl } from '@/utils/imageUtils';
 
 type Tab = 'upload-photos' | 'add-comments' | 'manage-hobbies' | 'comment-hobbies' | 'manage-social-media' | 'manage-pets' | 'manage-languages';
+
+const SOCIAL_MEDIA_PLATFORMS = [
+  { value: 'facebook', label: 'Facebook' },
+  { value: 'instagram', label: 'Instagram' },
+  { value: 'twitter', label: 'Twitter' },
+  { value: 'linkedin', label: 'LinkedIn' },
+  { value: 'tiktok', label: 'TikTok' },
+  { value: 'youtube', label: 'YouTube' },
+  { value: 'goodreads', label: 'GoodReads' },
+  { value: 'strava', label: 'Strava' },
+  { value: 'letterboxd', label: 'Letterboxd' },
+  { value: 'other', label: 'Other' }
+];
+
+const PROFICIENCY_LEVELS = [
+  { value: 'beginner', label: 'Beginner' },
+  { value: 'intermediate', label: 'Intermediate' },
+  { value: 'advanced', label: 'Advanced' },
+  { value: 'native', label: 'Native/Fluent' }
+];
+
+const COMMON_LANGUAGES = [
+  { value: 'English', label: 'English' },
+  { value: 'Spanish', label: 'Spanish' },
+  { value: 'French', label: 'French' },
+  { value: 'German', label: 'German' },
+  { value: 'Italian', label: 'Italian' },
+  { value: 'Portuguese', label: 'Portuguese' },
+  { value: 'Russian', label: 'Russian' },
+  { value: 'Chinese', label: 'Chinese' },
+  { value: 'Mandarin', label: 'Mandarin' },
+  { value: 'Japanese', label: 'Japanese' },
+  { value: 'Korean', label: 'Korean' },
+  { value: 'Arabic', label: 'Arabic' },
+  { value: 'Hindi', label: 'Hindi' },
+  { value: 'Dutch', label: 'Dutch' },
+  { value: 'Swedish', label: 'Swedish' },
+  { value: 'Norwegian', label: 'Norwegian' },
+  { value: 'Danish', label: 'Danish' },
+  { value: 'Finnish', label: 'Finnish' },
+  { value: 'Polish', label: 'Polish' },
+  { value: 'Turkish', label: 'Turkish' },
+  { value: 'Greek', label: 'Greek' },
+  { value: 'Hebrew', label: 'Hebrew' },
+  { value: 'Vietnamese', label: 'Vietnamese' },
+  { value: 'Thai', label: 'Thai' },
+  { value: 'Indonesian', label: 'Indonesian' },
+  { value: 'Malay', label: 'Malay' },
+  { value: 'Tagalog', label: 'Tagalog' },
+  { value: 'Swahili', label: 'Swahili' },
+  { value: 'Czech', label: 'Czech' },
+  { value: 'Hungarian', label: 'Hungarian' },
+  { value: 'Romanian', label: 'Romanian' },
+  { value: 'Bulgarian', label: 'Bulgarian' },
+  { value: 'Croatian', label: 'Croatian' },
+  { value: 'Serbian', label: 'Serbian' },
+  { value: 'Slovak', label: 'Slovak' },
+  { value: 'Slovenian', label: 'Slovenian' },
+  { value: 'Ukrainian', label: 'Ukrainian' },
+  { value: 'Bengali', label: 'Bengali' },
+  { value: 'Urdu', label: 'Urdu' },
+  { value: 'Persian', label: 'Persian' },
+  { value: 'Punjabi', label: 'Punjabi' },
+  { value: 'Tamil', label: 'Tamil' },
+  { value: 'Telugu', label: 'Telugu' },
+  { value: 'Marathi', label: 'Marathi' },
+  { value: 'Gujarati', label: 'Gujarati' },
+  { value: 'Kannada', label: 'Kannada' },
+  { value: 'Malayalam', label: 'Malayalam' },
+  { value: 'Odia', label: 'Odia' },
+  { value: 'Assamese', label: 'Assamese' },
+  { value: 'Nepali', label: 'Nepali' },
+  { value: 'Sinhala', label: 'Sinhala' },
+  { value: 'Burmese', label: 'Burmese' },
+  { value: 'Khmer', label: 'Khmer' },
+  { value: 'Lao', label: 'Lao' },
+  { value: 'Mongolian', label: 'Mongolian' },
+  { value: 'Tibetan', label: 'Tibetan' },
+  { value: 'Georgian', label: 'Georgian' },
+  { value: 'Armenian', label: 'Armenian' },
+  { value: 'Azerbaijani', label: 'Azerbaijani' },
+  { value: 'Kazakh', label: 'Kazakh' },
+  { value: 'Uzbek', label: 'Uzbek' },
+  { value: 'Kyrgyz', label: 'Kyrgyz' },
+  { value: 'Tajik', label: 'Tajik' },
+  { value: 'Turkmen', label: 'Turkmen' },
+  { value: 'Afrikaans', label: 'Afrikaans' },
+  { value: 'Zulu', label: 'Zulu' },
+  { value: 'Xhosa', label: 'Xhosa' },
+  { value: 'Amharic', label: 'Amharic' },
+  { value: 'Hausa', label: 'Hausa' },
+  { value: 'Yoruba', label: 'Yoruba' },
+  { value: 'Igbo', label: 'Igbo' },
+  { value: 'Somali', label: 'Somali' },
+  { value: 'Oromo', label: 'Oromo' },
+  { value: 'Kinyarwanda', label: 'Kinyarwanda' },
+  { value: 'Luganda', label: 'Luganda' },
+  { value: 'Shona', label: 'Shona' },
+  { value: 'Kiswahili', label: 'Kiswahili' },
+  { value: 'Welsh', label: 'Welsh' },
+  { value: 'Irish', label: 'Irish' },
+  { value: 'Scottish Gaelic', label: 'Scottish Gaelic' },
+  { value: 'Basque', label: 'Basque' },
+  { value: 'Catalan', label: 'Catalan' },
+  { value: 'Galician', label: 'Galician' },
+  { value: 'Maltese', label: 'Maltese' },
+  { value: 'Icelandic', label: 'Icelandic' },
+  { value: 'Faroese', label: 'Faroese' },
+  { value: 'Estonian', label: 'Estonian' },
+  { value: 'Latvian', label: 'Latvian' },
+  { value: 'Lithuanian', label: 'Lithuanian' },
+  { value: 'Belarusian', label: 'Belarusian' },
+  { value: 'Macedonian', label: 'Macedonian' },
+  { value: 'Albanian', label: 'Albanian' },
+  { value: 'Bosnian', label: 'Bosnian' },
+  { value: 'Montenegrin', label: 'Montenegrin' },
+  { value: 'Moldovan', label: 'Moldovan' }
+];
 
 const AdminDemoDataPage = () => {
   const { user } = useAuthenticator();
@@ -80,7 +199,6 @@ const AdminDemoDataPage = () => {
     if (user && user.userId === "f16b1510-0001-705f-8680-28689883e706") {
       setIsAdmin(true);
       fetchDemoMembers();
-      fetchPhotos();
     }
   }, [user]);
 
@@ -92,29 +210,42 @@ const AdminDemoDataPage = () => {
       if (demo.length > 0 && !selectedMember) {
         setSelectedMember(demo[0]);
       }
+      // Fetch photos after demo members are loaded
+      // We use a demo user ID (from DEMO_USER_IDS) not a family member ID
+      await fetchPhotos();
     } catch (error) {
       console.error("Error fetching demo members:", error);
       showToast('Error fetching demo members', 'error');
     }
   };
 
-  const fetchPhotos = async () => {
+  const fetchPhotos = async (demoMemberIdOverride?: string) => {
     try {
       setLoading(true);
-      // Fetch photos from the API - pass a demo user ID to get demo photos
-      // The API will filter by family_group automatically
-      if (demoMembers.length > 0) {
-        const response = await fetch('/api/photos?userId=' + demoMembers[0].family_member_id);
-        const data = await response.json();
-        if (data.photos) {
-          // Filter to only demo photos (should already be filtered by API, but double-check)
-          const demoPhotos = data.photos.filter((photo: PhotoData) => 
-            photo.family_group === DEMO_FAMILY_GROUP
-          );
-          setPhotos(demoPhotos);
-        } else {
-          setPhotos([]);
-        }
+      // Fetch photos from the API - we need to use a DEMO USER ID (Cognito ID), not a family member ID
+      // The API uses getUserFamilyGroup which checks DEMO_USER_IDS, not family member IDs
+      // Use the first demo user ID from DEMO_USER_IDS to ensure correct family group filtering
+      const demoUserId = DEMO_USER_IDS.length > 0 ? DEMO_USER_IDS[0] : null;
+      
+      if (!demoUserId) {
+        console.error('❌ No demo user IDs configured');
+        setPhotos([]);
+        setLoading(false);
+        return;
+      }
+
+      console.log('📸 Fetching photos using demo user ID:', demoUserId);
+      const response = await fetch('/api/photos?userId=' + demoUserId);
+      const data = await response.json();
+      console.log('📸 Photos API response:', data.photos?.length || 0, 'photos');
+      
+      if (data.photos) {
+        // Filter to only demo photos (should already be filtered by API, but double-check)
+        const demoPhotos = data.photos.filter((photo: PhotoData) => 
+          photo.family_group === DEMO_FAMILY_GROUP
+        );
+        console.log('📸 Demo photos after filtering:', demoPhotos.length);
+        setPhotos(demoPhotos);
       } else {
         setPhotos([]);
       }
@@ -981,12 +1112,13 @@ const AdminDemoDataPage = () => {
                         className="textarea textarea-bordered w-full"
                         rows={3}
                         placeholder="Enter your comment..."
+                        data-theme="light"
                       />
                     </div>
                     <button
                       onClick={handleAddComment}
                       disabled={isAddingComment || !commentText.trim()}
-                      className="btn btn-primary mt-4"
+                      className="btn btn-primary btn-sm mt-4"
                     >
                       {isAddingComment ? 'Adding Comment...' : 'Add Comment'}
                     </button>
@@ -1236,12 +1368,15 @@ const AdminDemoDataPage = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Add New Social Media Link</label>
                 <div className="grid grid-cols-2 gap-4 mb-3">
                   <div>
-                    <input
-                      type="text"
-                      value={newSocialMedia.platform}
-                      onChange={(e) => setNewSocialMedia({ ...newSocialMedia, platform: e.target.value })}
-                      className="input input-bordered w-full"
-                      placeholder="Platform (e.g., Facebook, Instagram)"
+                    <Select
+                      value={SOCIAL_MEDIA_PLATFORMS.find((option: { value: string; label: string }) => option.value === newSocialMedia.platform) || null}
+                      onChange={(selectedOption: { value: string; label: string } | null) => 
+                        setNewSocialMedia(prev => ({ ...prev, platform: selectedOption?.value || '' }))
+                      }
+                      options={SOCIAL_MEDIA_PLATFORMS}
+                      placeholder="Select platform"
+                      className="text-black"
+                      data-theme="light"
                     />
                   </div>
                   <div>
@@ -1249,8 +1384,9 @@ const AdminDemoDataPage = () => {
                       type="url"
                       value={newSocialMedia.url}
                       onChange={(e) => setNewSocialMedia({ ...newSocialMedia, url: e.target.value })}
-                      className="input input-bordered w-full"
+                      className="input input-bordered h-[2.4rem] w-full"
                       placeholder="URL"
+                      data-theme="light"
                     />
                   </div>
                 </div>
@@ -1327,6 +1463,7 @@ const AdminDemoDataPage = () => {
                     onChange={(e) => setNewPet({ ...newPet, name: e.target.value })}
                     className="input input-bordered w-full"
                     placeholder="Pet Name *"
+                    data-theme="light"
                   />
                   <input
                     type="text"
@@ -1334,6 +1471,7 @@ const AdminDemoDataPage = () => {
                     onChange={(e) => setNewPet({ ...newPet, birthday: e.target.value })}
                     className="input input-bordered w-full"
                     placeholder="Birthday (e.g., 2020-01-15)"
+                    data-theme="light"
                   />
                   <input
                     type="text"
@@ -1341,6 +1479,7 @@ const AdminDemoDataPage = () => {
                     onChange={(e) => setNewPet({ ...newPet, death_date: e.target.value })}
                     className="input input-bordered w-full"
                     placeholder="Death Date (optional, e.g., 2023-12-01)"
+                    data-theme="light"
                   />
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Pet Photo (Optional)</label>
@@ -1350,6 +1489,7 @@ const AdminDemoDataPage = () => {
                       onChange={handlePetImageChange}
                       ref={petFileInputRef}
                       className="file-input file-input-bordered w-full"
+                      data-theme="light"
                     />
                     {petImagePreview && (
                       <div className="mt-3 relative inline-block">
@@ -1426,27 +1566,36 @@ const AdminDemoDataPage = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Add New Language</label>
                 <div className="grid grid-cols-2 gap-4 mb-3">
                   <div>
-                    <input
-                      type="text"
-                      value={newLanguage.name}
-                      onChange={(e) => setNewLanguage({ ...newLanguage, name: e.target.value })}
-                      className="input input-bordered w-full"
-                      placeholder="Language Name *"
+                    <CreatableSelect
+                      value={newLanguage.name ? { value: newLanguage.name, label: newLanguage.name } : null}
+                      onChange={(selectedOption: { value: string; label: string } | null) => {
+                        const languageName = selectedOption?.value || '';
+                        setNewLanguage(prev => ({ ...prev, name: languageName }));
+                      }}
+                      onCreateOption={(inputValue) => {
+                        setNewLanguage(prev => ({ ...prev, name: inputValue.trim() }));
+                      }}
+                      options={COMMON_LANGUAGES}
+                      placeholder="Type or select a language"
+                      isClearable
+                      isSearchable
+                      formatCreateLabel={(inputValue) => `Add "${inputValue}"`}
+                      className="text-black"
+                      data-theme="light"
                     />
                   </div>
                   <div>
-                    <select
-                      value={newLanguage.proficiency}
-                      onChange={(e) => setNewLanguage({ ...newLanguage, proficiency: e.target.value })}
-                      className="select select-bordered w-full"
-                    >
-                      <option value="">Select Proficiency *</option>
-                      <option value="Beginner">Beginner</option>
-                      <option value="Intermediate">Intermediate</option>
-                      <option value="Advanced">Advanced</option>
-                      <option value="Native">Native</option>
-                      <option value="Fluent">Fluent</option>
-                    </select>
+                    <Select
+                      value={PROFICIENCY_LEVELS.find((option: { value: string; label: string }) => option.value === newLanguage.proficiency) || null}
+                      onChange={(selectedOption: { value: string; label: string } | null) => {
+                        const proficiency = selectedOption?.value || '';
+                        setNewLanguage(prev => ({ ...prev, proficiency }));
+                      }}
+                      options={PROFICIENCY_LEVELS}
+                      placeholder="Select proficiency"
+                      className="text-black"
+                      data-theme="light"
+                    />
                   </div>
                 </div>
                 <button
