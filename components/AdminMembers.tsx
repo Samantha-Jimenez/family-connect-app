@@ -22,6 +22,10 @@ export type AdminFormData = {
   current_state: string;
   death_date: string;
   family_group?: string;
+  use_first_name?: boolean;
+  use_middle_name?: boolean;
+  use_nick_name?: boolean;
+  show_zodiac?: boolean;
 };
 
 const US_STATES = [
@@ -154,6 +158,10 @@ const AdminMembers = ({ familyMembers, handleAddFamilyMember, formData, handleIn
                             current_state: member.current_state,
                             death_date: member.death_date,
                             family_group: member.family_group || REAL_FAMILY_GROUP,
+                            use_first_name: member.use_first_name ?? true,
+                            use_middle_name: member.use_middle_name ?? false,
+                            use_nick_name: member.use_nick_name ?? false,
+                            show_zodiac: member.show_zodiac ?? false,
                           });
                         }
                       }}
@@ -351,6 +359,97 @@ const AdminMembers = ({ familyMembers, handleAddFamilyMember, formData, handleIn
                               />
                               <label htmlFor="edit_bio" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Bio</label>
                             </div>
+                            
+                            <div className="mb-6">
+                              <h3 className="text-lg font-medium text-gray-900 mb-4">Primary Name Display</h3>
+                              <div className="grid md:grid-cols-[10rem_10rem_10rem] gap-4">
+                                <div className="flex items-center">
+                                  <input
+                                    type="radio"
+                                    id="edit_use_first_name"
+                                    name="primary_name"
+                                    value="first_name"
+                                    checked={editFormData.use_first_name ?? true}
+                                    onChange={(e) => {
+                                      setEditFormData({
+                                        ...editFormData,
+                                        use_first_name: true,
+                                        use_middle_name: false,
+                                        use_nick_name: false
+                                      });
+                                    }}
+                                    className="radio radio-success w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-lime focus:ring-2"
+                                  />
+                                  <label htmlFor="edit_use_first_name" className="ml-2 text-sm text-gray-900">
+                                    Use first name
+                                  </label>
+                                </div>
+                                <div className="flex items-center">
+                                  <input
+                                    type="radio"
+                                    id="edit_use_middle_name"
+                                    name="primary_name"
+                                    value="middle_name"
+                                    checked={editFormData.use_middle_name ?? false}
+                                    disabled={!editFormData.middleName || editFormData.middleName.trim() === ''}
+                                    onChange={(e) => {
+                                      setEditFormData({
+                                        ...editFormData,
+                                        use_first_name: false,
+                                        use_middle_name: true,
+                                        use_nick_name: false
+                                      });
+                                    }}
+                                    className="radio radio-success w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-lime focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  />
+                                  <label htmlFor="edit_use_middle_name" className={`ml-2 text-sm text-gray-900 ${!editFormData.middleName || editFormData.middleName.trim() === '' ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                    Use middle name
+                                  </label>
+                                </div>
+                                <div className="flex items-center">
+                                  <input
+                                    type="radio"
+                                    id="edit_use_nick_name"
+                                    name="primary_name"
+                                    value="nick_name"
+                                    checked={editFormData.use_nick_name ?? false}
+                                    disabled={!editFormData.nickName || editFormData.nickName.trim() === ''}
+                                    onChange={(e) => {
+                                      setEditFormData({
+                                        ...editFormData,
+                                        use_first_name: false,
+                                        use_middle_name: false,
+                                        use_nick_name: true
+                                      });
+                                    }}
+                                    className="radio radio-success w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-lime focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  />
+                                  <label htmlFor="edit_use_nick_name" className={`ml-2 text-sm text-gray-900 ${!editFormData.nickName || editFormData.nickName.trim() === '' ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                    Use nick name
+                                  </label>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="mb-4 flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                id="edit_show_zodiac"
+                                name="show_zodiac"
+                                checked={editFormData.show_zodiac ?? false}
+                                onChange={(e) => {
+                                  setEditFormData({
+                                    ...editFormData,
+                                    show_zodiac: e.target.checked
+                                  });
+                                }}
+                                className="checkbox checkbox-success w-4 h-4 bg-gray-100 border-gray-300 rounded focus:ring-lime focus:ring-2 [--chkfg:white]"
+                              />
+                              <label htmlFor="edit_show_zodiac" className="ml-2 text-sm text-gray-900">
+                                Show zodiac sign on profile
+                              </label>
+                            </div>
+
                             <div className="grid md:grid-cols-2 md:gap-6">
                               <div className="relative z-0 w-full mb-5 group">
                                 <input

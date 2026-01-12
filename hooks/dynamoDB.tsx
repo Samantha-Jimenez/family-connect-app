@@ -92,6 +92,7 @@ export interface FamilyMember {
   use_first_name: boolean;
   use_middle_name: boolean;
   use_nick_name: boolean;
+  show_zodiac?: boolean;
   family_group?: string; // 'demo' for demo data, 'real' for real family data
   social_media?: {
     platform: string;
@@ -1023,6 +1024,7 @@ export const getAllFamilyMembers = async (userId?: string, includeAllGroups?: bo
       use_first_name: item.use_first_name?.BOOL ?? true,
       use_middle_name: item.use_middle_name?.BOOL ?? false,
       use_nick_name: item.use_nick_name?.BOOL ?? false,
+      show_zodiac: item.show_zodiac?.BOOL ?? false,
       family_group: item.family_group?.S || REAL_FAMILY_GROUP,
     }));
 
@@ -1161,6 +1163,7 @@ export const getFamilyMembersWithoutEmail = async (): Promise<FamilyMember[]> =>
       use_first_name: item.use_first_name?.BOOL ?? true,
       use_middle_name: item.use_middle_name?.BOOL ?? false,
       use_nick_name: item.use_nick_name?.BOOL ?? false,
+      show_zodiac: item.show_zodiac?.BOOL ?? false,
     }));
   } catch (error) {
     console.error("❌ Error fetching family members without email:", error);
@@ -1187,6 +1190,10 @@ export const updateFamilyMember = async (
     current_state: string;
     death_date: string;
     family_group?: string;
+    use_first_name?: boolean;
+    use_middle_name?: boolean;
+    use_nick_name?: boolean;
+    show_zodiac?: boolean;
   }
 ) => {
   try {
@@ -1196,7 +1203,7 @@ export const updateFamilyMember = async (
         family_member_id: { S: familyMemberId },
       },
       UpdateExpression:
-        "SET first_name = :firstName, last_name = :lastName, middle_name = :middleName, nick_name = :nickName, email = :email, username = :username, bio = :bio, phone_number = :phoneNumber, birthday = :birthday, birth_city = :birth_city, birth_state = :birth_state, profile_photo = :profile_photo, current_city = :current_city, current_state = :current_state, death_date = :death_date, family_group = :family_group",
+        "SET first_name = :firstName, last_name = :lastName, middle_name = :middleName, nick_name = :nickName, email = :email, username = :username, bio = :bio, phone_number = :phoneNumber, birthday = :birthday, birth_city = :birth_city, birth_state = :birth_state, profile_photo = :profile_photo, current_city = :current_city, current_state = :current_state, death_date = :death_date, family_group = :family_group, use_first_name = :use_first_name, use_middle_name = :use_middle_name, use_nick_name = :use_nick_name, show_zodiac = :show_zodiac",
       ExpressionAttributeValues: {
         ":firstName": { S: data.firstName },
         ":lastName": { S: data.lastName },
@@ -1214,6 +1221,10 @@ export const updateFamilyMember = async (
         ":current_state": { S: data.current_state },
         ":death_date": { S: data.death_date },
         ":family_group": { S: data.family_group || REAL_FAMILY_GROUP },
+        ":use_first_name": { BOOL: data.use_first_name ?? true },
+        ":use_middle_name": { BOOL: data.use_middle_name ?? false },
+        ":use_nick_name": { BOOL: data.use_nick_name ?? false },
+        ":show_zodiac": { BOOL: data.show_zodiac ?? false },
       },
       ReturnValues: "UPDATED_NEW" as ReturnValue,
     };
