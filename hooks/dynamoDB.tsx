@@ -639,6 +639,273 @@ export const savePhotoToDB = async (photoData: PhotoData) => {
   }
 };
 
+/**
+ * Admin-only function to save a photo as a demo family member
+ * This bypasses authentication checks and allows admins to upload photos as demo members
+ * @param photoData - Photo data including uploaded_by (demo member ID)
+ * @param familyGroup - Should be 'demo' for demo family members
+ */
+export const adminSavePhotoAsDemoMember = async (photoData: PhotoData, familyGroup: string = 'demo') => {
+  try {
+    // Check if photo already exists to determine new vs existing tags
+    const getPhotoParams = {
+      TableName: TABLES.PHOTOS,
+      Key: {
+        photo_id: { S: photoData.photo_id }
+      }
+    };
+
+    const existingPhotoData = await dynamoDB.send(new GetItemCommand(getPhotoParams));
+    const isNewPhoto = !existingPhotoData.Item;
+
+    // Get existing tags if photo already exists
+    const existingTaggedIds = new Set<string>();
+    if (existingPhotoData.Item?.people_tagged?.L) {
+      existingPhotoData.Item.people_tagged.L.forEach((person: any) => {
+        const id = person.M?.id?.S;
+        if (id) {
+          existingTaggedIds.add(id);
+        }
+      });
+    }
+
+    // Determine newly tagged people
+    const newTags = photoData.metadata?.people_tagged || [];
+    const newlyTaggedPeople = newTags.filter(person => {
+      return person.id && !existingTaggedIds.has(person.id);
+    });
+
+    // For admin uploads, use the provided family_group
+    const finalPhotoFamilyGroup = existingPhotoData.Item?.family_group?.S || familyGroup;
+    
+    console.log('📸 Admin saving photo with family_group:', finalPhotoFamilyGroup, 'uploaded_by:', photoData.uploaded_by);
+
+    // Create the base item with required fields
+    const item: Record<string, any> = {
+      photo_id: { S: photoData.photo_id },
+      s3_key: { S: `photos/${photoData.s3_key.replace(/^photos\//g, '')}` },
+      uploaded_by: { S: photoData.uploaded_by },
+      upload_date: { S: photoData.upload_date },
+      family_group: { S: finalPhotoFamilyGroup },
+      album_ids: { L: (photoData.album_ids || []).map(id => ({ S: id })) },
+    };
+
+    // Add optional fields only if they exist
+    if (photoData.metadata.description) {
+      item.description = { S: photoData.metadata.description };
+    }
+
+    if (photoData.metadata.location) {
+      item.location = {
+        M: {
+          country: { S: photoData.metadata.location.country || '' },
+          state: { S: photoData.metadata.location.state || '' },
+          city: { S: photoData.metadata.location.city || '' },
+          neighborhood: { S: photoData.metadata.location.neighborhood || '' }
+        }
+      };
+    }
+
+    if (photoData.metadata.date_taken) {
+      item.date_taken = { S: photoData.metadata.date_taken };
+    }
+
+    if (photoData.metadata.people_tagged && photoData.metadata.people_tagged.length > 0) {
+      item.people_tagged = {
+        L: photoData.metadata.people_tagged.map(person => ({
+          M: {
+            id: { S: person.id },
+            name: { S: person.name }
+          }
+        }))
+      };
+    }
+
+    const command = new PutItemCommand({
+      TableName: TABLES.PHOTOS,
+      Item: item
+    });
+
+    await dynamoDB.send(command);
+    console.log('✅ Admin photo saved to DynamoDB successfully');
+
+    // Create notifications for newly tagged people (optional - can be skipped for demo data)
+    if (newlyTaggedPeople.length > 0) {
+      try {
+        // Get uploader's name for the notification
+        const uploaderName = await getUserNameById(photoData.uploaded_by);
+        const uploaderDisplayName = uploaderName 
+          ? `${uploaderName.firstName} ${uploaderName.lastName}` 
+          : 'Someone';
+
+        for (const taggedPerson of newlyTaggedPeople) {
+          // Don't notify the uploader if they tagged themselves
+          if (taggedPerson.id === photoData.uploaded_by) continue;
+
+          const title = "You were tagged in a photo";
+          const message = `${uploaderDisplayName} tagged you in a photo`;
+
+          await createNotification(
+            taggedPerson.id,
+            'photo_tag',
+            title,
+            message,
+            photoData.photo_id,
+            { tagger_id: photoData.uploaded_by, tagger_name: uploaderDisplayName }
+          );
+        }
+
+        if (newlyTaggedPeople.length > 0) {
+          const notificationCount = newlyTaggedPeople.filter(p => p.id !== photoData.uploaded_by).length;
+          console.log(`✅ Created ${notificationCount} notification(s) for newly tagged people`);
+        }
+      } catch (notificationError) {
+        // Don't fail the photo save if notification creation fails
+        console.error("❌ Error creating photo tag notifications:", notificationError);
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error saving admin photo to DynamoDB:', error);
+    throw error;
+  }
+};
+
+/**
+ * Admin-only function to update hobbies for a demo family member
+ * This bypasses authentication checks and allows admins to update hobbies for demo members
+ * @param memberId - The family member ID to update
+ * @param hobbies - Array of hobby strings to set for the member
+ */
+export const adminUpdateMemberHobbies = async (memberId: string, hobbies: string[]) => {
+  try {
+    const params = {
+      TableName: TABLES.FAMILY,
+      Key: {
+        family_member_id: { S: memberId }
+      },
+      UpdateExpression: "SET hobbies = :hobbies",
+      ExpressionAttributeValues: {
+        ":hobbies": { 
+          L: hobbies.map(hobby => ({ S: hobby.trim() })).filter(h => h.S.length > 0)
+        }
+      }
+    };
+
+    await dynamoDB.send(new UpdateItemCommand(params));
+    console.log(`✅ Hobbies updated for member ${memberId} successfully!`);
+  } catch (error) {
+    console.error("❌ Error updating hobbies:", error);
+    throw error;
+  }
+};
+
+/**
+ * Admin-only function to update social media links for a demo family member
+ * @param memberId - The family member ID to update
+ * @param socialMedia - Array of { platform: string, url: string } objects
+ */
+export const adminUpdateMemberSocialMedia = async (memberId: string, socialMedia: { platform: string; url: string }[]) => {
+  try {
+    const params = {
+      TableName: TABLES.FAMILY,
+      Key: {
+        family_member_id: { S: memberId }
+      },
+      UpdateExpression: "SET social_media = :social_media",
+      ExpressionAttributeValues: {
+        ":social_media": { 
+          L: socialMedia
+            .filter(sm => sm.platform.trim() && sm.url.trim())
+            .map(sm => ({
+              M: {
+                platform: { S: sm.platform.trim() },
+                url: { S: sm.url.trim() }
+              }
+            }))
+        }
+      }
+    };
+
+    await dynamoDB.send(new UpdateItemCommand(params));
+    console.log(`✅ Social media updated for member ${memberId} successfully!`);
+  } catch (error) {
+    console.error("❌ Error updating social media:", error);
+    throw error;
+  }
+};
+
+/**
+ * Admin-only function to update pets for a demo family member
+ * @param memberId - The family member ID to update
+ * @param pets - Array of { name: string, birthday: string, death_date?: string, image?: string } objects
+ */
+export const adminUpdateMemberPets = async (memberId: string, pets: { name: string; birthday: string; death_date?: string; image?: string }[]) => {
+  try {
+    const params = {
+      TableName: TABLES.FAMILY,
+      Key: {
+        family_member_id: { S: memberId }
+      },
+      UpdateExpression: "SET pets = :pets",
+      ExpressionAttributeValues: {
+        ":pets": { 
+          L: pets
+            .filter(pet => pet.name.trim())
+            .map(pet => ({
+              M: {
+                name: { S: pet.name.trim() },
+                birthday: { S: pet.birthday || '' },
+                death_date: { S: pet.death_date || '' },
+                image: { S: pet.image || '' }
+              }
+            }))
+        }
+      }
+    };
+
+    await dynamoDB.send(new UpdateItemCommand(params));
+    console.log(`✅ Pets updated for member ${memberId} successfully!`);
+  } catch (error) {
+    console.error("❌ Error updating pets:", error);
+    throw error;
+  }
+};
+
+/**
+ * Admin-only function to update languages for a demo family member
+ * @param memberId - The family member ID to update
+ * @param languages - Array of { name: string, proficiency: string } objects
+ */
+export const adminUpdateMemberLanguages = async (memberId: string, languages: { name: string; proficiency: string }[]) => {
+  try {
+    const params = {
+      TableName: TABLES.FAMILY,
+      Key: {
+        family_member_id: { S: memberId }
+      },
+      UpdateExpression: "SET languages = :languages",
+      ExpressionAttributeValues: {
+        ":languages": { 
+          L: languages
+            .filter(lang => lang.name.trim() && lang.proficiency.trim())
+            .map(lang => ({
+              M: {
+                name: { S: lang.name.trim() },
+                proficiency: { S: lang.proficiency.trim() }
+              }
+            }))
+        }
+      }
+    };
+
+    await dynamoDB.send(new UpdateItemCommand(params));
+    console.log(`✅ Languages updated for member ${memberId} successfully!`);
+  } catch (error) {
+    console.error("❌ Error updating languages:", error);
+    throw error;
+  }
+};
+
 export const addPhotoToAlbum = async (photo_id: string, album_id: string) => {
   try {
     const user = await getCurrentUser();

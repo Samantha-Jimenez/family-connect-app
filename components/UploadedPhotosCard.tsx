@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import PhotoModal from '@/components/PhotoModal';
 import { getUserData, PhotoData, getUserNameById } from '@/hooks/dynamoDB';
+import { getCurrentUser } from 'aws-amplify/auth';
 import LoadSpinner from '@/components/LoadSpinner';
 
 export default function UploadedPhotosCard({ userId }: { userId: string }) {
@@ -10,34 +11,37 @@ export default function UploadedPhotosCard({ userId }: { userId: string }) {
   const [loading, setLoading] = useState(true);
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoData | null>(null);
   const [uploaderName, setUploaderName] = useState<string | null>(null);
-  // const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
 
   useEffect(() => {
-    fetchUserPhotos();
-    // fetchCurrentUserId();
+    fetchCurrentUserId();
   }, []);
 
-  // const fetchCurrentUserId = async () => {
-  //   try {
-  //     const user = await getCurrentUser();
-  //     setCurrentUserId(user.userId);
-  //   } catch (error) {
-  //     console.error('Error fetching current user ID:', error);
-  //   }
-  // };
+  useEffect(() => {
+    if (currentUserId) {
+      fetchUserPhotos();
+    }
+  }, [currentUserId, userId]);
+
+  const fetchCurrentUserId = async () => {
+    try {
+      const user = await getCurrentUser();
+      setCurrentUserId(user.userId);
+    } catch (error) {
+      console.error('Error fetching current user ID:', error);
+    }
+  };
 
   const fetchUserPhotos = async () => {
+    if (!currentUserId) return;
+    
     try {
-      // const user = await getCurrentUser();
-      // if (!user?.userId) {
-      //   throw new Error("User not authenticated");
-      // }
-
-      const response = await fetch(`/api/photos?userId=${encodeURIComponent(userId)}`);
+      // Use the logged-in user's ID to determine family group, not the viewed member's ID
+      const response = await fetch(`/api/photos?userId=${encodeURIComponent(currentUserId)}`);
       const data = await response.json();
       
-      // Simplified filtering - just check the uploaded_by field
+      // Filter to show only photos uploaded by the viewed member (userId)
       const filteredPhotos = data.photos.filter((photo: PhotoData) => 
         photo.uploaded_by === userId
       );
