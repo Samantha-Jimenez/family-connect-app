@@ -18,7 +18,7 @@ export default function TaggedPhotosCard({ userId }: { userId: string }) {
   useEffect(() => {
     fetchTaggedPhotos();
     fetchCurrentUserId();
-  }, []);
+  }, [userId]);
 
   const fetchCurrentUserId = async () => {
     try {

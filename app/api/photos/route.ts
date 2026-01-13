@@ -135,19 +135,9 @@ export async function GET(request: Request) {
       TableName: 'Photos',
     };
     
-    // Build filter expression
-    const filterExpressions: string[] = [];
-    const expressionAttributeValues: any = {};
-    
-    if (taggedUserId) {
-      filterExpressions.push("contains(people_tagged, :taggedUserId)");
-      expressionAttributeValues[":taggedUserId"] = { S: taggedUserId };
-    }
-    
-    if (filterExpressions.length > 0) {
-      params.FilterExpression = filterExpressions.join(' AND ');
-      params.ExpressionAttributeValues = expressionAttributeValues;
-    }
+    // Note: We don't filter by taggedUserId in DynamoDB because people_tagged is a List of Maps,
+    // and DynamoDB's contains() function doesn't work correctly with nested structures.
+    // Instead, we'll filter in JavaScript after processing the photos.
 
     const command = new ScanCommand(params);
     const response = await dynamoDB.send(command);
@@ -244,7 +234,22 @@ export async function GET(request: Request) {
 
     const validPhotos = photos.filter(photo => photo !== null);
     
-    return NextResponse.json({ photos: validPhotos });
+    // Filter by taggedUserId if provided (check if the user is in people_tagged array)
+    let finalPhotos = validPhotos;
+    if (taggedUserId) {
+      finalPhotos = validPhotos.filter(photo => {
+        const isTagged = photo.metadata?.people_tagged?.some(
+          (person: { id: string; name: string }) => person.id === taggedUserId
+        );
+        if (!isTagged) {
+          console.log(`🚫 Filtered out photo ${photo.photo_id} - user ${taggedUserId} not in people_tagged`);
+        }
+        return isTagged;
+      });
+      console.log(`📸 Photos after filtering by taggedUserId (${taggedUserId}):`, finalPhotos.length);
+    }
+    
+    return NextResponse.json({ photos: finalPhotos });
   } catch (error) {
     console.error('Error fetching photos:', error);
     return NextResponse.json({ 
