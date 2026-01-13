@@ -433,7 +433,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
             {userData?.bio ? (
               <>
                 <h2 className="text-xl text-black md:row-span-2">About Me</h2>
-                <p className="text-gray-500 md:row-span-2">
+                <p className="text-gray-500 md:row-span-2 whitespace-pre-line">
                   {userData?.bio || ''}
                 </p>
               </>

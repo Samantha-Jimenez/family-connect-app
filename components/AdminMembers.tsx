@@ -36,7 +36,7 @@ const US_STATES = [
   'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
 ];
 
-const AdminMembers = ({ familyMembers, handleAddFamilyMember, formData, handleInputChange, imagePreview, handleImageChange, isUploading, uploadProgress, handleClearImage, editingMemberId, setEditingMemberId, editFormData, setEditFormData, handleEditInputChange, handleUpdateMember, handleEditImageChange, editImagePreview, editIsUploading, editUploadProgress, sortField, sortDirection, handleSort, isDemoMember, setIsDemoMember }: { familyMembers: FamilyMember[], handleAddFamilyMember: (e: React.FormEvent<HTMLFormElement>) => void, formData: AdminFormData, handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void, imagePreview: string | null, handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void, isUploading: boolean, uploadProgress: number, handleClearImage: () => void, editingMemberId: string | null, setEditingMemberId: (id: string | null) => void, editFormData: AdminFormData, setEditFormData: (formData: AdminFormData) => void, handleEditInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void, handleUpdateMember: (e: React.FormEvent<HTMLFormElement>) => void, handleEditImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void, editImagePreview: string | null, editIsUploading: boolean, editUploadProgress: number, sortField: keyof FamilyMember | null, sortDirection: 'asc' | 'desc', handleSort: (field: keyof FamilyMember) => void, isDemoMember: boolean, setIsDemoMember: (value: boolean) => void }) => {
+const AdminMembers = ({ familyMembers, handleAddFamilyMember, formData, handleInputChange, imagePreview, handleImageChange, isUploading, uploadProgress, handleClearImage, editingMemberId, setEditingMemberId, editFormData, setEditFormData, handleEditInputChange, handleUpdateMember, handleEditImageChange, editImagePreview, editIsUploading, editUploadProgress, sortField, sortDirection, handleSort, isDemoMember, setIsDemoMember }: { familyMembers: FamilyMember[], handleAddFamilyMember: (e: React.FormEvent<HTMLFormElement>) => void, formData: AdminFormData, handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void, imagePreview: string | null, handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void, isUploading: boolean, uploadProgress: number, handleClearImage: () => void, editingMemberId: string | null, setEditingMemberId: (id: string | null) => void, editFormData: AdminFormData, setEditFormData: (formData: AdminFormData) => void, handleEditInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void, handleUpdateMember: (e: React.FormEvent<HTMLFormElement>) => void, handleEditImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void, editImagePreview: string | null, editIsUploading: boolean, editUploadProgress: number, sortField: keyof FamilyMember | null, sortDirection: 'asc' | 'desc', handleSort: (field: keyof FamilyMember) => void, isDemoMember: boolean, setIsDemoMember: (value: boolean) => void }) => {
   
   const [showDemoMembers, setShowDemoMembers] = useState(false);
 
@@ -348,14 +348,21 @@ const AdminMembers = ({ familyMembers, handleAddFamilyMember, formData, handleIn
                               </div>
                             </div>
                             <div className="relative z-0 w-full mb-5 group">
-                              <input
-                                type="text"
+                              <textarea
                                 name="bio"
                                 id="edit_bio"
                                 value={editFormData.bio}
-                                onChange={handleEditInputChange}
-                                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                                onChange={(e) => {
+                                  handleEditInputChange(e);
+                                  // Auto-resize textarea
+                                  const textarea = e.target;
+                                  textarea.style.height = 'auto';
+                                  textarea.style.height = textarea.scrollHeight + 'px';
+                                }}
+                                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer resize-none overflow-hidden"
                                 placeholder=" "
+                                rows={2}
+                                style={{ minHeight: '2.5rem' }}
                               />
                               <label htmlFor="edit_bio" className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 origin-[0] peer-focus:start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Bio</label>
                             </div>

@@ -177,7 +177,7 @@ const AdminPage = () => {
   };
 
   const handleEditInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setEditFormData(prevState => ({ ...prevState, [name as FormDataKey]: value }));
