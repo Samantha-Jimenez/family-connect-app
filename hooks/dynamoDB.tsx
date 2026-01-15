@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { ReturnValue } from "@aws-sdk/client-dynamodb";
-import { getUserFamilyGroup, REAL_FAMILY_GROUP } from '@/utils/demoConfig';
+import { getUserFamilyGroup, REAL_FAMILY_GROUP, DEMO_FAMILY_GROUP } from '@/utils/demoConfig';
 
 // Set up DynamoDB client
 const dynamoDB = new DynamoDBClient({ 
@@ -1051,7 +1051,8 @@ export const getAllFamilyMembers = async (userId?: string, includeAllGroups?: bo
 };
 
 // Function to get all unique hobbies from all family members
-export const getAllHobbies = async (): Promise<string[]> => {
+// If familyGroup is provided, only returns hobbies from members in that family group
+export const getAllHobbies = async (familyGroup?: string): Promise<string[]> => {
   try {
     const params = {
       TableName: TABLES.FAMILY,
@@ -1066,6 +1067,14 @@ export const getAllHobbies = async (): Promise<string[]> => {
 
     const allHobbies = new Set<string>();
     response.Items.forEach(item => {
+      // Filter by family_group if provided
+      if (familyGroup) {
+        const memberGroup = item.family_group?.S || REAL_FAMILY_GROUP;
+        if (memberGroup !== familyGroup) {
+          return; // Skip members not in the specified family group
+        }
+      }
+      
       if (item.hobbies?.L) {
         item.hobbies.L.forEach((hobby: any) => {
           const hobbyName = hobby.S || '';

@@ -319,7 +319,8 @@ const AdminDemoDataPage = () => {
 
   const fetchAllHobbies = async () => {
     try {
-      const hobbies = await getAllHobbies();
+      // Only fetch hobbies from demo family members
+      const hobbies = await getAllHobbies(DEMO_FAMILY_GROUP);
       setAllHobbies(hobbies);
     } catch (error) {
       console.error("Error fetching all hobbies:", error);
@@ -328,7 +329,8 @@ const AdminDemoDataPage = () => {
 
   const fetchAvailableHobbies = async () => {
     try {
-      const hobbies = await getAllHobbies();
+      // Only fetch hobbies from demo family members
+      const hobbies = await getAllHobbies(DEMO_FAMILY_GROUP);
       setAvailableHobbies(hobbies);
     } catch (error) {
       console.error("Error fetching available hobbies:", error);
@@ -1171,6 +1173,7 @@ const AdminDemoDataPage = () => {
                     }}
                     className="input input-bordered flex-1"
                     placeholder="Enter hobby name..."
+                    data-theme="light"
                   />
                   <button
                     onClick={handleAddHobby}
@@ -1289,6 +1292,7 @@ const AdminDemoDataPage = () => {
                         className="textarea textarea-bordered w-full mb-3"
                         rows={3}
                         placeholder="Enter your comment (optional if adding a photo)..."
+                        data-theme="light"
                       />
                       
                       <div className="mb-3">
@@ -1299,6 +1303,7 @@ const AdminDemoDataPage = () => {
                           onChange={handleHobbyCommentPhotoChange}
                           ref={hobbyCommentFileInputRef}
                           className="file-input file-input-bordered w-full"
+                          data-theme="light"
                         />
                         {hobbyCommentPhotoPreview && (
                           <div className="mt-3 relative inline-block">
