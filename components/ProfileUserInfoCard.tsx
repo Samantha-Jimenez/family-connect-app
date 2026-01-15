@@ -131,6 +131,22 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
     });
   };
 
+  const formatPhoneNumber = (phoneNumber: string): string => {
+    if (!phoneNumber) return '';
+    
+    // Remove all non-digit characters
+    const digitsOnly = phoneNumber.replace(/\D/g, '');
+    
+    // Check if it's a 10-digit number
+    if (digitsOnly.length === 10) {
+      // Format as (XXX) XXX-XXXX
+      return `(${digitsOnly.slice(0, 3)}) ${digitsOnly.slice(3, 6)}-${digitsOnly.slice(6)}`;
+    }
+    
+    // If not 10 digits, return the original (or could handle other formats)
+    return phoneNumber;
+  };
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -370,7 +386,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                   {userData?.phone_number ? (
                     <li className="flex items-center">
                       <span className="icon-[mdi--phone] h-5 mr-2" />
-                      {userData?.phone_number || ''}
+                      {formatPhoneNumber(userData.phone_number)}
                     </li>
                   ) : ""}
                   {userData?.current_city || userData?.current_state ? (
