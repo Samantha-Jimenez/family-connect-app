@@ -244,15 +244,34 @@ function cleanAndGroupLocations(data: PhotoData[]) {
   const grouped: { [key: string]: { [key: string]: { [key: string]: string[] } } } = {};
 
   for (const item of data) {
-    const location = item.metadata.location;
-    let country = location.country.trim() || "United States";
-    let state = location.state.trim();
-    let city = location.city.trim();
-    let neighborhood = location.neighborhood.trim();
+    const location = item.metadata?.location;
+    if (!location) continue; // Skip if no location data
+    
+    let country = (location.country || '').trim() || "United States";
+    let state = (location.state || '').trim();
+    let city = (location.city || '').trim();
+    let neighborhood = (location.neighborhood || '').trim();
 
-    if (!state && !city) continue; // skip entries with no meaningful location
+    // Normalize state: check if it's an abbreviation first, then check full name
+    // This ensures we can match both "CA" and "California"
+    if (state) {
+      // Check if it's an abbreviation (2 letters) and map it
+      if (state.length === 2 && stateNameMap[state.toUpperCase()]) {
+        state = stateNameMap[state.toUpperCase()];
+      } else if (stateAbbreviationMap[state]) {
+        // Already a full name, keep it
+        state = state;
+      } else {
+        // Try to find if it matches any abbreviation (case-insensitive)
+        const upperState = state.toUpperCase();
+        if (stateNameMap[upperState]) {
+          state = stateNameMap[upperState];
+        }
+      }
+    }
 
-    state = stateNameMap[state] || state; // normalize short state codes
+    // Only skip if there's absolutely no location data at any level
+    if (!country && !state && !city && !neighborhood) continue;
 
     if (!grouped[country]) grouped[country] = {};
     if (!grouped[country][state]) grouped[country][state] = {};
@@ -577,7 +596,25 @@ const Photos = () => {
   };
 
   const mapNameToId = (name: string): string | undefined => {
-    const member = familyMembers.find(member => `${member.first_name} ${member.last_name}` === name);
+    // Try exact match first
+    let member = familyMembers.find(member => `${member.first_name} ${member.last_name}` === name);
+    
+    // If no exact match, try case-insensitive match
+    if (!member) {
+      const normalizedName = name.toLowerCase().trim();
+      member = familyMembers.find(member => {
+        const memberName = `${member.first_name} ${member.last_name}`.toLowerCase().trim();
+        return memberName === normalizedName;
+      });
+    }
+    
+    if (!member) {
+      console.warn(`Could not find family member with name: "${name}". Available members:`, 
+        familyMembers.map(m => `${m.first_name} ${m.last_name}`));
+    } else {
+      console.log(`Mapped "${name}" to ID: ${member.family_member_id}`);
+    }
+    
     return member ? member.family_member_id : undefined;
   };
 
@@ -652,23 +689,30 @@ const Photos = () => {
       // Location filter - each level is independent, use AND logic across levels
       const loc = image.metadata?.location;
       
+      // Helper function to normalize location strings for comparison
+      const normalizeLocation = (str: string | undefined): string => {
+        return (str || '').trim().toLowerCase();
+      };
+      
       // Check country filter (if selected)
       if (selectedCountry.length > 0) {
-        if (!loc || !selectedCountry.some(c => c.value === loc.country)) {
-          return false;
-        }
+        if (!loc) return false;
+        const photoCountry = normalizeLocation(loc.country);
+        const matchesCountry = selectedCountry.some(c => normalizeLocation(c.value) === photoCountry);
+        if (!matchesCountry) return false;
       }
 
       // Check state filter (if selected) - match both full name AND abbreviation
       if (selectedState.length > 0) {
         if (!loc) return false;
         
+        const photoState = normalizeLocation(loc.state);
         const matchesState = selectedState.some(s => {
-          const stateName = s.value;
-          const stateAbbr = stateAbbreviationMap[stateName];
+          const stateName = normalizeLocation(s.value);
+          const stateAbbr = stateAbbreviationMap[s.value] ? normalizeLocation(stateAbbreviationMap[s.value]) : '';
           
           // Match if photo's state equals the full name OR the abbreviation
-          return loc.state === stateName || loc.state === stateAbbr;
+          return photoState === stateName || (stateAbbr && photoState === stateAbbr);
         });
         
         if (!matchesState) return false;
@@ -676,24 +720,48 @@ const Photos = () => {
 
       // Check city filter (if selected)
       if (selectedCity.length > 0) {
-        if (!loc || !selectedCity.some(c => c.value === loc.city)) {
-          return false;
-        }
+        if (!loc) return false;
+        const photoCity = normalizeLocation(loc.city);
+        const matchesCity = selectedCity.some(c => normalizeLocation(c.value) === photoCity);
+        if (!matchesCity) return false;
       }
 
       // Check neighborhood filter (if selected)
       if (selectedNeighborhood.length > 0) {
-        if (!loc || !selectedNeighborhood.some(n => n.value === loc.neighborhood)) {
-          return false;
-        }
+        if (!loc) return false;
+        const photoNeighborhood = normalizeLocation(loc.neighborhood);
+        const matchesNeighborhood = selectedNeighborhood.some(n => normalizeLocation(n.value) === photoNeighborhood);
+        if (!matchesNeighborhood) return false;
       }
 
       // People filter - all selected people must be tagged
       if (selectedPeople.length > 0) {
-        const hasAllPeople = selectedPeople.every(person => 
-          image.metadata?.people_tagged?.some(tagged => tagged.id === person.id)
-        );
-        if (!hasAllPeople) return false;
+        // Filter out any people with empty IDs (shouldn't happen, but safety check)
+        const validSelectedPeople = selectedPeople.filter(person => person.id && person.id.trim() !== '');
+        
+        if (validSelectedPeople.length === 0) {
+          console.warn('People filter: No valid people selected (all had empty IDs). Selected people:', selectedPeople);
+          return true; // If no valid people selected, show all
+        }
+        
+        const hasAllPeople = validSelectedPeople.every(person => {
+          // Check if this person is tagged in the photo
+          const isTagged = image.metadata?.people_tagged?.some(tagged => {
+            // Compare IDs (both should be strings, trim whitespace for safety)
+            const matches = tagged.id && person.id && tagged.id.trim() === person.id.trim();
+            if (!matches && person.id) {
+              // Debug: log when a person ID doesn't match
+              const taggedIds = image.metadata?.people_tagged?.map(t => t.id).join(', ') || 'none';
+              console.log(`Person filter: Looking for ID "${person.id}" (${person.name}), found tagged IDs: [${taggedIds}]`);
+            }
+            return matches;
+          });
+          return isTagged;
+        });
+        
+        if (!hasAllPeople) {
+          return false;
+        }
       }
 
       return true;
@@ -721,7 +789,24 @@ const Photos = () => {
 
   // Auto-trigger filtering when dependencies change
   useEffect(() => {
-    if (images.length > 0 && currentDateRange[0] !== 0 && currentDateRange[1] !== 0) {
+    if (images.length > 0) {
+      // If date range isn't initialized yet, initialize it first
+      if (currentDateRange[0] === 0 && currentDateRange[1] === 0) {
+        const validImages = images.filter(img => img.metadata?.date_taken);
+        if (validImages.length > 0) {
+          const timestamps = validImages
+            .map(img => dateToTimestamp(img.metadata?.date_taken || ''))
+            .filter(ts => !isNaN(ts));
+          if (timestamps.length > 0) {
+            const min = Math.min(...timestamps);
+            const max = Math.max(...timestamps);
+            setCurrentDateRange([min, max]);
+            return; // Will trigger again when date range is set
+          }
+        }
+      }
+      
+      // Run filter
       startTransition(() => {
         filterImages();
       });
@@ -736,23 +821,39 @@ const Photos = () => {
   };
 
   const handlePersonChange = (selectedOptions: any) => {
-    const people = selectedOptions.map((option: any) => ({
-      id: mapNameToId(option.value) || '',
-      name: option.value,
-    }));
+    console.log('handlePersonChange called with:', selectedOptions);
+    console.log('Available family members:', familyMembers.map(m => `${m.first_name} ${m.last_name}`));
+    
+    const people = selectedOptions
+      .map((option: any) => {
+        const id = mapNameToId(option.value);
+        if (!id) {
+          console.error(`❌ Could not find ID for selected person: "${option.value}"`);
+          console.error('Available family member names:', familyMembers.map(m => `${m.first_name} ${m.last_name}`));
+          return null;
+        }
+        console.log(`✅ Mapped "${option.value}" to ID: ${id}`);
+        return {
+          id: id,
+          name: option.value,
+        };
+      })
+      .filter((person: TaggedPerson | null): person is TaggedPerson => person !== null);
 
+    console.log('Final selectedPeople:', people);
     setSelectedPeople(people);
     // No need to call filter here - useEffect will handle it
   };
 
   // Memoize person options to avoid recreating on every render
-  const personOptions = useMemo(() => 
-    familyMembers.map(member => ({
+  const personOptions = useMemo(() => {
+    const options = familyMembers.map(member => ({
       value: `${member.first_name} ${member.last_name}`,
       label: `${member.first_name} ${member.last_name}`,
-    })), 
-    [familyMembers]
-  );
+    }));
+    console.log('Person options generated:', options);
+    return options;
+  }, [familyMembers]);
 
   // Memoize active filters to avoid recalculating on every render
   const activeFilters = useMemo(() => 
