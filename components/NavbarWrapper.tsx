@@ -67,6 +67,23 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
   const [showDemoInfo, setShowDemoInfo] = useState(false);
   const [copiedField, setCopiedField] = useState<'username' | 'password' | null>(null);
 
+  // Helper function to filter notifications by family group
+  const filterNotificationsByFamilyGroup = async (notifications: Notification[], userId: string): Promise<Notification[]> => {
+    try {
+      // Get family members in the same family group
+      const familyMembers = await getAllFamilyMembers(userId);
+      const familyMemberIds = new Set(familyMembers.map(m => m.family_member_id));
+      
+      // Filter notifications to only include those for family members in the same family group
+      return notifications.filter(notification => {
+        return familyMemberIds.has(notification.user_id);
+      });
+    } catch (error) {
+      console.error('Error filtering notifications by family group:', error);
+      return notifications; // Return original if filtering fails
+    }
+  };
+
   useEffect(() => {
     async function fetchFamilyMembers() {
       try {
@@ -86,15 +103,18 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
       
       try {
         setNotificationsLoading(true);
-        const [notifs, count] = await Promise.all([
-          getNotificationsByUser(userData.userId),
-          getUnreadNotificationCount(userData.userId)
-        ]);
-        setNotifications(notifs);
+        // Get all notifications for the user
+        const allNotifs = await getNotificationsByUser(userData.userId);
+        
+        // Filter notifications to only include those for family members in the same family group
+        const filteredNotifs = await filterNotificationsByFamilyGroup(allNotifs, userData.userId);
+        
+        setNotifications(filteredNotifs);
+        
         // Load and filter unread count by preferences
         const preferences = await getNotificationPreferencesFromDB(userData.userId);
         setNotificationPreferences(preferences);
-        const visibleNotifications = notifs.filter(n => !preferences.disabledTypes.includes(n.type as any));
+        const visibleNotifications = filteredNotifs.filter(n => !preferences.disabledTypes.includes(n.type as any));
         const visibleUnreadCount = visibleNotifications.filter(n => !n.is_read).length;
         setUnreadCount(visibleUnreadCount);
       } catch (error) {
@@ -120,12 +140,15 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
       try {
         await generateBirthdayNotifications();
         // Refresh notifications after generating
-        const [notifs, count] = await Promise.all([
-          getNotificationsByUser(userData.userId!),
-          getUnreadNotificationCount(userData.userId!)
-        ]);
-        setNotifications(notifs);
-        setUnreadCount(count);
+        const allNotifs = await getNotificationsByUser(userData.userId!);
+        const filteredNotifs = await filterNotificationsByFamilyGroup(allNotifs, userData.userId!);
+        setNotifications(filteredNotifs);
+        
+        // Calculate unread count from filtered notifications
+        const preferences = await getNotificationPreferencesFromDB(userData.userId!);
+        const visibleNotifications = filteredNotifs.filter(n => !preferences.disabledTypes.includes(n.type as any));
+        const visibleUnreadCount = visibleNotifications.filter(n => !n.is_read).length;
+        setUnreadCount(visibleUnreadCount);
       } catch (error) {
         console.error('Error generating birthday notifications:', error);
       }
@@ -159,12 +182,15 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
         
         await generateEventReminderNotifications(eventsForReminders);
         // Refresh notifications after generating
-        const [notifs, count] = await Promise.all([
-          getNotificationsByUser(userData.userId!),
-          getUnreadNotificationCount(userData.userId!)
-        ]);
-        setNotifications(notifs);
-        setUnreadCount(count);
+        const allNotifs = await getNotificationsByUser(userData.userId!);
+        const filteredNotifs = await filterNotificationsByFamilyGroup(allNotifs, userData.userId!);
+        setNotifications(filteredNotifs);
+        
+        // Calculate unread count from filtered notifications
+        const preferences = await getNotificationPreferencesFromDB(userData.userId!);
+        const visibleNotifications = filteredNotifs.filter(n => !preferences.disabledTypes.includes(n.type as any));
+        const visibleUnreadCount = visibleNotifications.filter(n => !n.is_read).length;
+        setUnreadCount(visibleUnreadCount);
       } catch (error) {
         console.error('Error generating event reminder notifications:', error);
       }
@@ -528,12 +554,15 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                         if (!userData?.userId) return;
                         try {
                           await deleteAllReadNotifications(userData.userId);
-                          const [notifs, count] = await Promise.all([
-                            getNotificationsByUser(userData.userId),
-                            getUnreadNotificationCount(userData.userId)
-                          ]);
-                          setNotifications(notifs);
-                          setUnreadCount(count);
+                          const allNotifs = await getNotificationsByUser(userData.userId);
+                          const filteredNotifs = await filterNotificationsByFamilyGroup(allNotifs, userData.userId);
+                          setNotifications(filteredNotifs);
+                          
+                          // Calculate unread count from filtered notifications
+                          const preferences = await getNotificationPreferencesFromDB(userData.userId);
+                          const visibleNotifications = filteredNotifs.filter(n => !preferences.disabledTypes.includes(n.type as any));
+                          const visibleUnreadCount = visibleNotifications.filter(n => !n.is_read).length;
+                          setUnreadCount(visibleUnreadCount);
                         } catch (error) {
                           console.error('Error deleting read notifications:', error);
                         }
@@ -694,14 +723,12 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                                 for (const notification of unreadSelected) {
                                   await markNotificationAsRead(notification.notification_id, userData.userId);
                                 }
-                                const [notifs, count] = await Promise.all([
-                                  getNotificationsByUser(userData.userId),
-                                  getUnreadNotificationCount(userData.userId)
-                                ]);
-                                setNotifications(notifs);
+                                const allNotifs = await getNotificationsByUser(userData.userId);
+                                const filteredNotifs = await filterNotificationsByFamilyGroup(allNotifs, userData.userId);
+                                setNotifications(filteredNotifs);
                                 const preferences = await getNotificationPreferencesFromDB(userData.userId);
                                 setNotificationPreferences(preferences);
-                                const visibleNotifications = notifs.filter(n => !preferences.disabledTypes.includes(n.type as any));
+                                const visibleNotifications = filteredNotifs.filter(n => !preferences.disabledTypes.includes(n.type as any));
                                 const visibleUnreadCount = visibleNotifications.filter(n => !n.is_read).length;
                                 setUnreadCount(visibleUnreadCount);
                                 setSelectedNotificationIds(new Set());
@@ -724,14 +751,12 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                                 for (const notificationId of selectedIds) {
                                   await deleteNotification(notificationId, userData.userId);
                                 }
-                                const [notifs, count] = await Promise.all([
-                                  getNotificationsByUser(userData.userId),
-                                  getUnreadNotificationCount(userData.userId)
-                                ]);
-                                setNotifications(notifs);
+                                const allNotifs = await getNotificationsByUser(userData.userId);
+                                const filteredNotifs = await filterNotificationsByFamilyGroup(allNotifs, userData.userId);
+                                setNotifications(filteredNotifs);
                                 const preferences = await getNotificationPreferencesFromDB(userData.userId);
                                 setNotificationPreferences(preferences);
-                                const visibleNotifications = notifs.filter(n => !preferences.disabledTypes.includes(n.type as any));
+                                const visibleNotifications = filteredNotifs.filter(n => !preferences.disabledTypes.includes(n.type as any));
                                 const visibleUnreadCount = visibleNotifications.filter(n => !n.is_read).length;
                                 setUnreadCount(visibleUnreadCount);
                                 setSelectedNotificationIds(new Set());
@@ -1017,12 +1042,15 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                                   if (!userData?.userId) return;
                                   try {
                                     await deleteNotification(notification.notification_id, userData.userId);
-                                    const [notifs, count] = await Promise.all([
-                                      getNotificationsByUser(userData.userId),
-                                      getUnreadNotificationCount(userData.userId)
-                                    ]);
-                                    setNotifications(notifs);
-                                    setUnreadCount(count);
+                                    const allNotifs = await getNotificationsByUser(userData.userId);
+                                    const filteredNotifs = await filterNotificationsByFamilyGroup(allNotifs, userData.userId);
+                                    setNotifications(filteredNotifs);
+                                    
+                                    // Calculate unread count from filtered notifications
+                                    const preferences = await getNotificationPreferencesFromDB(userData.userId);
+                                    const visibleNotifications = filteredNotifs.filter(n => !preferences.disabledTypes.includes(n.type as any));
+                                    const visibleUnreadCount = visibleNotifications.filter(n => !n.is_read).length;
+                                    setUnreadCount(visibleUnreadCount);
                                   } catch (error) {
                                     console.error('Error deleting notification:', error);
                                   }
@@ -1201,14 +1229,12 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
                                         for (const notification of group.notifications) {
                                           await deleteNotification(notification.notification_id, userData.userId);
                                         }
-                                        const [notifs, count] = await Promise.all([
-                                          getNotificationsByUser(userData.userId),
-                                          getUnreadNotificationCount(userData.userId)
-                                        ]);
-                                        setNotifications(notifs);
+                                        const allNotifs = await getNotificationsByUser(userData.userId);
+                                        const filteredNotifs = await filterNotificationsByFamilyGroup(allNotifs, userData.userId);
+                                        setNotifications(filteredNotifs);
                                         const preferences = await getNotificationPreferencesFromDB(userData.userId);
                                         setNotificationPreferences(preferences);
-                                        const visibleNotifications = notifs.filter(n => !preferences.disabledTypes.includes(n.type as any));
+                                        const visibleNotifications = filteredNotifs.filter(n => !preferences.disabledTypes.includes(n.type as any));
                                         const visibleUnreadCount = visibleNotifications.filter(n => !n.is_read).length;
                                         setUnreadCount(visibleUnreadCount);
                                       } catch (error) {
