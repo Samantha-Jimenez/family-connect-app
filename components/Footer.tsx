@@ -19,9 +19,6 @@ const Footer = () => {
                 Have a suggestion or request?
               </button>
             </div>
-            <div className="flex items-center">
-              <p className="text-sm text-gray-500">© 2025 Family Connect. All rights reserved.</p>
-            </div>
           </div>
         </div>
       </footer>
