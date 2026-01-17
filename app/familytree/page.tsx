@@ -84,7 +84,7 @@ const PersonCard = ({ member }: { member: FamilyMemberProps }) => {
             </div>
           )}
         </div>
-        <p className="text-sm font-light mt-2 text-black hover:font-medium hover:text-md transition-all duration-200 ease-in-out">
+        <p className="text-sm font-light text-black hover:font-medium hover:text-md transition-all duration-200 ease-in-out h-8 content-center">
           {member.first_name} {member.last_name}
         </p>
       </Link>
