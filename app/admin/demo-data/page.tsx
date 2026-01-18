@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState, useRef, ChangeEvent } from 'react';
 import { useAuthenticator } from "@aws-amplify/ui-react";
-import { getAllFamilyMembers, adminSavePhotoAsDemoMember, addCommentToPhoto, getProfilePhotoById, PhotoData, FamilyMember, adminUpdateMemberHobbies, getAllHobbies, addCommentToHobby, getCommentsForHobby, getUserData, adminUpdateMemberSocialMedia, adminUpdateMemberPets, adminUpdateMemberLanguages } from "@/hooks/dynamoDB";
+import { getAllFamilyMembers, adminSavePhotoAsDemoMember, addCommentToPhoto, getProfilePhotoById, PhotoData, FamilyMember, adminUpdateMemberHobbies, getAllHobbies, addCommentToHobby, getCommentsForHobby, getUserData, adminUpdateMemberSocialMedia, adminUpdateMemberPets, adminUpdateMemberLanguages, saveEventToDynamoDB, CalendarEventData } from "@/hooks/dynamoDB";
 import { DEMO_FAMILY_GROUP, DEMO_USER_IDS } from '@/utils/demoConfig';
 import { useToast } from '@/context/ToastContext';
 import Select from 'react-select';
@@ -9,7 +9,7 @@ import CreatableSelect from 'react-select/creatable';
 import Image from 'next/image';
 import { getFullImageUrl } from '@/utils/imageUtils';
 
-type Tab = 'upload-photos' | 'add-comments' | 'manage-hobbies' | 'comment-hobbies' | 'manage-social-media' | 'manage-pets' | 'manage-languages';
+type Tab = 'upload-photos' | 'add-comments' | 'manage-hobbies' | 'comment-hobbies' | 'manage-social-media' | 'manage-pets' | 'manage-languages' | 'create-calendar-event';
 
 const SOCIAL_MEDIA_PLATFORMS = [
   { value: 'facebook', label: 'Facebook' },
@@ -194,6 +194,17 @@ const AdminDemoDataPage = () => {
   const [languagesEntries, setLanguagesEntries] = useState<{ name: string; proficiency: string }[]>([]);
   const [newLanguage, setNewLanguage] = useState({ name: '', proficiency: '' });
   const [isUpdatingLanguages, setIsUpdatingLanguages] = useState(false);
+
+  // Calendar event state
+  const [eventTitle, setEventTitle] = useState('');
+  const [eventStartDate, setEventStartDate] = useState('');
+  const [eventStartTime, setEventStartTime] = useState('');
+  const [eventEndDate, setEventEndDate] = useState('');
+  const [eventEndTime, setEventEndTime] = useState('');
+  const [eventAllDay, setEventAllDay] = useState(false);
+  const [eventLocation, setEventLocation] = useState('');
+  const [eventDescription, setEventDescription] = useState('');
+  const [isCreatingEvent, setIsCreatingEvent] = useState(false);
 
   useEffect(() => {
     if (user && user.userId === "f16b1510-0001-705f-8680-28689883e706") {
@@ -730,6 +741,88 @@ const AdminDemoDataPage = () => {
     }
   };
 
+  const handleCreateCalendarEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedMember || !eventTitle.trim() || !eventStartDate) {
+      showToast('Please fill in all required fields', 'error');
+      return;
+    }
+
+    setIsCreatingEvent(true);
+    try {
+      // Build start datetime
+      let startDateTime: Date;
+      if (eventAllDay) {
+        startDateTime = new Date(`${eventStartDate}T00:00:00`);
+      } else {
+        const startTime = eventStartTime || '00:00';
+        startDateTime = new Date(`${eventStartDate}T${startTime}:00`);
+      }
+
+      if (isNaN(startDateTime.getTime())) {
+        throw new Error('Invalid start date/time');
+      }
+
+      // Build end datetime if provided
+      let endDateTime: Date | undefined;
+      if (eventEndDate) {
+        if (eventAllDay) {
+          const end = new Date(eventEndDate);
+          end.setDate(end.getDate() + 1); // Add one day for all-day events
+          endDateTime = new Date(`${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}T00:00:00`);
+        } else {
+          const endTime = eventEndTime || '23:59';
+          endDateTime = new Date(`${eventEndDate}T${endTime}:00`);
+        }
+        
+        if (endDateTime && isNaN(endDateTime.getTime())) {
+          throw new Error('Invalid end date/time');
+        }
+      }
+
+      // Use the selected member's family_member_id as userId so it displays correctly
+      // Pass a demo user ID to saveEventToDynamoDB so it correctly determines DEMO_FAMILY_GROUP
+      const demoUserId = DEMO_USER_IDS.length > 0 ? DEMO_USER_IDS[0] : selectedMember.family_member_id;
+
+      const eventData: CalendarEventData = {
+        id: crypto.randomUUID(),
+        title: eventTitle.trim(),
+        start: startDateTime.toISOString(),
+        end: endDateTime?.toISOString(),
+        allDay: eventAllDay,
+        location: eventLocation.trim() || undefined,
+        description: eventDescription.trim() || undefined,
+        userId: selectedMember.family_member_id, // Use family_member_id so it displays as the selected member
+        createdBy: selectedMember.family_member_id, // Store the actual family member who created it
+        category: 'appointment',
+        backgroundColor: '#C8D5B9',
+        borderColor: '#2E6E49',
+        textColor: '#000000',
+      };
+
+      // Pass demoUserId as second parameter to ensure correct family_group assignment
+      // The eventData.userId (family_member_id) will be used for display via getUserNameById
+      await saveEventToDynamoDB(eventData, demoUserId);
+
+      showToast('Calendar event created successfully as ' + selectedMember.first_name + ' ' + selectedMember.last_name, 'success');
+
+      // Reset form
+      setEventTitle('');
+      setEventStartDate('');
+      setEventStartTime('');
+      setEventEndDate('');
+      setEventEndTime('');
+      setEventAllDay(false);
+      setEventLocation('');
+      setEventDescription('');
+    } catch (error) {
+      console.error('Error creating calendar event:', error);
+      showToast('Error creating calendar event: ' + (error instanceof Error ? error.message : 'Unknown error'), 'error');
+    } finally {
+      setIsCreatingEvent(false);
+    }
+  };
+
   const handleAddHobbyComment = async () => {
     if (!selectedHobbyForComment || !selectedMember) {
       showToast('Please select a hobby and a demo member', 'error');
@@ -904,6 +997,12 @@ const AdminDemoDataPage = () => {
               onClick={() => setActiveTab('manage-languages')}
             >
               Languages
+            </a>
+            <a 
+              className={`tab tab-lg ${activeTab === 'create-calendar-event' ? 'tab-active' : ''}`}
+              onClick={() => setActiveTab('create-calendar-event')}
+            >
+              Create Calendar Event
             </a>
           </div>
         </div>
@@ -1622,6 +1721,123 @@ const AdminDemoDataPage = () => {
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Create Calendar Event Tab */}
+        {activeTab === 'create-calendar-event' && selectedMember && (
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">Create Calendar Event as {selectedMember.first_name} {selectedMember.last_name}</h2>
+            
+            <form onSubmit={handleCreateCalendarEvent} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Event Title *</label>
+                <input
+                  type="text"
+                  value={eventTitle}
+                  onChange={(e) => setEventTitle(e.target.value)}
+                  className="input input-bordered w-full"
+                  placeholder="Enter event title..."
+                  required
+                  data-theme="light"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 mb-4">
+                <input
+                  type="checkbox"
+                  checked={eventAllDay}
+                  onChange={(e) => setEventAllDay(e.target.checked)}
+                  className="checkbox"
+                  data-theme="light"
+                />
+                <label className="text-sm font-medium text-gray-700">All Day Event</label>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Start Date *</label>
+                  <input
+                    type="date"
+                    value={eventStartDate}
+                    onChange={(e) => setEventStartDate(e.target.value)}
+                    className="input input-bordered w-full"
+                    required
+                    data-theme="light"
+                  />
+                </div>
+                {!eventAllDay && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+                    <input
+                      type="time"
+                      value={eventStartTime}
+                      onChange={(e) => setEventStartTime(e.target.value)}
+                      className="input input-bordered w-full"
+                      data-theme="light"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">End Date (Optional)</label>
+                  <input
+                    type="date"
+                    value={eventEndDate}
+                    onChange={(e) => setEventEndDate(e.target.value)}
+                    className="input input-bordered w-full"
+                    data-theme="light"
+                  />
+                </div>
+                {!eventAllDay && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">End Time (Optional)</label>
+                    <input
+                      type="time"
+                      value={eventEndTime}
+                      onChange={(e) => setEventEndTime(e.target.value)}
+                      className="input input-bordered w-full"
+                      data-theme="light"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Location (Optional)</label>
+                <input
+                  type="text"
+                  value={eventLocation}
+                  onChange={(e) => setEventLocation(e.target.value)}
+                  className="input input-bordered w-full"
+                  placeholder="Enter event location..."
+                  data-theme="light"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description (Optional)</label>
+                <textarea
+                  value={eventDescription}
+                  onChange={(e) => setEventDescription(e.target.value)}
+                  className="textarea textarea-bordered w-full"
+                  rows={4}
+                  placeholder="Enter event description..."
+                  data-theme="light"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isCreatingEvent || !eventTitle.trim() || !eventStartDate}
+                className="btn btn-primary w-full"
+                data-theme="light"
+              >
+                {isCreatingEvent ? 'Creating Event...' : 'Create Event'}
+              </button>
+            </form>
           </div>
         )}
       </div>
