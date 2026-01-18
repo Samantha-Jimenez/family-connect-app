@@ -1,15 +1,16 @@
 "use client";
 import React, { useEffect, useState, useRef, ChangeEvent } from 'react';
 import { useAuthenticator } from "@aws-amplify/ui-react";
-import { getAllFamilyMembers, adminSavePhotoAsDemoMember, addCommentToPhoto, getProfilePhotoById, PhotoData, FamilyMember, adminUpdateMemberHobbies, getAllHobbies, addCommentToHobby, getCommentsForHobby, getUserData, adminUpdateMemberSocialMedia, adminUpdateMemberPets, adminUpdateMemberLanguages, saveEventToDynamoDB, CalendarEventData, getEventsFromDynamoDB, saveRSVPToDynamoDB, deleteRSVPFromDynamoDB, getEventRSVPs, getUserNameById } from "@/hooks/dynamoDB";
+import { getAllFamilyMembers, adminSavePhotoAsDemoMember, addCommentToPhoto, getProfilePhotoById, PhotoData, FamilyMember, adminUpdateMemberHobbies, getAllHobbies, addCommentToHobby, getCommentsForHobby, getUserData, adminUpdateMemberSocialMedia, adminUpdateMemberPets, adminUpdateMemberLanguages, saveEventToDynamoDB, CalendarEventData, getEventsFromDynamoDB, saveRSVPToDynamoDB, deleteRSVPFromDynamoDB, getEventRSVPs, getUserNameById, deleteEventFromDynamoDB, sendEventCancellationNotifications } from "@/hooks/dynamoDB";
 import { DEMO_FAMILY_GROUP, DEMO_USER_IDS } from '@/utils/demoConfig';
 import { useToast } from '@/context/ToastContext';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import Image from 'next/image';
 import { getFullImageUrl } from '@/utils/imageUtils';
+import ConfirmationModal from '@/components/ConfirmationModal';
 
-type Tab = 'upload-photos' | 'add-comments' | 'manage-hobbies' | 'comment-hobbies' | 'manage-social-media' | 'manage-pets' | 'manage-languages' | 'create-calendar-event' | 'rsvp-to-events';
+type Tab = 'upload-photos' | 'add-comments' | 'manage-hobbies' | 'comment-hobbies' | 'manage-social-media' | 'manage-pets' | 'manage-languages' | 'create-calendar-event' | 'rsvp-to-events' | 'manage-events';
 
 const SOCIAL_MEDIA_PLATFORMS = [
   { value: 'facebook', label: 'Facebook' },
@@ -326,9 +327,9 @@ const AdminDemoDataPage = () => {
     fetchAvailableHobbies();
   }, []);
 
-  // Fetch demo events when RSVP tab is active
+  // Fetch demo events when RSVP or Manage Events tab is active
   useEffect(() => {
-    if (activeTab === 'rsvp-to-events') {
+    if (activeTab === 'rsvp-to-events' || activeTab === 'manage-events') {
       fetchDemoEvents();
     }
   }, [activeTab]);
@@ -442,6 +443,43 @@ const AdminDemoDataPage = () => {
       showToast('Error removing RSVP', 'error');
     } finally {
       setIsSavingRSVP(false);
+    }
+  };
+
+  // Event deletion state
+  const [eventToDelete, setEventToDelete] = useState<CalendarEventData | null>(null);
+  const [isDeletingEvent, setIsDeletingEvent] = useState(false);
+
+  const handleDeleteEvent = async () => {
+    if (!eventToDelete || !eventToDelete.id) {
+      return;
+    }
+
+    setIsDeletingEvent(true);
+    try {
+      // Send cancellation notifications to users who RSVP'd
+      try {
+        await sendEventCancellationNotifications(eventToDelete.id, eventToDelete.title);
+      } catch (notificationError) {
+        console.error('Error sending cancellation notifications:', notificationError);
+        // Don't block deletion if notification sending fails
+      }
+
+      // Delete the event from DynamoDB
+      await deleteEventFromDynamoDB(eventToDelete.id);
+      
+      showToast(`Event "${eventToDelete.title}" deleted successfully`, 'success');
+      
+      // Refresh events list
+      await fetchDemoEvents();
+      
+      // Clear the event to delete
+      setEventToDelete(null);
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      showToast('Error deleting event', 'error');
+    } finally {
+      setIsDeletingEvent(false);
     }
   };
 
@@ -934,6 +972,11 @@ const AdminDemoDataPage = () => {
 
       showToast('Calendar event created successfully as ' + selectedMember.first_name + ' ' + selectedMember.last_name, 'success');
 
+      // Refresh events list if manage-events or rsvp-to-events tab is active
+      if (activeTab === 'manage-events' || activeTab === 'rsvp-to-events') {
+        await fetchDemoEvents();
+      }
+
       // Reset form
       setEventTitle('');
       setEventStartDate('');
@@ -1137,6 +1180,12 @@ const AdminDemoDataPage = () => {
               onClick={() => setActiveTab('rsvp-to-events')}
             >
               RSVP to Events
+            </a>
+            <a 
+              className={`tab tab-lg ${activeTab === 'manage-events' ? 'tab-active' : ''}`}
+              onClick={() => setActiveTab('manage-events')}
+            >
+              Manage Events
             </a>
           </div>
         </div>
@@ -2123,6 +2172,73 @@ const AdminDemoDataPage = () => {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Manage Events Tab */}
+        {activeTab === 'manage-events' && (
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">Manage Demo Events</h2>
+            
+            {demoEvents.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No demo events found. Create events in the "Create Calendar Event" tab first.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {demoEvents.map((event) => (
+                  <div key={event.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-2">{event.title}</h3>
+                        <div className="space-y-1 text-sm text-gray-600">
+                          <p>
+                            <strong>Date:</strong> {event.start ? new Date(event.start).toLocaleString() : 'No date'}
+                          </p>
+                          {event.end && (
+                            <p>
+                              <strong>End:</strong> {new Date(event.end).toLocaleString()}
+                            </p>
+                          )}
+                          {event.allDay && (
+                            <p className="text-gray-500 italic">All Day Event</p>
+                          )}
+                          {event.location && (
+                            <p>
+                              <strong>Location:</strong> {event.location}
+                            </p>
+                          )}
+                          {event.description && (
+                            <p>
+                              <strong>Description:</strong> {event.description}
+                            </p>
+                          )}
+                          {event.userId && (
+                            <p className="text-xs text-gray-500 mt-2">
+                              Created by: {event.userId}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setEventToDelete(event)}
+                        disabled={isDeletingEvent}
+                        className="btn btn-sm bg-[#E12B1F] border-0 text-white hover:bg-[#E12B1F]/70 ml-4"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <ConfirmationModal
+              isOpen={!!eventToDelete}
+              onClose={() => setEventToDelete(null)}
+              onConfirm={handleDeleteEvent}
+              message={eventToDelete ? `Are you sure you want to delete the event "${eventToDelete.title}"? This will send cancellation notifications to all users who RSVP'd.` : ''}
+            />
           </div>
         )}
       </div>
