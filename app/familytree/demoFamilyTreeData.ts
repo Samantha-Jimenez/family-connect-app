@@ -31,6 +31,10 @@ export const demoFamilyTreeData = {
         {
           first_name: "Fester",
           last_name: "Addams",
+          spouse: {
+            first_name: "Deborah",
+            last_name: "Jellinsky-Addams",
+          },
         },
       ],
     },
@@ -65,7 +69,7 @@ export const demoFamilyTreeData = {
 //       - Wednesday Addams
 //       - Pugsley Addams
 //       - Pubert Addams
-//     - Fester Addams
+//     - Fester Addams (with spouse Deborah Jellinsky-Addams)
 //   - Sloom Addams
 //     - Itt 'Cousin Itt' Addams (with spouse Margaret Alford-Addams)
 //       - What Addams
