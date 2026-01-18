@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState, useRef, ChangeEvent } from 'react';
 import { useAuthenticator } from "@aws-amplify/ui-react";
-import { getAllFamilyMembers, adminSavePhotoAsDemoMember, addCommentToPhoto, getProfilePhotoById, PhotoData, FamilyMember, adminUpdateMemberHobbies, getAllHobbies, addCommentToHobby, getCommentsForHobby, getUserData, adminUpdateMemberSocialMedia, adminUpdateMemberPets, adminUpdateMemberLanguages, saveEventToDynamoDB, CalendarEventData, getEventsFromDynamoDB, saveRSVPToDynamoDB, deleteRSVPFromDynamoDB, getEventRSVPs, getUserNameById, deleteEventFromDynamoDB, sendEventCancellationNotifications } from "@/hooks/dynamoDB";
+import { getAllFamilyMembers, adminSavePhotoAsDemoMember, addCommentToPhoto, getProfilePhotoById, PhotoData, FamilyMember, adminUpdateMemberHobbies, getAllHobbies, addCommentToHobby, getCommentsForHobby, getUserData, adminUpdateMemberSocialMedia, adminUpdateMemberPets, adminUpdateMemberLanguages, saveEventToDynamoDB, CalendarEventData, getEventsFromDynamoDB, saveRSVPToDynamoDB, deleteRSVPFromDynamoDB, getEventRSVPs, getUserNameById, deleteEventFromDynamoDB, sendEventCancellationNotifications, adminCreateAlbumAsDemoMember, getUserAlbums, AlbumData, adminAddPhotoToAlbum } from "@/hooks/dynamoDB";
 import { DEMO_FAMILY_GROUP, DEMO_USER_IDS } from '@/utils/demoConfig';
 import { useToast } from '@/context/ToastContext';
 import Select from 'react-select';
@@ -10,7 +10,7 @@ import Image from 'next/image';
 import { getFullImageUrl } from '@/utils/imageUtils';
 import ConfirmationModal from '@/components/ConfirmationModal';
 
-type Tab = 'upload-photos' | 'add-comments' | 'manage-hobbies' | 'comment-hobbies' | 'manage-social-media' | 'manage-pets' | 'manage-languages' | 'create-calendar-event' | 'rsvp-to-events' | 'manage-events';
+type Tab = 'upload-photos' | 'add-comments' | 'manage-hobbies' | 'comment-hobbies' | 'manage-social-media' | 'manage-pets' | 'manage-languages' | 'create-calendar-event' | 'rsvp-to-events' | 'manage-events' | 'create-album' | 'manage-album-photos';
 
 const SOCIAL_MEDIA_PLATFORMS = [
   { value: 'facebook', label: 'Facebook' },
@@ -289,6 +289,60 @@ const AdminDemoDataPage = () => {
     }
   }, [selectedMember, demoMembers.length]);
 
+  // Fetch albums when manage-album-photos tab is active or selected member changes
+  useEffect(() => {
+    if (activeTab === 'manage-album-photos' && selectedMember) {
+      fetchMemberAlbums();
+    }
+  }, [activeTab, selectedMember]);
+
+  const fetchMemberAlbums = async () => {
+    if (!selectedMember) return;
+    setIsLoadingAlbums(true);
+    try {
+      const albums = await getUserAlbums(selectedMember.family_member_id);
+      setDemoMemberAlbums(albums);
+      if (albums.length > 0 && !selectedAlbumForPhotos) {
+        setSelectedAlbumForPhotos(albums[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching member albums:', error);
+      showToast('Error fetching albums', 'error');
+      setDemoMemberAlbums([]);
+    } finally {
+      setIsLoadingAlbums(false);
+    }
+  };
+
+  const handleAddPhotosToAlbum = async () => {
+    if (!selectedAlbumForPhotos || selectedPhotosForAlbum.length === 0) {
+      showToast('Please select an album and at least one photo', 'error');
+      return;
+    }
+
+    setIsAddingPhotosToAlbum(true);
+    try {
+      for (const photoId of selectedPhotosForAlbum) {
+        await adminAddPhotoToAlbum(photoId, selectedAlbumForPhotos.album_id);
+      }
+      showToast(`Successfully added ${selectedPhotosForAlbum.length} photo(s) to album "${selectedAlbumForPhotos.name}"`, 'success');
+      setSelectedPhotosForAlbum([]);
+    } catch (error) {
+      console.error('Error adding photos to album:', error);
+      showToast('Error adding photos to album', 'error');
+    } finally {
+      setIsAddingPhotosToAlbum(false);
+    }
+  };
+
+  const handlePhotoCheckbox = (photoId: string) => {
+    setSelectedPhotosForAlbum(prev =>
+      prev.includes(photoId)
+        ? prev.filter(id => id !== photoId)
+        : [...prev, photoId]
+    );
+  };
+
   const fetchMemberSocialMedia = async () => {
     if (!selectedMember) return;
     try {
@@ -450,6 +504,18 @@ const AdminDemoDataPage = () => {
   const [eventToDelete, setEventToDelete] = useState<CalendarEventData | null>(null);
   const [isDeletingEvent, setIsDeletingEvent] = useState(false);
 
+  // Album creation state
+  const [albumName, setAlbumName] = useState('');
+  const [albumDescription, setAlbumDescription] = useState('');
+  const [isCreatingAlbum, setIsCreatingAlbum] = useState(false);
+
+  // Album photo management state
+  const [demoMemberAlbums, setDemoMemberAlbums] = useState<AlbumData[]>([]);
+  const [selectedAlbumForPhotos, setSelectedAlbumForPhotos] = useState<AlbumData | null>(null);
+  const [selectedPhotosForAlbum, setSelectedPhotosForAlbum] = useState<string[]>([]);
+  const [isAddingPhotosToAlbum, setIsAddingPhotosToAlbum] = useState(false);
+  const [isLoadingAlbums, setIsLoadingAlbums] = useState(false);
+
   const handleDeleteEvent = async () => {
     if (!eventToDelete || !eventToDelete.id) {
       return;
@@ -480,6 +546,39 @@ const AdminDemoDataPage = () => {
       showToast('Error deleting event', 'error');
     } finally {
       setIsDeletingEvent(false);
+    }
+  };
+
+  const handleCreateAlbum = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedMember || !albumName.trim()) {
+      showToast('Please select a demo member and enter an album name', 'error');
+      return;
+    }
+
+    setIsCreatingAlbum(true);
+    try {
+      await adminCreateAlbumAsDemoMember(
+        albumName.trim(),
+        selectedMember.family_member_id,
+        albumDescription.trim() || undefined
+      );
+
+      showToast(`Album "${albumName}" created successfully as ${selectedMember.first_name} ${selectedMember.last_name}`, 'success');
+
+      // Refresh albums list if manage-album-photos tab is active
+      if (activeTab === 'manage-album-photos') {
+        await fetchMemberAlbums();
+      }
+
+      // Reset form
+      setAlbumName('');
+      setAlbumDescription('');
+    } catch (error) {
+      console.error('Error creating album:', error);
+      showToast('Error creating album', 'error');
+    } finally {
+      setIsCreatingAlbum(false);
     }
   };
 
@@ -1186,6 +1285,18 @@ const AdminDemoDataPage = () => {
               onClick={() => setActiveTab('manage-events')}
             >
               Manage Events
+            </a>
+            <a 
+              className={`tab tab-lg ${activeTab === 'create-album' ? 'tab-active' : ''}`}
+              onClick={() => setActiveTab('create-album')}
+            >
+              Create Album
+            </a>
+            <a 
+              className={`tab tab-lg ${activeTab === 'manage-album-photos' ? 'tab-active' : ''}`}
+              onClick={() => setActiveTab('manage-album-photos')}
+            >
+              Add Photos to Albums
             </a>
           </div>
         </div>
@@ -2239,6 +2350,163 @@ const AdminDemoDataPage = () => {
               onConfirm={handleDeleteEvent}
               message={eventToDelete ? `Are you sure you want to delete the event "${eventToDelete.title}"? This will send cancellation notifications to all users who RSVP'd.` : ''}
             />
+          </div>
+        )}
+
+        {/* Create Album Tab */}
+        {activeTab === 'create-album' && selectedMember && (
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">Create Album as {selectedMember.first_name} {selectedMember.last_name}</h2>
+            
+            <form onSubmit={handleCreateAlbum} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Album Name *</label>
+                <input
+                  type="text"
+                  value={albumName}
+                  onChange={(e) => setAlbumName(e.target.value)}
+                  className="input input-bordered w-full"
+                  placeholder="Enter album name..."
+                  required
+                  data-theme="light"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description (Optional)</label>
+                <textarea
+                  value={albumDescription}
+                  onChange={(e) => setAlbumDescription(e.target.value)}
+                  className="textarea textarea-bordered w-full"
+                  rows={4}
+                  placeholder="Enter album description..."
+                  data-theme="light"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isCreatingAlbum || !albumName.trim()}
+                className="btn btn-primary w-full"
+                data-theme="light"
+              >
+                {isCreatingAlbum ? 'Creating Album...' : 'Create Album'}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Add Photos to Albums Tab */}
+        {activeTab === 'manage-album-photos' && selectedMember && (
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">Add Photos to Albums for {selectedMember.first_name} {selectedMember.last_name}</h2>
+            
+            <div className="space-y-6">
+              {/* Select Album */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Select Album</label>
+                {isLoadingAlbums ? (
+                  <div className="text-center py-4">Loading albums...</div>
+                ) : demoMemberAlbums.length === 0 ? (
+                  <div className="text-gray-500 text-sm mb-4">
+                    No albums found for this member. Create an album first in the "Create Album" tab.
+                  </div>
+                ) : (
+                  <Select
+                    options={demoMemberAlbums.map(album => ({
+                      value: album.album_id,
+                      label: `${album.name}${album.description ? ` - ${album.description}` : ''}`
+                    }))}
+                    value={selectedAlbumForPhotos ? {
+                      value: selectedAlbumForPhotos.album_id,
+                      label: `${selectedAlbumForPhotos.name}${selectedAlbumForPhotos.description ? ` - ${selectedAlbumForPhotos.description}` : ''}`
+                    } : null}
+                    onChange={(option) => {
+                      const album = demoMemberAlbums.find(a => a.album_id === option?.value);
+                      setSelectedAlbumForPhotos(album || null);
+                      setSelectedPhotosForAlbum([]);
+                    }}
+                    className="text-black"
+                    placeholder="Select an album..."
+                  />
+                )}
+              </div>
+
+              {selectedAlbumForPhotos && (
+                <>
+                  {/* Photo Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Photos to Add to "{selectedAlbumForPhotos.name}"
+                    </label>
+                    {loading ? (
+                      <div className="text-center py-4">Loading photos...</div>
+                    ) : photos.length === 0 ? (
+                      <div className="text-gray-500 text-sm">No photos found. Upload some photos first!</div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          {photos.map((photo) => {
+                            const isSelected = selectedPhotosForAlbum.includes(photo.photo_id);
+                            const isAlreadyInAlbum = photo.album_ids?.includes(selectedAlbumForPhotos.album_id);
+                            
+                            return (
+                              <div
+                                key={photo.photo_id}
+                                className={`relative border-2 rounded-lg overflow-hidden cursor-pointer transition-all ${
+                                  isSelected
+                                    ? 'border-blue-500 ring-2 ring-blue-300'
+                                    : isAlreadyInAlbum
+                                    ? 'border-green-500 opacity-75'
+                                    : 'border-gray-300 hover:border-gray-400'
+                                }`}
+                                onClick={() => !isAlreadyInAlbum && handlePhotoCheckbox(photo.photo_id)}
+                              >
+                                <Image
+                                  src={photo.url}
+                                  alt={photo.metadata?.description || 'Photo'}
+                                  width={200}
+                                  height={200}
+                                  className="w-full h-32 object-cover"
+                                />
+                                {isSelected && (
+                                  <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                                    ✓
+                                  </div>
+                                )}
+                                {isAlreadyInAlbum && (
+                                  <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
+                                    In Album
+                                  </div>
+                                )}
+                                {photo.metadata?.description && (
+                                  <p className="p-2 text-xs text-gray-600 truncate">{photo.metadata.description}</p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {selectedPhotosForAlbum.length > 0 && (
+                          <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <span className="text-sm font-medium text-blue-800">
+                              {selectedPhotosForAlbum.length} photo(s) selected
+                            </span>
+                            <button
+                              onClick={handleAddPhotosToAlbum}
+                              disabled={isAddingPhotosToAlbum}
+                              className="btn btn-sm bg-plantain-green border-0 text-white hover:bg-plantain-green/70"
+                            >
+                              {isAddingPhotosToAlbum ? 'Adding...' : `Add ${selectedPhotosForAlbum.length} Photo(s) to Album`}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>

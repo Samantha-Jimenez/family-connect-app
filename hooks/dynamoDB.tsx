@@ -470,6 +470,37 @@ export const createAlbum = async (name: string, description?: string) => {
   }
 };
 
+/**
+ * Admin-only function to create an album as a demo family member
+ * This bypasses authentication checks and allows admins to create albums as demo members
+ * @param name - Album name
+ * @param demoMemberId - The demo family member ID to create the album as
+ * @param description - Optional album description
+ */
+export const adminCreateAlbumAsDemoMember = async (name: string, demoMemberId: string, description?: string) => {
+  try {
+    const album_id = `album_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    const params = {
+      TableName: TABLES.ALBUMS,
+      Item: {
+        album_id: { S: album_id },
+        name: { S: name },
+        description: { S: description || '' },
+        created_by: { S: demoMemberId },
+        created_date: { S: new Date().toISOString() }
+      }
+    };
+
+    await dynamoDB.send(new PutItemCommand(params));
+    console.log('✅ Admin album created successfully:', album_id, 'for member:', demoMemberId);
+    return album_id;
+  } catch (error) {
+    console.error("❌ Error creating album as demo member:", error);
+    throw error;
+  }
+};
+
 export const savePhotoToDB = async (photoData: PhotoData) => {
   try {
     // Check if photo already exists to determine new vs existing tags
@@ -969,6 +1000,57 @@ export const addPhotoToAlbum = async (photo_id: string, album_id: string) => {
     console.log("✅ Photo added to album successfully!");
   } catch (error) {
     console.error("❌ Error adding photo to album:", error);
+    throw error;
+  }
+};
+
+/**
+ * Admin-only function to add a photo to an album without authentication checks
+ * This allows admins to add photos to albums created by demo members
+ * @param photo_id - The photo ID to add to the album
+ * @param album_id - The album ID to add the photo to
+ */
+export const adminAddPhotoToAlbum = async (photo_id: string, album_id: string) => {
+  try {
+    // Get the current photo data to check if album_id already exists
+    const getPhotoParams = {
+      TableName: TABLES.PHOTOS,
+      Key: {
+        photo_id: { S: photo_id }
+      }
+    };
+
+    const photoData = await dynamoDB.send(new GetItemCommand(getPhotoParams));
+    
+    if (!photoData.Item) {
+      throw new Error("Photo not found");
+    }
+
+    // Check if album_ids already contains this album
+    const currentAlbumIds = photoData.Item.album_ids?.L?.map((item: any) => item.S) || [];
+    
+    if (currentAlbumIds.includes(album_id)) {
+      console.log("✅ Photo is already in this album");
+      return; // Photo is already in this album, no need to add again
+    }
+
+    // Add the album_id to the album_ids list
+    const updatePhotoParams = {
+      TableName: TABLES.PHOTOS,
+      Key: {
+        photo_id: { S: photo_id }
+      },
+      UpdateExpression: "SET album_ids = list_append(if_not_exists(album_ids, :emptyList), :albumId)",
+      ExpressionAttributeValues: {
+        ":albumId": { L: [{ S: album_id }] },
+        ":emptyList": { L: [] }
+      }
+    };
+
+    await dynamoDB.send(new UpdateItemCommand(updatePhotoParams));
+    console.log(`✅ Admin: Photo ${photo_id} added to album ${album_id} successfully!`);
+  } catch (error) {
+    console.error("❌ Error adding photo to album (admin):", error);
     throw error;
   }
 };
