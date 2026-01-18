@@ -13,7 +13,7 @@ interface EventModalProps {
   selectedDate: string;
   event?: CalendarEvent | null;
   mode?: 'add' | 'edit';
-  rsvpEvent: (eventId: string, status: 'yes' | 'no' | 'maybe') => void;
+  rsvpEvent: (eventId: string, status: 'yes' | 'no' | 'maybe' | null) => void;
 }
 
 export default function EventModal({
@@ -327,13 +327,35 @@ export default function EventModal({
     if (rsvpStatus === status) {
       setRsvpStatus(null);
       if (event?.id) {
-        await rsvpEvent(event.id, null as any); // Pass null to remove RSVP
+        await rsvpEvent(event.id, null); // Pass null to remove RSVP
+      }
+      // Refresh RSVP list after removal
+      if (event?.id) {
+        const rsvps = await getEventRSVPs(event.id);
+        const rsvpsWithNames = await Promise.all(
+          rsvps.map(async (rsvp) => {
+            const nameObj = await getUserNameById(rsvp.userId);
+            const name = nameObj ? `${nameObj.firstName} ${nameObj.lastName}` : rsvp.userId;
+            return { ...rsvp, name };
+          })
+        );
+        setRsvpList(rsvpsWithNames);
       }
       return;
     }
     setRsvpStatus(status);
     if (event?.id) {
       await rsvpEvent(event.id, status);
+      // Refresh RSVP list after adding
+      const rsvps = await getEventRSVPs(event.id);
+      const rsvpsWithNames = await Promise.all(
+        rsvps.map(async (rsvp) => {
+          const nameObj = await getUserNameById(rsvp.userId);
+          const name = nameObj ? `${nameObj.firstName} ${nameObj.lastName}` : rsvp.userId;
+          return { ...rsvp, name };
+        })
+      );
+      setRsvpList(rsvpsWithNames);
     }
   };
 

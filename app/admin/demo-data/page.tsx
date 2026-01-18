@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState, useRef, ChangeEvent } from 'react';
 import { useAuthenticator } from "@aws-amplify/ui-react";
-import { getAllFamilyMembers, adminSavePhotoAsDemoMember, addCommentToPhoto, getProfilePhotoById, PhotoData, FamilyMember, adminUpdateMemberHobbies, getAllHobbies, addCommentToHobby, getCommentsForHobby, getUserData, adminUpdateMemberSocialMedia, adminUpdateMemberPets, adminUpdateMemberLanguages, saveEventToDynamoDB, CalendarEventData } from "@/hooks/dynamoDB";
+import { getAllFamilyMembers, adminSavePhotoAsDemoMember, addCommentToPhoto, getProfilePhotoById, PhotoData, FamilyMember, adminUpdateMemberHobbies, getAllHobbies, addCommentToHobby, getCommentsForHobby, getUserData, adminUpdateMemberSocialMedia, adminUpdateMemberPets, adminUpdateMemberLanguages, saveEventToDynamoDB, CalendarEventData, getEventsFromDynamoDB, saveRSVPToDynamoDB, deleteRSVPFromDynamoDB, getEventRSVPs, getUserNameById } from "@/hooks/dynamoDB";
 import { DEMO_FAMILY_GROUP, DEMO_USER_IDS } from '@/utils/demoConfig';
 import { useToast } from '@/context/ToastContext';
 import Select from 'react-select';
@@ -9,7 +9,7 @@ import CreatableSelect from 'react-select/creatable';
 import Image from 'next/image';
 import { getFullImageUrl } from '@/utils/imageUtils';
 
-type Tab = 'upload-photos' | 'add-comments' | 'manage-hobbies' | 'comment-hobbies' | 'manage-social-media' | 'manage-pets' | 'manage-languages' | 'create-calendar-event';
+type Tab = 'upload-photos' | 'add-comments' | 'manage-hobbies' | 'comment-hobbies' | 'manage-social-media' | 'manage-pets' | 'manage-languages' | 'create-calendar-event' | 'rsvp-to-events';
 
 const SOCIAL_MEDIA_PLATFORMS = [
   { value: 'facebook', label: 'Facebook' },
@@ -206,6 +206,15 @@ const AdminDemoDataPage = () => {
   const [eventDescription, setEventDescription] = useState('');
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
 
+  // RSVP state
+  const [demoEvents, setDemoEvents] = useState<CalendarEventData[]>([]);
+  const [selectedEventForRSVP, setSelectedEventForRSVP] = useState<CalendarEventData | null>(null);
+  const [selectedMemberForRSVP, setSelectedMemberForRSVP] = useState<FamilyMember | null>(null);
+  const [rsvpStatus, setRsvpStatus] = useState<'yes' | 'no' | 'maybe' | null>(null);
+  const [currentRSVPs, setCurrentRSVPs] = useState<{ userId: string; status: 'yes' | 'no' | 'maybe'; name: string }[]>([]);
+  const [isLoadingRSVPs, setIsLoadingRSVPs] = useState(false);
+  const [isSavingRSVP, setIsSavingRSVP] = useState(false);
+
   useEffect(() => {
     if (user && user.userId === "f16b1510-0001-705f-8680-28689883e706") {
       setIsAdmin(true);
@@ -316,6 +325,125 @@ const AdminDemoDataPage = () => {
     fetchAllHobbies();
     fetchAvailableHobbies();
   }, []);
+
+  // Fetch demo events when RSVP tab is active
+  useEffect(() => {
+    if (activeTab === 'rsvp-to-events') {
+      fetchDemoEvents();
+    }
+  }, [activeTab]);
+
+  // Fetch RSVPs when event is selected
+  useEffect(() => {
+    if (selectedEventForRSVP?.id) {
+      fetchEventRSVPs(selectedEventForRSVP.id);
+    } else {
+      setCurrentRSVPs([]);
+      setRsvpStatus(null);
+    }
+  }, [selectedEventForRSVP]);
+
+  // Update RSVP status when member or RSVPs change
+  useEffect(() => {
+    if (selectedMemberForRSVP && currentRSVPs.length > 0) {
+      const memberRSVP = currentRSVPs.find(r => r.userId === selectedMemberForRSVP.family_member_id);
+      setRsvpStatus(memberRSVP?.status || null);
+    } else if (!selectedMemberForRSVP) {
+      setRsvpStatus(null);
+    }
+  }, [selectedMemberForRSVP, currentRSVPs]);
+
+  const fetchDemoEvents = async () => {
+    try {
+      const demoUserId = DEMO_USER_IDS.length > 0 ? DEMO_USER_IDS[0] : null;
+      if (!demoUserId) {
+        console.error('❌ No demo user IDs configured');
+        setDemoEvents([]);
+        return;
+      }
+      const events = await getEventsFromDynamoDB(demoUserId);
+      setDemoEvents(events);
+    } catch (error) {
+      console.error('Error fetching demo events:', error);
+      showToast('Error fetching demo events', 'error');
+      setDemoEvents([]);
+    }
+  };
+
+  const fetchEventRSVPs = async (eventId: string) => {
+    setIsLoadingRSVPs(true);
+    try {
+      const rsvps = await getEventRSVPs(eventId);
+      const rsvpsWithNames = await Promise.all(
+        rsvps.map(async (rsvp) => {
+          const nameObj = await getUserNameById(rsvp.userId);
+          const name = nameObj ? `${nameObj.firstName} ${nameObj.lastName}` : rsvp.userId;
+          return { ...rsvp, name };
+        })
+      );
+      setCurrentRSVPs(rsvpsWithNames);
+      // RSVP status will be updated by useEffect when currentRSVPs or selectedMemberForRSVP changes
+    } catch (error) {
+      console.error('Error fetching event RSVPs:', error);
+      showToast('Error fetching RSVPs', 'error');
+      setCurrentRSVPs([]);
+    } finally {
+      setIsLoadingRSVPs(false);
+    }
+  };
+
+  const handleRSVP = async (status: 'yes' | 'no' | 'maybe') => {
+    if (!selectedEventForRSVP || !selectedMemberForRSVP) {
+      showToast('Please select an event and a demo member', 'error');
+      return;
+    }
+
+    // If clicking the same status, remove RSVP
+    if (rsvpStatus === status) {
+      await handleRemoveRSVP();
+      return;
+    }
+
+    setIsSavingRSVP(true);
+    try {
+      const eventCreatorId = selectedEventForRSVP.userId || selectedEventForRSVP.createdBy;
+      await saveRSVPToDynamoDB(
+        selectedEventForRSVP.id!,
+        selectedMemberForRSVP.family_member_id,
+        status,
+        eventCreatorId
+      );
+      setRsvpStatus(status);
+      showToast(`RSVP saved as ${status} for ${selectedMemberForRSVP.first_name} ${selectedMemberForRSVP.last_name}`, 'success');
+      // Refresh RSVPs
+      await fetchEventRSVPs(selectedEventForRSVP.id!);
+    } catch (error) {
+      console.error('Error saving RSVP:', error);
+      showToast('Error saving RSVP', 'error');
+    } finally {
+      setIsSavingRSVP(false);
+    }
+  };
+
+  const handleRemoveRSVP = async () => {
+    if (!selectedEventForRSVP || !selectedMemberForRSVP) {
+      return;
+    }
+
+    setIsSavingRSVP(true);
+    try {
+      await deleteRSVPFromDynamoDB(selectedEventForRSVP.id!, selectedMemberForRSVP.family_member_id);
+      setRsvpStatus(null);
+      showToast(`RSVP removed for ${selectedMemberForRSVP.first_name} ${selectedMemberForRSVP.last_name}`, 'success');
+      // Refresh RSVPs
+      await fetchEventRSVPs(selectedEventForRSVP.id!);
+    } catch (error) {
+      console.error('Error removing RSVP:', error);
+      showToast('Error removing RSVP', 'error');
+    } finally {
+      setIsSavingRSVP(false);
+    }
+  };
 
   const fetchMemberHobbies = async () => {
     if (!selectedMember) return;
@@ -1003,6 +1131,12 @@ const AdminDemoDataPage = () => {
               onClick={() => setActiveTab('create-calendar-event')}
             >
               Create Calendar Event
+            </a>
+            <a 
+              className={`tab tab-lg ${activeTab === 'rsvp-to-events' ? 'tab-active' : ''}`}
+              onClick={() => setActiveTab('rsvp-to-events')}
+            >
+              RSVP to Events
             </a>
           </div>
         </div>
@@ -1838,6 +1972,157 @@ const AdminDemoDataPage = () => {
                 {isCreatingEvent ? 'Creating Event...' : 'Create Event'}
               </button>
             </form>
+          </div>
+        )}
+
+        {/* RSVP to Events Tab */}
+        {activeTab === 'rsvp-to-events' && (
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">RSVP to Demo Events</h2>
+            
+            <div className="space-y-6">
+              {/* Select Event */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Select Event</label>
+                <Select
+                  options={demoEvents.map(event => ({
+                    value: event.id,
+                    label: `${event.title} (${event.start ? new Date(event.start).toLocaleDateString() : 'No date'})`
+                  }))}
+                  value={selectedEventForRSVP ? {
+                    value: selectedEventForRSVP.id,
+                    label: `${selectedEventForRSVP.title} (${selectedEventForRSVP.start ? new Date(selectedEventForRSVP.start).toLocaleDateString() : 'No date'})`
+                  } : null}
+                  onChange={(option) => {
+                    const event = demoEvents.find(e => e.id === option?.value);
+                    setSelectedEventForRSVP(event || null);
+                    setRsvpStatus(null);
+                  }}
+                  className="text-black"
+                  placeholder="Select a demo event..."
+                />
+              </div>
+
+              {selectedEventForRSVP && (
+                <>
+                  {/* Event Details */}
+                  <div className="border rounded-lg p-4 bg-gray-50">
+                    <h3 className="text-lg font-semibold mb-2">{selectedEventForRSVP.title}</h3>
+                    <div className="text-sm text-gray-600 space-y-1">
+                      <p><strong>Date:</strong> {selectedEventForRSVP.start ? new Date(selectedEventForRSVP.start).toLocaleString() : 'No date'}</p>
+                      {selectedEventForRSVP.end && (
+                        <p><strong>End:</strong> {new Date(selectedEventForRSVP.end).toLocaleString()}</p>
+                      )}
+                      {selectedEventForRSVP.location && (
+                        <p><strong>Location:</strong> {selectedEventForRSVP.location}</p>
+                      )}
+                      {selectedEventForRSVP.description && (
+                        <p><strong>Description:</strong> {selectedEventForRSVP.description}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Select Demo Member for RSVP */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Select Demo Member to RSVP As</label>
+                    <Select
+                      options={memberOptions}
+                      value={selectedMemberForRSVP ? {
+                        value: selectedMemberForRSVP.family_member_id,
+                        label: `${selectedMemberForRSVP.first_name} ${selectedMemberForRSVP.last_name}`
+                      } : null}
+                      onChange={(option) => {
+                        const member = demoMembers.find(m => m.family_member_id === option?.value);
+                        setSelectedMemberForRSVP(member || null);
+                        // RSVP status will be updated by useEffect
+                      }}
+                      className="text-black"
+                      placeholder="Select a demo family member..."
+                    />
+                  </div>
+
+                  {selectedMemberForRSVP && (
+                    <>
+                      {/* RSVP Buttons */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">RSVP Status</label>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleRSVP('yes')}
+                            disabled={isSavingRSVP}
+                            className={`btn btn-sm ${rsvpStatus === 'yes' ? 'bg-plantain-green border-2 border-black text-white' : 'bg-plantain-green border-0 text-white hover:bg-plantain-green/70'} ${isSavingRSVP ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          >
+                            Yes {rsvpStatus === 'yes' && '✓'}
+                          </button>
+                          <button
+                            onClick={() => handleRSVP('no')}
+                            disabled={isSavingRSVP}
+                            className={`btn btn-sm ${rsvpStatus === 'no' ? 'bg-engineering-orange border-2 border-black text-white' : 'bg-engineering-orange border-0 text-white hover:bg-engineering-orange/70'} ${isSavingRSVP ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          >
+                            No {rsvpStatus === 'no' && '✓'}
+                          </button>
+                          <button
+                            onClick={() => handleRSVP('maybe')}
+                            disabled={isSavingRSVP}
+                            className={`btn btn-sm ${rsvpStatus === 'maybe' ? 'bg-golden-sand border-2 border-black text-black' : 'bg-golden-sand border-0 text-black hover:bg-golden-sand/70'} ${isSavingRSVP ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          >
+                            Maybe {rsvpStatus === 'maybe' && '✓'}
+                          </button>
+                        </div>
+                        {rsvpStatus && (
+                          <p className="mt-2 text-sm text-gray-600">
+                            Current RSVP: <strong>{rsvpStatus.charAt(0).toUpperCase() + rsvpStatus.slice(1)}</strong> for {selectedMemberForRSVP.first_name} {selectedMemberForRSVP.last_name}
+                            <button
+                              onClick={handleRemoveRSVP}
+                              disabled={isSavingRSVP}
+                              className="ml-2 text-red-600 hover:underline text-xs"
+                            >
+                              (Remove RSVP)
+                            </button>
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Current RSVPs for Event */}
+                      <div className="border-t pt-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">All RSVPs for This Event</label>
+                        {isLoadingRSVPs ? (
+                          <div className="text-center py-4">Loading RSVPs...</div>
+                        ) : currentRSVPs.length === 0 ? (
+                          <p className="text-gray-500 text-sm">No RSVPs yet for this event.</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {currentRSVPs.map((rsvp, index) => (
+                              <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                                <div>
+                                  <p className="font-semibold">{rsvp.name}</p>
+                                  <p className="text-sm text-gray-600">
+                                    Status: <span className="capitalize">{rsvp.status}</span>
+                                  </p>
+                                </div>
+                                <div className={`badge badge-lg ${
+                                  rsvp.status === 'yes' ? 'bg-plantain-green text-white' :
+                                  rsvp.status === 'no' ? 'bg-engineering-orange text-white' :
+                                  'bg-golden-sand text-black'
+                                }`}>
+                                  {rsvp.status.charAt(0).toUpperCase() + rsvp.status.slice(1)}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+
+              {demoEvents.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  No demo events found. Create events in the "Create Calendar Event" tab first.
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

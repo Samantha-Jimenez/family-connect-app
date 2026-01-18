@@ -2482,6 +2482,9 @@ export const editCommentInMember = async (memberId: string, userId: string, comm
   }
 };
 
+/**
+ * Saves an RSVP to DynamoDB.
+ */
 export const saveRSVPToDynamoDB = async (eventId: string, userId: string, status: 'yes' | 'no' | 'maybe', eventCreatorId?: string) => {
     const rsvpParams = {
         TableName: TABLES.EVENT_RSVP,
@@ -2494,7 +2497,7 @@ export const saveRSVPToDynamoDB = async (eventId: string, userId: string, status
 
     try {
         await dynamoDB.send(new PutItemCommand(rsvpParams));
-        console.log("✅ RSVP saved to DynamoDB successfully!");
+        console.log(`✅ RSVP saved to DynamoDB successfully! Event: ${eventId}, User: ${userId}, Status: ${status}`);
 
         // Create notification for the event creator (if they're not the one RSVPing and we have the creator ID)
         if (eventCreatorId && eventCreatorId !== userId) {
@@ -2538,7 +2541,8 @@ export async function getRSVPStatus(
     const params = {
       TableName: TABLES.EVENT_RSVP,
       Key: {
-        rsvp_id: { S: eventId }
+        rsvp_id: { S: eventId },
+        user_id: { S: userId }
       }
     };
     const data = await dynamoDB.send(new GetItemCommand(params));
@@ -2555,11 +2559,19 @@ export async function getRSVPStatus(
   }
 }
 
+/**
+ * Gets all RSVPs for a specific event.
+ * 
+ * NOTE: This function uses a Scan with FilterExpression, which scans the entire table.
+ * For better performance with large tables, consider creating a Global Secondary Index (GSI)
+ * with rsvp_id as the partition key, allowing Query operations instead of Scan.
+ */
 export async function getEventRSVPs(eventId: string): Promise<{ userId: string; status: 'yes' | 'no' | 'maybe' }[]> {
   try {
     const params = {
       TableName: TABLES.EVENT_RSVP,
-      IndexName: undefined, // If you have a GSI for eventId, set it here
+      // Note: Using Scan because we need to filter by rsvp_id (partition key)
+      // For better performance, create a GSI with rsvp_id as partition key
       FilterExpression: "rsvp_id = :eventId",
       ExpressionAttributeValues: {
         ":eventId": { S: eventId }
@@ -2616,6 +2628,24 @@ export async function getUserRSVPs(userId: string): Promise<{ eventId: string; s
   } catch (error) {
     console.error("❌ Error fetching user RSVPs:", error);
     return [];
+  }
+}
+
+// Delete an RSVP from DynamoDB
+export async function deleteRSVPFromDynamoDB(eventId: string, userId: string): Promise<void> {
+  try {
+    const params = {
+      TableName: TABLES.EVENT_RSVP,
+      Key: {
+        rsvp_id: { S: eventId },
+        user_id: { S: userId }
+      }
+    };
+    await dynamoDB.send(new DeleteItemCommand(params));
+    console.log("✅ RSVP deleted from DynamoDB successfully!");
+  } catch (error) {
+    console.error("❌ Error deleting RSVP from DynamoDB:", error);
+    throw error;
   }
 }
 

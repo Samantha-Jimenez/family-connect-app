@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext'; // Import your auth context
 import { v4 as uuidv4 } from 'uuid';
 import { DEFAULT_EVENTS } from '@/app/calendar/calendarData'; // Ensure this import is correct
 import { PutItemCommand } from "@aws-sdk/client-dynamodb"; // Import PutItemCommand
-import { getUserRSVPs, saveRSVPToDynamoDB, getAllFamilyMembers, getEventsFromDynamoDB, saveEventToDynamoDB, deleteEventFromDynamoDB, FamilyMember } from '@/hooks/dynamoDB'; // Import the new function and saveRSVPToDynamoDB
+import { getUserRSVPs, saveRSVPToDynamoDB, deleteRSVPFromDynamoDB, getAllFamilyMembers, getEventsFromDynamoDB, saveEventToDynamoDB, deleteEventFromDynamoDB, FamilyMember } from '@/hooks/dynamoDB'; // Import the new function and saveRSVPToDynamoDB
 import { getUserFamilyGroup, isDemoUser, REAL_FAMILY_GROUP, DEMO_USER_IDS, DEMO_FAMILY_GROUP } from '@/utils/demoConfig';
 
 export interface CalendarEvent {
@@ -41,7 +41,7 @@ interface CalendarContextType {
   events: CalendarEvent[];
   setEvents: React.Dispatch<React.SetStateAction<CalendarEvent[]>>;
   addEvent: (title: string, start: string, end?: string, allDay?: boolean, location?: string, createdBy?: string, description?: string) => void;
-  rsvpEvent: (eventId: string, status: 'yes' | 'no' | 'maybe') => void;
+  rsvpEvent: (eventId: string, status: 'yes' | 'no' | 'maybe' | null) => void;
   fetchUserRSVPs: () => Promise<CalendarEvent[]>;
   refreshEvents: () => void;
 }
@@ -445,7 +445,7 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
     return [];
   };
 
-  const rsvpEvent = async (eventId: string, status: 'yes' | 'no' | 'maybe') => {
+  const rsvpEvent = async (eventId: string, status: 'yes' | 'no' | 'maybe' | null) => {
     // Find the event to get the creator's userId
     const event = events.find(e => e.id === eventId);
     const eventCreatorId = event?.userId || event?.extendedProps?.userId;
@@ -453,15 +453,21 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
     setEvents(currentEvents => {
       const updatedEvents = currentEvents.map(event =>
         event.id === eventId
-          ? { ...event, rsvpStatus: status }
+          ? { ...event, rsvpStatus: status || undefined }
           : event
       );
       localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
       return updatedEvents;
     });
-    // Save RSVP to DynamoDB and await it
+    // Save or delete RSVP from DynamoDB
     if (user && typeof user.userId === 'string' && user.userId) {
-      await saveRSVPToDynamoDB(eventId, user.userId, status, eventCreatorId);
+      if (status === null) {
+        // Remove RSVP from DynamoDB
+        await deleteRSVPFromDynamoDB(eventId, user.userId);
+      } else {
+        // Save RSVP to DynamoDB
+        await saveRSVPToDynamoDB(eventId, user.userId, status, eventCreatorId);
+      }
     }
   };
 
