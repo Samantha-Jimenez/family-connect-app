@@ -189,6 +189,8 @@ const AdminDemoDataPage = () => {
   const [petImage, setPetImage] = useState<File | null>(null);
   const [petImagePreview, setPetImagePreview] = useState<string | null>(null);
   const [isUpdatingPets, setIsUpdatingPets] = useState(false);
+  const [editingPetIndex, setEditingPetIndex] = useState<number | null>(null);
+  const [originalPetImage, setOriginalPetImage] = useState<string | undefined>(undefined);
   const petFileInputRef = useRef<HTMLInputElement>(null);
 
   // Languages state
@@ -897,6 +899,41 @@ const AdminDemoDataPage = () => {
     }
   };
 
+  const handleEditPet = (index: number) => {
+    const pet = petsEntries[index];
+    setNewPet({
+      name: pet.name || '',
+      birthday: pet.birthday || '',
+      death_date: pet.death_date || ''
+    });
+    setEditingPetIndex(index);
+    // Track original image
+    setOriginalPetImage(pet.image);
+    // Set preview to existing image if available
+    if (pet.image) {
+      setPetImagePreview(getFullImageUrl(pet.image));
+    } else {
+      setPetImagePreview(null);
+    }
+    setPetImage(null);
+    // Scroll to form
+    setTimeout(() => {
+      const formElement = document.querySelector('[data-pet-form]');
+      formElement?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
+  };
+
+  const handleCancelEditPet = () => {
+    setEditingPetIndex(null);
+    setOriginalPetImage(undefined);
+    setNewPet({ name: '', birthday: '', death_date: '' });
+    setPetImage(null);
+    setPetImagePreview(null);
+    if (petFileInputRef.current) {
+      petFileInputRef.current.value = '';
+    }
+  };
+
   const handleAddPet = async () => {
     if (!newPet.name.trim()) {
       showToast('Please enter a pet name', 'error');
@@ -904,7 +941,10 @@ const AdminDemoDataPage = () => {
     }
 
     let petImageUrl = '';
-    if (petImage) {
+    // If editing and no new image uploaded and preview still exists, keep existing image
+    if (editingPetIndex !== null && !petImage && originalPetImage && petImagePreview) {
+      petImageUrl = originalPetImage;
+    } else if (petImage) {
       try {
         const formData = new FormData();
         formData.append('file', petImage);
@@ -929,17 +969,33 @@ const AdminDemoDataPage = () => {
       }
     }
 
-    setPetsEntries([...petsEntries, {
-      name: newPet.name.trim(),
-      birthday: newPet.birthday.trim(),
-      death_date: newPet.death_date.trim() || undefined,
-      image: petImageUrl || undefined
-    }]);
-    setNewPet({ name: '', birthday: '', death_date: '' });
-    setPetImage(null);
-    setPetImagePreview(null);
-    if (petFileInputRef.current) {
-      petFileInputRef.current.value = '';
+    if (editingPetIndex !== null) {
+      // Update existing pet
+      const updatedPets = [...petsEntries];
+      updatedPets[editingPetIndex] = {
+        name: newPet.name.trim(),
+        birthday: newPet.birthday.trim(),
+        death_date: newPet.death_date.trim() || undefined,
+        image: petImageUrl || undefined
+      };
+      setPetsEntries(updatedPets);
+      setOriginalPetImage(undefined);
+      handleCancelEditPet();
+      showToast('Pet updated successfully', 'success');
+    } else {
+      // Add new pet
+      setPetsEntries([...petsEntries, {
+        name: newPet.name.trim(),
+        birthday: newPet.birthday.trim(),
+        death_date: newPet.death_date.trim() || undefined,
+        image: petImageUrl || undefined
+      }]);
+      setNewPet({ name: '', birthday: '', death_date: '' });
+      setPetImage(null);
+      setPetImagePreview(null);
+      if (petFileInputRef.current) {
+        petFileInputRef.current.value = '';
+      }
     }
   };
 
@@ -1840,20 +1896,38 @@ const AdminDemoDataPage = () => {
                             <p className="text-sm text-gray-600">Death Date: {pet.death_date}</p>
                           )}
                         </div>
-                        <button
-                          onClick={() => handleRemovePet(index)}
-                          className="btn btn-sm btn-ghost text-red-500"
-                        >
-                          Remove
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEditPet(index)}
+                            className="btn btn-sm btn-ghost text-blue-500"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleRemovePet(index)}
+                            className="btn btn-sm btn-ghost text-red-500"
+                          >
+                            Remove
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
 
-              <div className="border-t pt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Add New Pet</label>
+              <div className="border-t pt-4" data-pet-form>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {editingPetIndex !== null ? 'Edit Pet' : 'Add New Pet'}
+                </label>
+                {editingPetIndex !== null && (
+                  <button
+                    onClick={handleCancelEditPet}
+                    className="btn btn-sm btn-ghost mb-2 text-gray-500"
+                  >
+                    Cancel Edit
+                  </button>
+                )}
                 <div className="space-y-3">
                   <input
                     type="text"
@@ -1912,7 +1986,7 @@ const AdminDemoDataPage = () => {
                     disabled={!newPet.name.trim()}
                     className="btn btn-primary"
                   >
-                    Add Pet
+                    {editingPetIndex !== null ? 'Update Pet' : 'Add Pet'}
                   </button>
                 </div>
               </div>
