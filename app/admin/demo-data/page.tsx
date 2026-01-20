@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState, useRef, ChangeEvent } from 'react';
 import { useAuthenticator } from "@aws-amplify/ui-react";
-import { getAllFamilyMembers, adminSavePhotoAsDemoMember, addCommentToPhoto, getProfilePhotoById, PhotoData, FamilyMember, adminUpdateMemberHobbies, getAllHobbies, addCommentToHobby, getCommentsForHobby, getUserData, adminUpdateMemberSocialMedia, adminUpdateMemberPets, adminUpdateMemberLanguages, saveEventToDynamoDB, CalendarEventData, getEventsFromDynamoDB, saveRSVPToDynamoDB, deleteRSVPFromDynamoDB, getEventRSVPs, getUserNameById, deleteEventFromDynamoDB, sendEventCancellationNotifications, adminCreateAlbumAsDemoMember, getUserAlbums, AlbumData, adminAddPhotoToAlbum } from "@/hooks/dynamoDB";
+import { getAllFamilyMembers, adminSavePhotoAsDemoMember, addCommentToPhoto, getProfilePhotoById, PhotoData, FamilyMember, adminUpdateMemberHobbies, getAllHobbies, addCommentToHobby, getCommentsForHobby, getUserData, adminUpdateMemberSocialMedia, adminUpdateMemberPets, adminUpdateMemberLanguages, saveEventToDynamoDB, CalendarEventData, getEventsFromDynamoDB, saveRSVPToDynamoDB, deleteRSVPFromDynamoDB, getEventRSVPs, getUserNameById, deleteEventFromDynamoDB, sendEventCancellationNotifications, adminCreateAlbumAsDemoMember, getUserAlbums, AlbumData, adminAddPhotoToAlbum, savePhotoToDB, TaggedPerson } from "@/hooks/dynamoDB";
 import { DEMO_FAMILY_GROUP, DEMO_USER_IDS } from '@/utils/demoConfig';
 import { useToast } from '@/context/ToastContext';
 import Select from 'react-select';
@@ -156,6 +156,21 @@ const AdminDemoDataPage = () => {
   const [selectedUsers, setSelectedUsers] = useState<{ value: string; label: string }[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Photo editing state
+  const [editingPhoto, setEditingPhoto] = useState<PhotoData | null>(null);
+  const [editedPhotoDescription, setEditedPhotoDescription] = useState('');
+  const [editedPhotoLocation, setEditedPhotoLocation] = useState({
+    country: '',
+    state: '',
+    city: '',
+    neighborhood: ''
+  });
+  const [editedPhotoDateYear, setEditedPhotoDateYear] = useState('');
+  const [editedPhotoDateMonth, setEditedPhotoDateMonth] = useState('');
+  const [editedPhotoDateDay, setEditedPhotoDateDay] = useState('');
+  const [editedPhotoTaggedPeople, setEditedPhotoTaggedPeople] = useState<{ value: string; label: string }[]>([]);
+  const [isSavingPhoto, setIsSavingPhoto] = useState(false);
 
   // Comment state
   const [selectedPhotoForComment, setSelectedPhotoForComment] = useState<PhotoData | null>(null);
@@ -777,6 +792,94 @@ const AdminDemoDataPage = () => {
     value: member.family_member_id,
     label: `${member.first_name} ${member.last_name}`
   }));
+
+  // Parse date components for editing
+  const parseDateComponents = (dateStr: string) => {
+    if (!dateStr) return { year: '', month: '', day: '' };
+    const parts = dateStr.split('-');
+    return {
+      year: parts[0] || '',
+      month: parts[1] || '',
+      day: parts[2] || ''
+    };
+  };
+
+  // Photo editing handlers
+  const handleEditPhoto = (photo: PhotoData) => {
+    setEditingPhoto(photo);
+    setEditedPhotoDescription(photo.metadata?.description || '');
+    setEditedPhotoLocation(photo.metadata?.location || {
+      country: '',
+      state: '',
+      city: '',
+      neighborhood: ''
+    });
+    const dateComponents = parseDateComponents(photo.metadata?.date_taken || '');
+    setEditedPhotoDateYear(dateComponents.year);
+    setEditedPhotoDateMonth(dateComponents.month);
+    setEditedPhotoDateDay(dateComponents.day);
+    setEditedPhotoTaggedPeople((photo.metadata?.people_tagged || []).map(person => ({
+      value: person.id,
+      label: person.name
+    })));
+  };
+
+  const handleCancelEditPhoto = () => {
+    setEditingPhoto(null);
+    setEditedPhotoDescription('');
+    setEditedPhotoLocation({ country: '', state: '', city: '', neighborhood: '' });
+    setEditedPhotoDateYear('');
+    setEditedPhotoDateMonth('');
+    setEditedPhotoDateDay('');
+    setEditedPhotoTaggedPeople([]);
+  };
+
+  const handleSavePhoto = async () => {
+    if (!editingPhoto) return;
+
+    setIsSavingPhoto(true);
+    try {
+      // Build date_taken string
+      let dateTaken = '';
+      if (editedPhotoDateYear) {
+        dateTaken = editedPhotoDateYear;
+        if (editedPhotoDateMonth) {
+          dateTaken += `-${editedPhotoDateMonth.padStart(2, '0')}`;
+          if (editedPhotoDateDay) {
+            dateTaken += `-${editedPhotoDateDay.padStart(2, '0')}`;
+          }
+        }
+      }
+
+      // Build tagged people array
+      const taggedPeople: TaggedPerson[] = editedPhotoTaggedPeople.map(user => ({
+        id: user.value,
+        name: user.label
+      }));
+
+      // Update photo data
+      const updatedPhoto: PhotoData = {
+        ...editingPhoto,
+        metadata: {
+          ...editingPhoto.metadata,
+          description: editedPhotoDescription,
+          location: editedPhotoLocation,
+          date_taken: dateTaken,
+          people_tagged: taggedPeople,
+        },
+      };
+
+      await savePhotoToDB(updatedPhoto);
+      showToast('Photo updated successfully', 'success');
+      handleCancelEditPhoto();
+      fetchPhotos();
+    } catch (error) {
+      console.error('Error saving photo:', error);
+      showToast('Error saving photo', 'error');
+    } finally {
+      setIsSavingPhoto(false);
+    }
+  };
 
   // Hobby management handlers
   const handleAddHobby = () => {
@@ -1502,6 +1605,189 @@ const AdminDemoDataPage = () => {
                 {isUploading ? 'Uploading...' : 'Upload Photo'}
               </button>
             </form>
+
+            {/* Edit Photo Section */}
+            {editingPhoto ? (
+              <div className="mt-8 border-t pt-6">
+                <h3 className="text-xl font-bold mb-4 text-gray-800">Edit Photo</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4 mb-4">
+                    <Image
+                      src={editingPhoto.url}
+                      alt={editingPhoto.metadata?.description || 'Photo'}
+                      width={200}
+                      height={200}
+                      className="w-32 h-32 object-cover rounded-lg"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-600">Editing: {editingPhoto.metadata?.description || 'Untitled'}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea
+                      value={editedPhotoDescription}
+                      onChange={(e) => setEditedPhotoDescription(e.target.value)}
+                      className="textarea textarea-bordered w-full"
+                      rows={3}
+                      placeholder="Enter photo description..."
+                      data-theme="light"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                      <input
+                        type="text"
+                        value={editedPhotoLocation.country}
+                        onChange={(e) => setEditedPhotoLocation({ ...editedPhotoLocation, country: e.target.value })}
+                        className="input input-bordered w-full"
+                        placeholder="Country"
+                        data-theme="light"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+                      <input
+                        type="text"
+                        value={editedPhotoLocation.state}
+                        onChange={(e) => setEditedPhotoLocation({ ...editedPhotoLocation, state: e.target.value })}
+                        className="input input-bordered w-full"
+                        placeholder="State"
+                        data-theme="light"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                      <input
+                        type="text"
+                        value={editedPhotoLocation.city}
+                        onChange={(e) => setEditedPhotoLocation({ ...editedPhotoLocation, city: e.target.value })}
+                        className="input input-bordered w-full"
+                        placeholder="City"
+                        data-theme="light"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Neighborhood</label>
+                      <input
+                        type="text"
+                        value={editedPhotoLocation.neighborhood}
+                        onChange={(e) => setEditedPhotoLocation({ ...editedPhotoLocation, neighborhood: e.target.value })}
+                        className="input input-bordered w-full"
+                        placeholder="Neighborhood"
+                        data-theme="light"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
+                      <input
+                        type="text"
+                        value={editedPhotoDateYear}
+                        onChange={(e) => setEditedPhotoDateYear(e.target.value)}
+                        className="input input-bordered w-full"
+                        placeholder="YYYY"
+                        data-theme="light"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Month</label>
+                      <input
+                        type="text"
+                        value={editedPhotoDateMonth}
+                        onChange={(e) => setEditedPhotoDateMonth(e.target.value)}
+                        className="input input-bordered w-full"
+                        placeholder="MM"
+                        data-theme="light"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Day</label>
+                      <input
+                        type="text"
+                        value={editedPhotoDateDay}
+                        onChange={(e) => setEditedPhotoDateDay(e.target.value)}
+                        className="input input-bordered w-full"
+                        placeholder="DD"
+                        data-theme="light"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Tag People</label>
+                    <Select
+                      isMulti
+                      options={taggingOptions}
+                      value={editedPhotoTaggedPeople}
+                      onChange={(options) => setEditedPhotoTaggedPeople(options as { value: string; label: string }[])}
+                      className="text-black"
+                      placeholder="Select people to tag..."
+                      data-theme="light"
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleSavePhoto}
+                      disabled={isSavingPhoto}
+                      className="btn btn-primary flex-1"
+                      data-theme="light"
+                    >
+                      {isSavingPhoto ? 'Saving...' : 'Save Changes'}
+                    </button>
+                    <button
+                      onClick={handleCancelEditPhoto}
+                      disabled={isSavingPhoto}
+                      className="btn btn-ghost"
+                      data-theme="light"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-8 border-t pt-6">
+                <h3 className="text-xl font-bold mb-4 text-gray-800">Existing Photos</h3>
+                {loading ? (
+                  <div className="text-center py-8">Loading photos...</div>
+                ) : photos.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">No photos uploaded yet</div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {photos.map((photo) => (
+                      <div
+                        key={photo.photo_id}
+                        className="relative border-2 rounded-lg overflow-hidden cursor-pointer hover:border-blue-500 transition-all"
+                      >
+                        <Image
+                          src={photo.url}
+                          alt={photo.metadata?.description || 'Photo'}
+                          width={200}
+                          height={200}
+                          className="w-full h-32 object-cover"
+                        />
+                        {photo.metadata?.description && (
+                          <p className="p-2 text-xs text-gray-600 truncate">{photo.metadata.description}</p>
+                        )}
+                        <button
+                          onClick={() => handleEditPhoto(photo)}
+                          className="absolute top-2 right-2 btn btn-sm btn-primary bg-blue-500 hover:bg-blue-600 border-0 text-white"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
