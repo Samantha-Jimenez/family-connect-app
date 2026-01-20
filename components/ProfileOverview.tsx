@@ -80,13 +80,13 @@ const ProfileOverview = ({ userId }: { userId: string }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* <RSVP userId={userId}/> */}
-      <div className="col-span-1 md:col-span-1 flex flex-col gap-4">
+      {/* <div className="col-span-1 md:col-span-1 flex flex-col gap-4"> */}
         <PetsCard userId={userId}/>
         <LanguagesCard userId={userId}/>
-      </div>
+      {/* </div> */}
 
       {/* ADD MORE COMPONENTS HERE */}
-      <div className="card bg-yellow-300/5 text-black shadow-lg p-4 col-span-1 md:col-span-1 md:col-start-2 h-min">
+      {/* <div className="card bg-yellow-300/5 text-black shadow-lg p-4 col-span-1 md:col-span-1 md:col-start-2 h-min">
         <h2 className="text-xl">Family Tree</h2>
         <p className="mt-2">Nuclear family connections</p>
         {loading ? (
@@ -110,7 +110,7 @@ const ProfileOverview = ({ userId }: { userId: string }) => {
         <Link href="/familytree">
           <button className="btn btn-sm btn-outline mt-4 bg-[#717568] text-white border-0 w-full hover:bg-[#717568]/80">Family Tree</button>
         </Link>
-      </div>
+      </div> */}
     </div>
   );
 };
