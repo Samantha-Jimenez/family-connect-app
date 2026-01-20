@@ -366,7 +366,9 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                 <>
                   <div className="text-gray-500 flex items-center source-sans-3">
                     <span className="icon-[mdi--map-marker] h-5 mr-2" />
-                    {userData.birth_city}, {userData.birth_state}
+                    {userData.birth_city && userData.birth_state 
+                      ? `${userData.birth_city}, ${userData.birth_state}`
+                      : userData.birth_city || userData.birth_state}
                   </div>
                 </>
               ) : ''}
@@ -394,7 +396,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                       <span className="icon-[mdi--map-marker] h-5 mr-2" />
                       {userData?.current_city && userData?.current_state 
                         ? `${userData.current_city}, ${userData.current_state}`
-                        : ''}
+                        : userData.current_city || userData.current_state}
                     </li>
                   ) : ""}
                 </ul>
