@@ -375,7 +375,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
             </div>
 
             <div className="mb-2 md:mb-0">
-            {userData?.email || userData?.phone_number || userData?.current_city || userData?.current_state ? (
+            {userData?.email || userData?.phone_number || ((userData?.current_city || userData?.current_state) && !userData?.death_date) ? (
               <>
                 <h2 className="text-xl text-black">Contact Information</h2>
                 <ul className="text-gray-500">
@@ -391,7 +391,7 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                       {formatPhoneNumber(userData.phone_number)}
                     </li>
                   ) : ""}
-                  {userData?.current_city || userData?.current_state ? (
+                  {(userData?.current_city || userData?.current_state) && !userData?.death_date ? (
                     <li className="flex items-center">
                       <span className="icon-[mdi--map-marker] h-5 mr-2" />
                       {userData?.current_city && userData?.current_state 
@@ -410,6 +410,14 @@ export default function ProfileUserInfoCard({ userId }: { userId: string }) {
                       <span className="icon-[mdi--date-range] h-5 mr-2" />
                       {formatBirthday(userData.death_date)}
                     </div>
+                    {(userData?.current_city || userData?.current_state) && (
+                      <div className="text-gray-500 flex items-center source-sans-3">
+                        <span className="icon-[mdi--map-marker] h-5 mr-2" />
+                        {userData?.current_city && userData?.current_state 
+                          ? `${userData.current_city}, ${userData.current_state}`
+                          : userData.current_city || userData.current_state}
+                      </div>
+                    )}
                   </>
                 ) : ''}
               </div>
