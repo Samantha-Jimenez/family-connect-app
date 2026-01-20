@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState, useRef, ChangeEvent } from 'react';
 import { useAuthenticator } from "@aws-amplify/ui-react";
-import { getAllFamilyMembers, adminSavePhotoAsDemoMember, addCommentToPhoto, getProfilePhotoById, PhotoData, FamilyMember, adminUpdateMemberHobbies, getAllHobbies, addCommentToHobby, getCommentsForHobby, getUserData, adminUpdateMemberSocialMedia, adminUpdateMemberPets, adminUpdateMemberLanguages, saveEventToDynamoDB, CalendarEventData, getEventsFromDynamoDB, saveRSVPToDynamoDB, deleteRSVPFromDynamoDB, getEventRSVPs, getUserNameById, deleteEventFromDynamoDB, sendEventCancellationNotifications, adminCreateAlbumAsDemoMember, getUserAlbums, AlbumData, adminAddPhotoToAlbum, savePhotoToDB, TaggedPerson } from "@/hooks/dynamoDB";
+import { getAllFamilyMembers, adminSavePhotoAsDemoMember, addCommentToPhoto, getProfilePhotoById, PhotoData, FamilyMember, adminUpdateMemberHobbies, getAllHobbies, addCommentToHobby, getCommentsForHobby, getUserData, adminUpdateMemberSocialMedia, adminUpdateMemberPets, adminUpdateMemberLanguages, saveEventToDynamoDB, CalendarEventData, getEventsFromDynamoDB, saveRSVPToDynamoDB, deleteRSVPFromDynamoDB, getEventRSVPs, getUserNameById, deleteEventFromDynamoDB, sendEventCancellationNotifications, adminCreateAlbumAsDemoMember, getUserAlbums, AlbumData, adminAddPhotoToAlbum, savePhotoToDB, TaggedPerson, updateAlbum, getPhotosByAlbum } from "@/hooks/dynamoDB";
 import { DEMO_FAMILY_GROUP, DEMO_USER_IDS } from '@/utils/demoConfig';
 import { useToast } from '@/context/ToastContext';
 import Select from 'react-select';
@@ -331,6 +331,20 @@ const AdminDemoDataPage = () => {
     }
   };
 
+  const fetchAlbumPhotos = async (albumId: string) => {
+    setIsLoadingAlbumPhotos(true);
+    try {
+      const photos = await getPhotosByAlbum(albumId);
+      setAlbumPhotos(photos);
+    } catch (error) {
+      console.error('Error fetching album photos:', error);
+      showToast('Error fetching album photos', 'error');
+      setAlbumPhotos([]);
+    } finally {
+      setIsLoadingAlbumPhotos(false);
+    }
+  };
+
   const handleAddPhotosToAlbum = async () => {
     if (!selectedAlbumForPhotos || selectedPhotosForAlbum.length === 0) {
       showToast('Please select an album and at least one photo', 'error');
@@ -358,6 +372,42 @@ const AdminDemoDataPage = () => {
         ? prev.filter(id => id !== photoId)
         : [...prev, photoId]
     );
+  };
+
+  const handleSaveCoverPhoto = async () => {
+    if (!selectedAlbumForPhotos || !selectedCoverPhotoId) {
+      showToast('Please select a cover photo', 'error');
+      return;
+    }
+
+    setIsSavingCoverPhoto(true);
+    try {
+      await updateAlbum(selectedAlbumForPhotos.album_id, {
+        cover_photo_id: selectedCoverPhotoId
+      });
+      
+      // Update the album in the local state
+      setSelectedAlbumForPhotos({
+        ...selectedAlbumForPhotos,
+        cover_photo_id: selectedCoverPhotoId
+      });
+      
+      // Update the album in the albums list
+      setDemoMemberAlbums(prevAlbums =>
+        prevAlbums.map(album =>
+          album.album_id === selectedAlbumForPhotos.album_id
+            ? { ...album, cover_photo_id: selectedCoverPhotoId }
+            : album
+        )
+      );
+      
+      showToast('Cover photo updated successfully', 'success');
+    } catch (error) {
+      console.error('Error saving cover photo:', error);
+      showToast('Error saving cover photo', 'error');
+    } finally {
+      setIsSavingCoverPhoto(false);
+    }
   };
 
   const fetchMemberSocialMedia = async () => {
@@ -532,6 +582,21 @@ const AdminDemoDataPage = () => {
   const [selectedPhotosForAlbum, setSelectedPhotosForAlbum] = useState<string[]>([]);
   const [isAddingPhotosToAlbum, setIsAddingPhotosToAlbum] = useState(false);
   const [isLoadingAlbums, setIsLoadingAlbums] = useState(false);
+  const [albumPhotos, setAlbumPhotos] = useState<PhotoData[]>([]);
+  const [isLoadingAlbumPhotos, setIsLoadingAlbumPhotos] = useState(false);
+  const [selectedCoverPhotoId, setSelectedCoverPhotoId] = useState<string | null>(null);
+  const [isSavingCoverPhoto, setIsSavingCoverPhoto] = useState(false);
+
+  // Fetch album photos when an album is selected
+  useEffect(() => {
+    if (selectedAlbumForPhotos) {
+      fetchAlbumPhotos(selectedAlbumForPhotos.album_id);
+      setSelectedCoverPhotoId(selectedAlbumForPhotos.cover_photo_id || null);
+    } else {
+      setAlbumPhotos([]);
+      setSelectedCoverPhotoId(null);
+    }
+  }, [selectedAlbumForPhotos]);
 
   const handleDeleteEvent = async () => {
     if (!eventToDelete || !eventToDelete.id) {
@@ -2864,6 +2929,72 @@ const AdminDemoDataPage = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* Set Cover Photo Section */}
+                  {albumPhotos.length > 0 && (
+                    <div className="border-t pt-6 mt-6">
+                      <h3 className="text-lg font-bold mb-4 text-gray-800">Set Cover Photo</h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Select a photo from the album to use as the cover image. Only one photo can be selected as the cover.
+                      </p>
+                      {isLoadingAlbumPhotos ? (
+                        <div className="text-center py-4">Loading album photos...</div>
+                      ) : (
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {albumPhotos.map((photo) => {
+                              const isCoverPhoto = selectedCoverPhotoId === photo.photo_id;
+                              return (
+                                <div
+                                  key={photo.photo_id}
+                                  className={`relative border-2 rounded-lg overflow-hidden cursor-pointer transition-all ${
+                                    isCoverPhoto
+                                      ? 'border-blue-500 ring-2 ring-blue-300'
+                                      : 'border-gray-300 hover:border-gray-400'
+                                  }`}
+                                  onClick={() => setSelectedCoverPhotoId(photo.photo_id)}
+                                >
+                                  <Image
+                                    src={photo.url}
+                                    alt={photo.metadata?.description || 'Photo'}
+                                    width={200}
+                                    height={200}
+                                    className="w-full h-32 object-cover"
+                                  />
+                                  {isCoverPhoto && (
+                                    <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                                      ✓
+                                    </div>
+                                  )}
+                                  {photo.metadata?.description && (
+                                    <p className="p-2 text-xs text-gray-600 truncate">{photo.metadata.description}</p>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {selectedCoverPhotoId && (
+                            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                              <span className="text-sm font-medium text-blue-800">
+                                {selectedCoverPhotoId === selectedAlbumForPhotos?.cover_photo_id
+                                  ? 'Cover photo is already set to this photo'
+                                  : 'Ready to set as cover photo'}
+                              </span>
+                              {selectedCoverPhotoId !== selectedAlbumForPhotos?.cover_photo_id && (
+                                <button
+                                  onClick={handleSaveCoverPhoto}
+                                  disabled={isSavingCoverPhoto}
+                                  className="btn btn-sm bg-blue-500 border-0 text-white hover:bg-blue-600"
+                                >
+                                  {isSavingCoverPhoto ? 'Saving...' : 'Set as Cover Photo'}
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </>
               )}
             </div>
