@@ -34,13 +34,30 @@ export default function TaggedPhotosCard({ userId }: { userId: string }) {
         throw new Error("User not authenticated");
       }
 
-      const response = await fetch(`/api/photos?userId=${encodeURIComponent(userId)}&taggedUserId=${encodeURIComponent(userId)}`);
+      // Get the current user's Cognito ID for family group filtering
+      // The userId prop is a family_member_id, but we need the Cognito user ID for the API's userId parameter
+      let currentUserCognitoId = '';
+      try {
+        const user = await getCurrentUser();
+        currentUserCognitoId = user?.userId || '';
+      } catch (error) {
+        console.error('Error getting current user:', error);
+      }
+
+      // Use the current user's Cognito ID for userId (family group filtering)
+      // Use the passed userId (family_member_id) for taggedUserId (to find photos where this member is tagged)
+      const url = `/api/photos?userId=${encodeURIComponent(currentUserCognitoId)}&taggedUserId=${encodeURIComponent(userId)}`;
+      console.log('🔍 TaggedPhotosCard - Fetching tagged photos for family_member_id:', userId);
+      console.log('🔍 TaggedPhotosCard - Using current user Cognito ID for family group:', currentUserCognitoId);
+      console.log('🔍 TaggedPhotosCard - API URL:', url);
+      
+      const response = await fetch(url);
       const data = await response.json();
-      // Filter photos where the current user is tagged
-      const filteredPhotos = data.photos.filter((photo: PhotoData) => {
-        return photo.metadata?.people_tagged?.some((person: TaggedPerson) => person.id === userId);
-      });
-      setTaggedPhotos(filteredPhotos);
+      
+      console.log('🔍 TaggedPhotosCard - API response photos count:', data.photos?.length || 0);
+      
+      // The API already filters photos by taggedUserId, so we can use the photos directly
+      setTaggedPhotos(data.photos || []);
     } catch (error) {
       console.error("Error fetching tagged photos:", error);
     } finally {

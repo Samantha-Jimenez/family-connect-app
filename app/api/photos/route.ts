@@ -237,16 +237,20 @@ export async function GET(request: Request) {
     // Filter by taggedUserId if provided (check if the user is in people_tagged array)
     let finalPhotos = validPhotos;
     if (taggedUserId) {
+      console.log(`🔍 Filtering by taggedUserId: ${taggedUserId}, before filtering: ${validPhotos.length} photos`);
       finalPhotos = validPhotos.filter(photo => {
-        const isTagged = photo.metadata?.people_tagged?.some(
+        const peopleTagged = photo.metadata?.people_tagged || [];
+        const isTagged = peopleTagged.some(
           (person: { id: string; name: string }) => person.id === taggedUserId
         );
         if (!isTagged) {
-          console.log(`🚫 Filtered out photo ${photo.photo_id} - user ${taggedUserId} not in people_tagged`);
+          console.log(`🚫 Filtered out photo ${photo.photo_id} - user ${taggedUserId} not in people_tagged. Tagged people:`, peopleTagged.map((p: any) => p.id));
         }
         return isTagged;
       });
       console.log(`📸 Photos after filtering by taggedUserId (${taggedUserId}):`, finalPhotos.length);
+    } else {
+      console.log('⚠️ No taggedUserId provided, skipping tagged user filter');
     }
     
     return NextResponse.json({ photos: finalPhotos });
