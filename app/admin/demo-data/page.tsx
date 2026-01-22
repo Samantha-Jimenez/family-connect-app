@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState, useRef, ChangeEvent } from 'react';
 import { useAuthenticator } from "@aws-amplify/ui-react";
-import { getAllFamilyMembers, adminSavePhotoAsDemoMember, addCommentToPhoto, getProfilePhotoById, PhotoData, FamilyMember, adminUpdateMemberHobbies, getAllHobbies, addCommentToHobby, getCommentsForHobby, getUserData, adminUpdateMemberSocialMedia, adminUpdateMemberPets, adminUpdateMemberLanguages, saveEventToDynamoDB, CalendarEventData, getEventsFromDynamoDB, saveRSVPToDynamoDB, deleteRSVPFromDynamoDB, getEventRSVPs, getUserNameById, deleteEventFromDynamoDB, sendEventCancellationNotifications, adminCreateAlbumAsDemoMember, getUserAlbums, AlbumData, adminAddPhotoToAlbum, savePhotoToDB, TaggedPerson, updateAlbum, getPhotosByAlbum, addCommentToMember, getCommentsForMember } from "@/hooks/dynamoDB";
+import { getAllFamilyMembers, adminSavePhotoAsDemoMember, addCommentToPhoto, getProfilePhotoById, PhotoData, FamilyMember, adminUpdateMemberHobbies, getAllHobbies, addCommentToHobby, getCommentsForHobby, getUserData, adminUpdateMemberSocialMedia, adminUpdateMemberPets, adminUpdateMemberLanguages, saveEventToDynamoDB, CalendarEventData, getEventsFromDynamoDB, saveRSVPToDynamoDB, deleteRSVPFromDynamoDB, getEventRSVPs, getUserNameById, deleteEventFromDynamoDB, sendEventCancellationNotifications, adminCreateAlbumAsDemoMember, getUserAlbums, AlbumData, adminAddPhotoToAlbum, savePhotoToDB, TaggedPerson, updateAlbum, getPhotosByAlbum, addCommentToMember, getCommentsForMember, editCommentInMember, deleteCommentFromMember } from "@/hooks/dynamoDB";
 import { DEMO_FAMILY_GROUP, DEMO_USER_IDS } from '@/utils/demoConfig';
 import { useToast } from '@/context/ToastContext';
 import Select from 'react-select';
@@ -239,6 +239,8 @@ const AdminDemoDataPage = () => {
   const [memorialComments, setMemorialComments] = useState<{ text: string; author: string; userId: string; timestamp: string; profilePhoto: string }[]>([]);
   const [isLoadingMemorialComments, setIsLoadingMemorialComments] = useState(false);
   const [isAddingMemorialComment, setIsAddingMemorialComment] = useState(false);
+  const [editingMemorialCommentIndex, setEditingMemorialCommentIndex] = useState<number | null>(null);
+  const [editedMemorialCommentText, setEditedMemorialCommentText] = useState('');
 
   useEffect(() => {
     if (user && user.userId === "f16b1510-0001-705f-8680-28689883e706") {
@@ -541,6 +543,79 @@ const AdminDemoDataPage = () => {
       showToast('Error adding memorial comment', 'error');
     } finally {
       setIsAddingMemorialComment(false);
+    }
+  };
+
+  const handleEditMemorialComment = async (index: number) => {
+    if (!editedMemorialCommentText.trim() || !selectedDeceasedMember) {
+      showToast('Please enter a comment to edit', 'error');
+      return;
+    }
+
+    const comment = memorialComments[index];
+    if (!comment) {
+      showToast('Comment not found', 'error');
+      return;
+    }
+
+    try {
+      // Map UI index (newest first) to database index (oldest first)
+      // UI index 0 (newest) = database index (memorialComments.length - 1 - index)
+      const dbIndex = memorialComments.length - 1 - index;
+      // Use the comment's original userId to match what's in the database
+      await editCommentInMember(
+        selectedDeceasedMember.family_member_id,
+        comment.userId,
+        dbIndex,
+        editedMemorialCommentText.trim()
+      );
+      
+      // Update the comment in local state
+      const updatedComments = [...memorialComments];
+      updatedComments[index].text = editedMemorialCommentText.trim();
+      setMemorialComments(updatedComments);
+      
+      setEditingMemorialCommentIndex(null);
+      setEditedMemorialCommentText('');
+      showToast('Memorial comment updated successfully', 'success');
+    } catch (error) {
+      console.error('Error editing memorial comment:', error);
+      showToast('Error editing memorial comment', 'error');
+    }
+  };
+
+  const handleDeleteMemorialComment = async (index: number) => {
+    if (!selectedDeceasedMember) {
+      return;
+    }
+
+    const comment = memorialComments[index];
+    if (!comment) {
+      showToast('Comment not found', 'error');
+      return;
+    }
+
+    const confirmDelete = window.confirm("Are you sure you want to delete this memorial comment?");
+    if (!confirmDelete) {
+      return;
+    }
+
+    try {
+      // Map UI index (newest first) to database index (oldest first)
+      const dbIndex = memorialComments.length - 1 - index;
+      // Use the comment's original userId to match what's in the database
+      await deleteCommentFromMember(
+        selectedDeceasedMember.family_member_id,
+        comment.userId,
+        dbIndex
+      );
+      
+      // Remove the comment from local state
+      setMemorialComments(memorialComments.filter((_, i) => i !== index));
+      showToast('Memorial comment deleted successfully', 'success');
+    } catch (error) {
+      console.error('Error deleting memorial comment:', error);
+      showToast('Error deleting memorial comment', 'error');
     }
   };
 
@@ -3180,38 +3255,85 @@ const AdminDemoDataPage = () => {
                           No memorial comments yet. Be the first to share a memory.
                         </div>
                       ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {memorialComments.map((comment, index) => (
-                            <div key={index} className="bg-[#E8D4B8]/10 text-black rounded-lg shadow-md p-4">
-                              <div className="flex items-start gap-3 mb-2">
-                                {comment.profilePhoto ? (
-                                  <Image
-                                    src={getFullImageUrl(comment.profilePhoto) || '/fallback-image.jpg'}
-                                    alt="Commenter Profile Photo"
-                                    width={50}
-                                    height={50}
-                                    className="object-cover rounded-full flex-shrink-0 w-[50px] h-[50px]"
-                                  />
-                                ) : (
-                                  <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
-                                    <span className="icon-[mdi--account] text-xl text-gray-400" />
-                                  </div>
-                                )}
-                                <div className="flex-grow min-w-0">
-                                  <h4 className="text-base font-semibold text-gray-900">{comment.author}</h4>
-                                  <p className="text-xs text-gray-500">
-                                    {new Date(comment.timestamp).toLocaleDateString('en-US', {
-                                      year: 'numeric',
-                                      month: 'long',
-                                      day: 'numeric'
-                                    })}
-                                  </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {memorialComments.map((comment, index) => (
+                          <div key={index} className="bg-[#E8D4B8]/10 text-black rounded-lg shadow-md p-4">
+                            {editingMemorialCommentIndex === index ? (
+                              <div className="space-y-2">
+                                <textarea
+                                  value={editedMemorialCommentText}
+                                  onChange={(e) => setEditedMemorialCommentText(e.target.value)}
+                                  className="w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none bg-gray-200 placeholder:text-gray-400"
+                                  rows={4}
+                                />
+                                <div className="flex gap-2 justify-end">
+                                  <button
+                                    onClick={() => handleEditMemorialComment(index)}
+                                    className="btn btn-sm bg-green-600 text-white hover:bg-green-700 border-0"
+                                  >
+                                    Save
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingMemorialCommentIndex(null);
+                                      setEditedMemorialCommentText('');
+                                    }}
+                                    className="btn btn-sm bg-gray-500 text-white hover:bg-gray-600 border-0"
+                                  >
+                                    Cancel
+                                  </button>
                                 </div>
                               </div>
-                              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap mt-2">{comment.text}</p>
-                            </div>
-                          ))}
-                        </div>
+                            ) : (
+                              <>
+                                <div className="flex items-start gap-3 mb-2">
+                                  {comment.profilePhoto ? (
+                                    <Image
+                                      src={getFullImageUrl(comment.profilePhoto) || '/fallback-image.jpg'}
+                                      alt="Commenter Profile Photo"
+                                      width={50}
+                                      height={50}
+                                      className="object-cover rounded-full flex-shrink-0 w-[50px] h-[50px]"
+                                    />
+                                  ) : (
+                                    <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                                      <span className="icon-[mdi--account] text-xl text-gray-400" />
+                                    </div>
+                                  )}
+                                  <div className="flex-grow min-w-0">
+                                    <h4 className="text-base font-semibold text-gray-900">{comment.author}</h4>
+                                    <p className="text-xs text-gray-500">
+                                      {new Date(comment.timestamp).toLocaleDateString('en-US', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric'
+                                      })}
+                                    </p>
+                                  </div>
+                                </div>
+                                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap mt-2">{comment.text}</p>
+                                <div className="flex gap-2 justify-end mt-3">
+                                  <button
+                                    onClick={() => {
+                                      setEditingMemorialCommentIndex(index);
+                                      setEditedMemorialCommentText(comment.text);
+                                    }}
+                                    className="text-blue-500 hover:underline text-sm"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteMemorialComment(index)}
+                                    className="text-red-500 hover:underline text-sm"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                       )}
                     </div>
                   </>
