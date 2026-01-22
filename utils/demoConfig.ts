@@ -17,6 +17,9 @@ export const DEMO_USER_IDS: string[] = demoUserIdsEnv
 // Demo family group identifier
 export const DEMO_FAMILY_GROUP = 'demo';
 
+// Real family group identifier (empty string for real/non-demo users)
+export const REAL_FAMILY_GROUP = '';
+
 /**
  * Check if a user is a demo user
  */

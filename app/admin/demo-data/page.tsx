@@ -272,17 +272,14 @@ const AdminDemoDataPage = () => {
         return;
       }
 
-      console.log('📸 Fetching photos using demo user ID:', demoUserId);
       const response = await fetch('/api/photos?userId=' + demoUserId);
       const data = await response.json();
-      console.log('📸 Photos API response:', data.photos?.length || 0, 'photos');
       
       if (data.photos) {
         // Filter to only demo photos (should already be filtered by API, but double-check)
         const demoPhotos = data.photos.filter((photo: PhotoData) => 
           photo.family_group === DEMO_FAMILY_GROUP
         );
-        console.log('📸 Demo photos after filtering:', demoPhotos.length);
         setPhotos(demoPhotos);
       } else {
         setPhotos([]);

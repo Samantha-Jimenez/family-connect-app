@@ -94,12 +94,8 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
         const familyMembers = await getAllFamilyMembers(user.userId);
         const familyMemberIds = new Set(familyMembers.map(m => m.family_member_id));
         
-        console.log('👤 Current user:', user.userId, 'Family group:', userFamilyGroup, 'Is demo:', isUserDemo);
-        console.log('👥 Family member IDs for current user:', Array.from(familyMemberIds));
-        
         // Generate birthday and memorial events from family members
         const generatedEvents: CalendarEvent[] = [];
-        console.log('👥 Generating birthday/memorial events from', familyMembers.length, 'family members');
         
         familyMembers.forEach((member: FamilyMember) => {
           // Get the member's family group (default to 'real' for backward compatibility)
@@ -109,11 +105,8 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
           // This is a safety check in case getAllFamilyMembers didn't filter correctly
           const isMemberDemo = memberFamilyGroup === DEMO_FAMILY_GROUP;
           if (isUserDemo !== isMemberDemo) {
-            console.log(`⚠️ Skipping ${member.first_name} ${member.last_name} - member group (${memberFamilyGroup}) doesn't match user group (${isUserDemo ? 'demo' : 'real'})`);
             return; // Skip this member
           }
-          
-          console.log(`✅ Generating events for ${member.first_name} ${member.last_name} (group: ${memberFamilyGroup})`);
           
           // Add birthday events - create events starting from 2025 onward
           if (member.birthday) {
@@ -190,10 +183,7 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
           }
         });
         
-        console.log('🎂 Generated', generatedEvents.length, 'birthday/memorial events from family members');
-        
         // Load events from DynamoDB first (for cross-device persistence) - do this in parallel with localStorage
-        console.log('📅 Loading events from DynamoDB...');
         const [dynamoEvents, savedEvents] = await Promise.all([
           getEventsFromDynamoDB(user.userId).catch(err => {
             console.error('❌ Error loading from DynamoDB:', err);
@@ -202,11 +192,8 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
           Promise.resolve(localStorage.getItem('calendarEvents'))
         ]);
         
-        console.log('📅 Loaded', dynamoEvents.length, 'events from DynamoDB');
-        
         // Parse localStorage events (for backward compatibility and offline support)
         const localEvents = savedEvents ? JSON.parse(savedEvents) : [];
-        console.log('📅 Loaded', localEvents.length, 'events from localStorage');
         
         // Merge events: DynamoDB takes precedence, then localStorage
         // Use a Map to deduplicate by event ID
@@ -306,7 +293,6 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
         });
         
         const allEvents = Array.from(eventsMap.values());
-        console.log('📅 Total merged events (after filtering localStorage and adding generated events):', allEvents.length);
         
         // Filter events by family group - STRICT filtering
         const filteredEvents = allEvents.filter((event: CalendarEvent) => {
@@ -370,8 +356,6 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
             return !isEventUserIdDemo;
           }
         });
-        
-        console.log('📅 Filtered events:', filteredEvents.length, 'events');
         
         // Update existing events with new color scheme
         const updatedEvents = filteredEvents.map((event: CalendarEvent) => {

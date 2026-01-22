@@ -47,14 +47,9 @@ export default function TaggedPhotosCard({ userId }: { userId: string }) {
       // Use the current user's Cognito ID for userId (family group filtering)
       // Use the passed userId (family_member_id) for taggedUserId (to find photos where this member is tagged)
       const url = `/api/photos?userId=${encodeURIComponent(currentUserCognitoId)}&taggedUserId=${encodeURIComponent(userId)}`;
-      console.log('🔍 TaggedPhotosCard - Fetching tagged photos for family_member_id:', userId);
-      console.log('🔍 TaggedPhotosCard - Using current user Cognito ID for family group:', currentUserCognitoId);
-      console.log('🔍 TaggedPhotosCard - API URL:', url);
       
       const response = await fetch(url);
       const data = await response.json();
-      
-      console.log('🔍 TaggedPhotosCard - API response photos count:', data.photos?.length || 0);
       
       // The API already filters photos by taggedUserId, so we can use the photos directly
       setTaggedPhotos(data.photos || []);

@@ -64,13 +64,11 @@ async function getPreferredName(userId: string): Promise<string> {
 // Helper function to get family member IDs for a user's family group
 async function getFamilyMemberIds(userId: string | null): Promise<string[]> {
   if (!userId) {
-    console.log('⚠️ getFamilyMemberIds: No userId provided');
     return [];
   }
   
   try {
     const familyGroup = getUserFamilyGroup(userId);
-    console.log(`🔍 getFamilyMemberIds - userId: ${userId}, familyGroup: ${familyGroup}`);
     
     const params = {
       TableName: 'Family',
@@ -80,11 +78,8 @@ async function getFamilyMemberIds(userId: string | null): Promise<string[]> {
     const response = await dynamoDB.send(command);
     
     if (!response.Items) {
-      console.log('⚠️ getFamilyMemberIds: No items found in Family table');
       return [];
     }
-    
-    console.log(`🔍 getFamilyMemberIds - Total family members in DB: ${response.Items.length}`);
     
     // Filter by family group and return IDs
     const filteredMembers = response.Items
@@ -95,15 +90,10 @@ async function getFamilyMemberIds(userId: string | null): Promise<string[]> {
       }))
       .filter(member => {
         const memberGroup = normalizeFamilyGroup(member.family_group);
-        const matches = memberGroup === familyGroup;
-        if (!matches) {
-          console.log(`🚫 Filtered out family member: ${member.name} (group: ${memberGroup}, expected: ${familyGroup})`);
-        }
-        return matches;
+        return memberGroup === familyGroup;
       });
     
     const memberIds = filteredMembers.map(member => member.id);
-    console.log(`✅ getFamilyMemberIds - Found ${memberIds.length} family members in group '${familyGroup}':`, memberIds);
     
     return memberIds;
   } catch (error) {
@@ -121,13 +111,8 @@ export async function GET(request: Request) {
     // Get family member IDs for the current user's family group
     const familyMemberIds = currentUserId ? await getFamilyMemberIds(currentUserId) : [];
     
-    console.log('📸 Photos API - currentUserId:', currentUserId);
-    console.log('📸 Photos API - familyMemberIds:', familyMemberIds);
-    console.log('📸 Photos API - familyMemberIds.length:', familyMemberIds.length);
-    
     // If we have a userId but no family members found, return empty (user has no family group data)
     if (currentUserId && familyMemberIds.length === 0) {
-      console.log('⚠️ User has no family members in their family group, returning empty photos');
       return NextResponse.json({ photos: [] });
     }
     
@@ -146,8 +131,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ photos: [] });
     }
     
-    console.log('📸 Total photos before filtering:', response.Items.length);
-    
     // Filter by family group - only show photos from the user's family group
     // Primary check: family_group field on photo must match user's family group
     // Secondary check: if no family_group set, check if uploaded_by matches family member IDs (backward compatibility)
@@ -159,26 +142,16 @@ export async function GET(request: Request) {
           
           // Primary check: if photo has family_group, it must match user's family group
           if (photoFamilyGroup) {
-            const matches = photoFamilyGroup === userFamilyGroup;
-            if (!matches) {
-              console.log(`🚫 Filtered out photo - photo_group: ${photoFamilyGroup}, user_group: ${userFamilyGroup}`);
-            }
-            return matches;
+            return photoFamilyGroup === userFamilyGroup;
           }
           
           // Secondary check: if no family_group set (old photos), check if uploaded_by is in family member IDs
           // This is for backward compatibility with photos uploaded before family_group was added
-          const uploadedByMatches = familyMemberIds.length > 0 && familyMemberIds.includes(uploadedBy);
-          if (!uploadedByMatches) {
-            console.log(`🚫 Filtered out photo (no family_group, uploaded_by not in family): ${uploadedBy}`);
-          }
-          return uploadedByMatches;
+          return familyMemberIds.length > 0 && familyMemberIds.includes(uploadedBy);
         })
       : currentUserId 
         ? [] // If userId provided but no family group determined, return empty
         : response.Items; // If no userId, return all (backward compatibility, should be avoided)
-    
-    console.log('📸 Photos after filtering by family_group:', filteredItems.length);
 
     const bucketName = process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME;
     
@@ -237,20 +210,12 @@ export async function GET(request: Request) {
     // Filter by taggedUserId if provided (check if the user is in people_tagged array)
     let finalPhotos = validPhotos;
     if (taggedUserId) {
-      console.log(`🔍 Filtering by taggedUserId: ${taggedUserId}, before filtering: ${validPhotos.length} photos`);
       finalPhotos = validPhotos.filter(photo => {
         const peopleTagged = photo.metadata?.people_tagged || [];
-        const isTagged = peopleTagged.some(
+        return peopleTagged.some(
           (person: { id: string; name: string }) => person.id === taggedUserId
         );
-        if (!isTagged) {
-          console.log(`🚫 Filtered out photo ${photo.photo_id} - user ${taggedUserId} not in people_tagged. Tagged people:`, peopleTagged.map((p: any) => p.id));
-        }
-        return isTagged;
       });
-      console.log(`📸 Photos after filtering by taggedUserId (${taggedUserId}):`, finalPhotos.length);
-    } else {
-      console.log('⚠️ No taggedUserId provided, skipping tagged user filter');
     }
     
     return NextResponse.json({ photos: finalPhotos });

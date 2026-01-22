@@ -194,20 +194,8 @@ export default function EnhancedRelationshipForm({ onRelationshipCreated, showTo
 
     setLoading(true);
     try {
-      console.log('Form submission debug:', {
-        selectedPersonA,
-        selectedPersonB,
-        selectedRelationshipType,
-        genderSpecificRelationship,
-        needsGenderSpecific: needsGenderSpecificOptions(selectedRelationshipType)
-      });
-
       // For gender-specific relationships, create both directions with appropriate types
       if (needsGenderSpecificOptions(selectedRelationshipType)) {
-        console.log('Creating gender-specific relationships:', {
-          relationshipA: `${selectedPersonA} -> ${selectedPersonB}: ${selectedRelationshipType}`,
-          relationshipB: `${selectedPersonB} -> ${selectedPersonA}: ${genderSpecificRelationship}`
-        });
 
         // Create relationship A -> B with the selected type
         await addFamilyRelationship(selectedPersonA, selectedPersonB, selectedRelationshipType, {
@@ -453,7 +441,6 @@ export default function EnhancedRelationshipForm({ onRelationshipCreated, showTo
                     value={option}
                     checked={genderSpecificRelationship === option}
                     onChange={(e) => {
-                      console.log('Gender-specific relationship selected:', e.target.value);
                       setGenderSpecificRelationship(e.target.value);
                     }}
                     className="mr-2"

@@ -223,7 +223,6 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     try {
       if (albumId) {
         await addPhotoToAlbum(photo.photo_id, albumId);
-        console.log('Photo added to album successfully!');
         showToast('Photo added to album!', 'success');
       }
     } catch (error) {
@@ -275,7 +274,6 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
         },
       };
       await savePhotoToDB(updatedPhoto);
-      console.log('Photo data saved successfully!');
       setIsEditing(false);
       showToast('Changes saved successfully!', 'success');
       if (onPhotoUpdated) {
@@ -290,7 +288,6 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const handleDelete = async () => {
     try {
       await deletePhotoById(photo.photo_id);
-      console.log('Photo deleted successfully!');
       showToast('Photo deleted successfully!', 'success', {
         position: 'top-right',
       });

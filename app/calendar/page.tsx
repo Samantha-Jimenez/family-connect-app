@@ -136,9 +136,7 @@ export default function Calendar() {
       setEvents(currentEvents => {
         const updatedEvents = [...currentEvents, newEvent];
         // Immediately save to localStorage for quick access
-        console.log('💾 Saving new event to localStorage:', newEvent.title, 'userId:', newEvent.userId);
         localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
-        console.log('✅ Saved', updatedEvents.length, 'events to localStorage');
         return updatedEvents;
       });
 
@@ -160,7 +158,6 @@ export default function Calendar() {
           category: newEvent.extendedProps?.category,
           rrule: (newEvent.extendedProps as any)?.rrule
         }, user?.userId);
-        console.log('✅ Event saved to DynamoDB for cross-device persistence');
       } catch (error) {
         console.error('❌ Error saving event to DynamoDB:', error);
         // Don't fail the event creation if DynamoDB save fails
@@ -257,7 +254,6 @@ export default function Calendar() {
         category: selectedEvent.extendedProps?.category,
         rrule: selectedEvent.extendedProps?.rrule
       }, user?.userId);
-      console.log('✅ Event updated in DynamoDB');
     } catch (error) {
       console.error('❌ Error updating event in DynamoDB:', error);
       // Don't block edit if DynamoDB update fails
@@ -283,7 +279,6 @@ export default function Calendar() {
     // Delete from DynamoDB
     try {
       await deleteEventFromDynamoDB(eventId);
-      console.log('✅ Event deleted from DynamoDB');
     } catch (error) {
       console.error('❌ Error deleting event from DynamoDB:', error);
       // Don't block deletion if DynamoDB delete fails
@@ -372,10 +367,6 @@ export default function Calendar() {
           );
         }}
         eventClick={handleEventClick}
-        eventMouseEnter={(info) => {
-          console.log('Event mouse entered:', info.event.title, info.event.extendedProps);
-          // Show tooltip or additional info on hover
-        }}
         timeZone="local"
       />
       <EventModal

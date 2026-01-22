@@ -36,8 +36,6 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
   const [photoUploaderName, setPhotoUploaderName] = useState<string | null>(null);
   const [isEditingPhoto, setIsEditingPhoto] = useState<boolean>(false);
 
-  console.log(albums.map((album) => album.cover_photo_id));
-
   useEffect(() => {
     const fetchAlbums = async () => {
       if (userId) {
@@ -109,7 +107,6 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
     try {
       const newAlbumId = await createAlbum(albumName, albumDescription);
       setAlbumId(newAlbumId);
-      console.log('Album created with ID:', newAlbumId);
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000); // Hide toast after 3 seconds
       // Refresh albums list
@@ -133,7 +130,6 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
   const handleAddPhotoToAlbum = async () => {
     try {
       await addPhotoToAlbum(photoId, albumId);
-      console.log('Photo added to album successfully!');
     } catch (error) {
       console.error('Error adding photo to album:', error);
     }

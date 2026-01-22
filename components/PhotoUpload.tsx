@@ -141,7 +141,6 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
       }
       
       const result = await response.json();
-      console.log('Upload result:', result); // Debug log
       
       if (!result.key) {
         console.error('Upload response missing key:', result);
@@ -149,7 +148,6 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
       }
 
       const s3Url = `https://${process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_PROJECT_REGION}.amazonaws.com/${result.key}`;
-      console.log('Generated S3 URL:', s3Url); // Debug log
 
       // Save to DynamoDB
       // Note: family_group will be automatically determined from the authenticated user in savePhotoToDB

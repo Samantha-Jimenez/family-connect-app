@@ -283,7 +283,6 @@ function cleanAndGroupLocations(data: PhotoData[]) {
       grouped[country][state][city].push("");
     }
   }
-  console.log('grouped', grouped);
   return grouped;
 }
 
@@ -608,13 +607,6 @@ const Photos = () => {
       });
     }
     
-    if (!member) {
-      console.warn(`Could not find family member with name: "${name}". Available members:`, 
-        familyMembers.map(m => `${m.first_name} ${m.last_name}`));
-    } else {
-      console.log(`Mapped "${name}" to ID: ${member.family_member_id}`);
-    }
-    
     return member ? member.family_member_id : undefined;
   };
 
@@ -744,17 +736,11 @@ const Photos = () => {
           return true; // If no valid people selected, show all
         }
         
-        const hasAllPeople = validSelectedPeople.every(person => {
+          const hasAllPeople = validSelectedPeople.every(person => {
           // Check if this person is tagged in the photo
           const isTagged = image.metadata?.people_tagged?.some(tagged => {
             // Compare IDs (both should be strings, trim whitespace for safety)
-            const matches = tagged.id && person.id && tagged.id.trim() === person.id.trim();
-            if (!matches && person.id) {
-              // Debug: log when a person ID doesn't match
-              const taggedIds = image.metadata?.people_tagged?.map(t => t.id).join(', ') || 'none';
-              console.log(`Person filter: Looking for ID "${person.id}" (${person.name}), found tagged IDs: [${taggedIds}]`);
-            }
-            return matches;
+            return tagged.id && person.id && tagged.id.trim() === person.id.trim();
           });
           return isTagged;
         });
@@ -821,9 +807,6 @@ const Photos = () => {
   };
 
   const handlePersonChange = (selectedOptions: any) => {
-    console.log('handlePersonChange called with:', selectedOptions);
-    console.log('Available family members:', familyMembers.map(m => `${m.first_name} ${m.last_name}`));
-    
     const people = selectedOptions
       .map((option: any) => {
         const id = mapNameToId(option.value);
@@ -832,7 +815,6 @@ const Photos = () => {
           console.error('Available family member names:', familyMembers.map(m => `${m.first_name} ${m.last_name}`));
           return null;
         }
-        console.log(`✅ Mapped "${option.value}" to ID: ${id}`);
         return {
           id: id,
           name: option.value,
@@ -840,7 +822,6 @@ const Photos = () => {
       })
       .filter((person: TaggedPerson | null): person is TaggedPerson => person !== null);
 
-    console.log('Final selectedPeople:', people);
     setSelectedPeople(people);
     // No need to call filter here - useEffect will handle it
   };
@@ -851,7 +832,6 @@ const Photos = () => {
       value: `${member.first_name} ${member.last_name}`,
       label: `${member.first_name} ${member.last_name}`,
     }));
-    console.log('Person options generated:', options);
     return options;
   }, [familyMembers]);
 
@@ -951,7 +931,6 @@ const Photos = () => {
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Implement the logic to update the photo data
-    console.log('Form submitted:', formData);
     setIsEditing(false);
   };
   // Restore the renderEditForm function

@@ -270,7 +270,6 @@ export const saveUserToDB = async (
     // Never trust family_group from client (client can be manipulated)
     // family_group is either 'demo' for demo users or omitted (null/empty) for real users
     const userFamilyGroup = getUserFamilyGroup(userId);
-    console.log(`🔒 Security: Determined user family_group from authenticated user: "${userFamilyGroup || '(omitted - real user)'}"`);
 
     // Prepare data for DynamoDB
     const item: any = {
@@ -351,7 +350,6 @@ export const saveUserToDB = async (
     };
 
     await dynamoDB.send(new PutItemCommand(params));
-    console.log("✅ User data saved to DynamoDB!");
   } catch (error) {
     console.error("❌ Error saving user to DynamoDB:", error);
     throw error;
@@ -504,7 +502,6 @@ export const adminCreateAlbumAsDemoMember = async (name: string, demoMemberId: s
     };
 
     await dynamoDB.send(new PutItemCommand(params));
-    console.log('✅ Admin album created successfully:', album_id, 'for member:', demoMemberId);
     return album_id;
   } catch (error) {
     console.error("❌ Error creating album as demo member:", error);
@@ -539,7 +536,6 @@ export const savePhotoToDB = async (photoData: PhotoData) => {
       // Always use the authenticated user's family group for security
       taggerId = user.userId;
       photoFamilyGroup = getUserFamilyGroup(user.userId);
-      console.log(`🔒 Security: Determined photo family_group from authenticated user: ${photoFamilyGroup} (ignoring any provided value)`);
       
       // Security check: If provided family_group doesn't match authenticated user's group, log a warning
       if (photoData.family_group && photoData.family_group !== photoFamilyGroup) {
@@ -585,8 +581,6 @@ export const savePhotoToDB = async (photoData: PhotoData) => {
       console.warn(`⚠️ Security Warning: Attempted to update photo from different family group. Photo group: ${existingPhotoData.Item.family_group.S}, User group: ${photoFamilyGroup}`);
       // Allow the update but keep the original family_group (this is a metadata update, not a group change)
     }
-    
-    console.log('📸 Saving photo with family_group:', finalPhotoFamilyGroup, 'uploaded_by:', photoData.uploaded_by);
 
     // Create the base item with required fields
     const item: Record<string, any> = {
@@ -598,9 +592,6 @@ export const savePhotoToDB = async (photoData: PhotoData) => {
       family_group: { S: finalPhotoFamilyGroup }, // Store family_group explicitly
       album_ids: { L: (photoData.album_ids || []).map(id => ({ S: id })) },
     };
-
-    // Log the s3_key being saved
-    console.log('Saving photo with s3_key:', item.s3_key.S);
 
     // Add optional fields only if they exist
     if (photoData.metadata.description) {
@@ -639,7 +630,6 @@ export const savePhotoToDB = async (photoData: PhotoData) => {
     });
 
     await dynamoDB.send(command);
-    console.log('✅ Photo saved to DynamoDB successfully');
 
     // Create notifications for newly tagged people
     if (newlyTaggedPeople.length > 0) {
@@ -669,7 +659,6 @@ export const savePhotoToDB = async (photoData: PhotoData) => {
 
         if (newlyTaggedPeople.length > 0) {
           const notificationCount = newlyTaggedPeople.filter(p => p.id !== taggerId).length;
-          console.log(`✅ Created ${notificationCount} notification(s) for newly tagged people`);
         }
       } catch (notificationError) {
         // Don't fail the photo save if notification creation fails
@@ -720,8 +709,6 @@ export const adminSavePhotoAsDemoMember = async (photoData: PhotoData, familyGro
 
     // For admin uploads, use the provided family_group
     const finalPhotoFamilyGroup = existingPhotoData.Item?.family_group?.S || familyGroup;
-    
-    console.log('📸 Admin saving photo with family_group:', finalPhotoFamilyGroup, 'uploaded_by:', photoData.uploaded_by);
 
     // Create the base item with required fields
     const item: Record<string, any> = {
@@ -770,7 +757,6 @@ export const adminSavePhotoAsDemoMember = async (photoData: PhotoData, familyGro
     });
 
     await dynamoDB.send(command);
-    console.log('✅ Admin photo saved to DynamoDB successfully');
 
     // Create notifications for newly tagged people (optional - can be skipped for demo data)
     if (newlyTaggedPeople.length > 0) {
@@ -800,7 +786,6 @@ export const adminSavePhotoAsDemoMember = async (photoData: PhotoData, familyGro
 
         if (newlyTaggedPeople.length > 0) {
           const notificationCount = newlyTaggedPeople.filter(p => p.id !== photoData.uploaded_by).length;
-          console.log(`✅ Created ${notificationCount} notification(s) for newly tagged people`);
         }
       } catch (notificationError) {
         // Don't fail the photo save if notification creation fails
@@ -835,7 +820,6 @@ export const adminUpdateMemberHobbies = async (memberId: string, hobbies: string
     };
 
     await dynamoDB.send(new UpdateItemCommand(params));
-    console.log(`✅ Hobbies updated for member ${memberId} successfully!`);
   } catch (error) {
     console.error("❌ Error updating hobbies:", error);
     throw error;
@@ -870,7 +854,6 @@ export const adminUpdateMemberSocialMedia = async (memberId: string, socialMedia
     };
 
     await dynamoDB.send(new UpdateItemCommand(params));
-    console.log(`✅ Social media updated for member ${memberId} successfully!`);
   } catch (error) {
     console.error("❌ Error updating social media:", error);
     throw error;
@@ -907,7 +890,6 @@ export const adminUpdateMemberPets = async (memberId: string, pets: { name: stri
     };
 
     await dynamoDB.send(new UpdateItemCommand(params));
-    console.log(`✅ Pets updated for member ${memberId} successfully!`);
   } catch (error) {
     console.error("❌ Error updating pets:", error);
     throw error;
@@ -942,7 +924,6 @@ export const adminUpdateMemberLanguages = async (memberId: string, languages: { 
     };
 
     await dynamoDB.send(new UpdateItemCommand(params));
-    console.log(`✅ Languages updated for member ${memberId} successfully!`);
   } catch (error) {
     console.error("❌ Error updating languages:", error);
     throw error;
@@ -990,7 +971,6 @@ export const addPhotoToAlbum = async (photo_id: string, album_id: string) => {
     const currentAlbumIds = photoData.Item.album_ids?.L?.map((item: any) => item.S) || [];
     
     if (currentAlbumIds.includes(album_id)) {
-      console.log("✅ Photo is already in this album");
       return; // Photo is already in this album, no need to add again
     }
 
@@ -1008,7 +988,6 @@ export const addPhotoToAlbum = async (photo_id: string, album_id: string) => {
     };
 
     await dynamoDB.send(new UpdateItemCommand(updatePhotoParams));
-    console.log("✅ Photo added to album successfully!");
   } catch (error) {
     console.error("❌ Error adding photo to album:", error);
     throw error;
@@ -1041,7 +1020,6 @@ export const adminAddPhotoToAlbum = async (photo_id: string, album_id: string) =
     const currentAlbumIds = photoData.Item.album_ids?.L?.map((item: any) => item.S) || [];
     
     if (currentAlbumIds.includes(album_id)) {
-      console.log("✅ Photo is already in this album");
       return; // Photo is already in this album, no need to add again
     }
 
@@ -1059,7 +1037,6 @@ export const adminAddPhotoToAlbum = async (photo_id: string, album_id: string) =
     };
 
     await dynamoDB.send(new UpdateItemCommand(updatePhotoParams));
-    console.log(`✅ Admin: Photo ${photo_id} added to album ${album_id} successfully!`);
   } catch (error) {
     console.error("❌ Error adding photo to album (admin):", error);
     throw error;
@@ -1076,13 +1053,11 @@ export const getAllFamilyMembers = async (userId?: string, includeAllGroups?: bo
         currentUserId = user.userId;
       } catch (error) {
         // User not authenticated, default to real family group
-        console.log('⚠️ No userId provided and could not get current user, defaulting to real family group');
       }
     }
     
     // Get the family group for the current user (or default to empty string for real users if no user)
     const familyGroup = currentUserId ? getUserFamilyGroup(currentUserId) : '';
-    console.log('🔍 getAllFamilyMembers - userId:', currentUserId, 'familyGroup:', familyGroup, 'includeAllGroups:', includeAllGroups);
     
     const params: any = {
       TableName: TABLES.FAMILY,
@@ -1133,7 +1108,6 @@ export const getAllFamilyMembers = async (userId?: string, includeAllGroups?: bo
       const memberGroup = normalizeFamilyGroup(member.family_group);
       const matches = memberGroup === familyGroup;
       if (!matches) {
-        console.log(`🚫 Filtered out member: ${member.first_name} ${member.last_name} (group: ${memberGroup}, expected: ${familyGroup})`);
       }
       return matches;
     });
@@ -1332,7 +1306,6 @@ export const updateFamilyMember = async (
     };
 
     await dynamoDB.send(new UpdateItemCommand(params));
-    console.log("✅ Family member updated successfully!");
   } catch (error) {
     console.error("❌ Error updating family member:", error);
     throw error;
@@ -1504,7 +1477,6 @@ export const addFamilyRelationship = async (
       await dynamoDB.send(new PutItemCommand(inverseParams));
     }
 
-    console.log("✅ Relationship added successfully!");
     return relationshipId;
   } catch (error) {
     console.error("❌ Error adding relationship:", error);
@@ -1589,7 +1561,6 @@ export const removeFamilyRelationship = async (
     };
 
     await dynamoDB.send(new DeleteItemCommand(params));
-    console.log("✅ Relationship removed successfully!");
   } catch (error) {
     console.error("❌ Error removing relationship:", error);
     throw error;
@@ -1659,7 +1630,6 @@ export const addFamilyMember = async (memberData: {
     };
 
     await dynamoDB.send(new PutItemCommand(params));
-    console.log("✅ Family member added successfully!");
   } catch (error) {
     console.error("❌ Error adding family member:", error);
     throw error;
@@ -1679,7 +1649,6 @@ export const getAllPhotosByTagged = async (taggedUserIds: string[]): Promise<Pho
 
     const command = new ScanCommand(params);
     const response = await dynamoDB.send(command);
-    console.log(response, "response.Items");
 
     if (!response.Items) {
       return [];
@@ -1928,7 +1897,6 @@ export const deletePhotoById = async (photoId: string) => {
 
     const command = new DeleteItemCommand(params);
     await dynamoDB.send(command);
-    console.log(`Photo with ID ${photoId} deleted successfully.`);
   } catch (error) {
     console.error("❌ Error deleting photo:", error);
     throw error;
@@ -1949,7 +1917,6 @@ export const addPhotoToFavorites = async (userId: string, photoId: string) => {
     };
 
     await dynamoDB.send(new UpdateItemCommand(params));
-    console.log("✅ Photo added to favorites successfully!");
   } catch (error) {
     console.error("❌ Error adding photo to favorites:", error);
     throw error;
@@ -1970,7 +1937,6 @@ export const removePhotoFromFavorites = async (userId: string, photoId: string) 
     };
 
     await dynamoDB.send(new UpdateItemCommand(params));
-    console.log("✅ Photo removed from favorites successfully!");
   } catch (error) {
     console.error("❌ Error removing photo from favorites:", error);
     throw error;
@@ -2107,7 +2073,6 @@ export const addCommentToPhoto = async (photoId: string, userId: string, comment
     };
 
     await dynamoDB.send(new UpdateItemCommand(params));
-    console.log("✅ Comment added to photo successfully!");
 
     // Truncate comment for notification message (first 50 chars)
     const commentPreview = comment.length > 50 ? comment.substring(0, 50) + '...' : comment;
@@ -2127,7 +2092,6 @@ export const addCommentToPhoto = async (photoId: string, userId: string, comment
           { commenter_id: userId, comment_preview: commentPreview }
         );
         
-        console.log(`✅ Notification created for photo uploader (${uploadedBy})`);
       } catch (notificationError) {
         // Don't fail the comment addition if notification creation fails
         console.error("❌ Error creating photo comment notification for uploader:", notificationError);
@@ -2156,7 +2120,6 @@ export const addCommentToPhoto = async (photoId: string, userId: string, comment
         
         const notifiedCount = Array.from(taggedPeopleIds).filter(id => id !== userId && id !== uploadedBy).length;
         if (notifiedCount > 0) {
-          console.log(`✅ Created ${notifiedCount} notification(s) for tagged members`);
         }
       } catch (notificationError) {
         // Don't fail the comment addition if notification creation fails
@@ -2260,7 +2223,6 @@ export const deleteCommentFromPhoto = async (photoId: string, userId: string, co
     };
 
     await dynamoDB.send(new UpdateItemCommand(params));
-    console.log("✅ Comment deleted successfully!");
   } catch (error) {
     console.error("❌ Error deleting comment from photo:", error);
     throw error;
@@ -2286,7 +2248,6 @@ export const editCommentInPhoto = async (photoId: string, userId: string, commen
     };
 
     await dynamoDB.send(new UpdateItemCommand(params));
-    console.log("✅ Comment edited successfully!");
   } catch (error) {
     console.error("❌ Error editing comment in photo:", error);
     throw error;
@@ -2345,7 +2306,6 @@ export const addCommentToHobby = async (hobby: string, userId: string, comment: 
     };
 
     await dynamoDB.send(new UpdateItemCommand(params));
-    console.log("✅ Comment added to hobby successfully!");
 
     // Create notifications for all members who have this hobby (except the commenter)
     try {
@@ -2374,7 +2334,6 @@ export const addCommentToHobby = async (hobby: string, userId: string, comment: 
       }
       
       if (notificationCount > 0) {
-        console.log(`✅ Notifications created for ${notificationCount} member${notificationCount === 1 ? '' : 's'} in ${hobby} hobby`);
       }
     } catch (notificationError) {
       // Don't fail the comment addition if notification creation fails
@@ -2436,7 +2395,6 @@ export const deleteCommentFromHobby = async (hobby: string, userId: string, comm
     };
 
     await dynamoDB.send(new UpdateItemCommand(params));
-    console.log("✅ Comment deleted from hobby successfully!");
   } catch (error) {
     console.error("❌ Error deleting comment from hobby:", error);
     throw error;
@@ -2462,7 +2420,6 @@ export const editCommentInHobby = async (hobby: string, userId: string, commentI
     };
 
     await dynamoDB.send(new UpdateItemCommand(params));
-    console.log("✅ Comment edited in hobby successfully!");
   } catch (error) {
     console.error("❌ Error editing comment in hobby:", error);
     throw error;
@@ -2486,7 +2443,6 @@ export const addCommentToMember = async (memberId: string, userId: string, comme
     };
 
     await dynamoDB.send(new UpdateItemCommand(params));
-    console.log("✅ Memorial comment added successfully!");
   } catch (error) {
     console.error("❌ Error adding memorial comment:", error);
     throw error;
@@ -2542,7 +2498,6 @@ export const deleteCommentFromMember = async (memberId: string, userId: string, 
     };
 
     await dynamoDB.send(new UpdateItemCommand(params));
-    console.log("✅ Memorial comment deleted successfully!");
   } catch (error) {
     console.error("❌ Error deleting memorial comment:", error);
     throw error;
@@ -2568,7 +2523,6 @@ export const editCommentInMember = async (memberId: string, userId: string, comm
     };
 
     await dynamoDB.send(new UpdateItemCommand(params));
-    console.log("✅ Memorial comment edited successfully!");
   } catch (error) {
     console.error("❌ Error editing memorial comment:", error);
     throw error;
@@ -2590,7 +2544,6 @@ export const saveRSVPToDynamoDB = async (eventId: string, userId: string, status
 
     try {
         await dynamoDB.send(new PutItemCommand(rsvpParams));
-        console.log(`✅ RSVP saved to DynamoDB successfully! Event: ${eventId}, User: ${userId}, Status: ${status}`);
 
         // Create notification for the event creator (if they're not the one RSVPing and we have the creator ID)
         if (eventCreatorId && eventCreatorId !== userId) {
@@ -2614,7 +2567,6 @@ export const saveRSVPToDynamoDB = async (eventId: string, userId: string, status
                     { rsvp_user_id: userId, rsvp_status: status }
                 );
 
-                console.log(`✅ Notification created for event creator (${eventCreatorId})`);
             } catch (notificationError) {
                 // Don't fail the RSVP save if notification creation fails
                 console.error("❌ Error creating event RSVP notification:", notificationError);
@@ -2735,7 +2687,6 @@ export async function deleteRSVPFromDynamoDB(eventId: string, userId: string): P
       }
     };
     await dynamoDB.send(new DeleteItemCommand(params));
-    console.log("✅ RSVP deleted from DynamoDB successfully!");
   } catch (error) {
     console.error("❌ Error deleting RSVP from DynamoDB:", error);
     throw error;
@@ -2805,7 +2756,6 @@ export const saveEventToDynamoDB = async (event: CalendarEventData, userId?: str
     });
 
     await dynamoDB.send(command);
-    console.log('✅ Event saved to DynamoDB:', event.id);
   } catch (error) {
     console.error('❌ Error saving event to DynamoDB:', error);
     throw error;
@@ -2891,7 +2841,6 @@ export const deleteEventFromDynamoDB = async (eventId: string): Promise<void> =>
     });
 
     await dynamoDB.send(command);
-    console.log('✅ Event deleted from DynamoDB:', eventId);
   } catch (error) {
     console.error('❌ Error deleting event from DynamoDB:', error);
     throw error;
@@ -2912,7 +2861,6 @@ export const setUserCTAVisible = async (userId: string, visible: boolean) => {
       }
     };
     await dynamoDB.send(new UpdateItemCommand(params));
-    console.log(`✅ Set CTA visible to ${visible} for user ${userId}`);
   } catch (error) {
     console.error("❌ Error updating CTA visibility:", error);
     throw error;
@@ -2936,7 +2884,6 @@ export const deleteAlbumById = async (albumId: string) => {
       }
     };
     await dynamoDB.send(new DeleteItemCommand(params));
-    console.log(`Album with ID ${albumId} deleted successfully.`);
   } catch (error) {
     console.error("❌ Error deleting album:", error);
     throw error;
@@ -2971,7 +2918,6 @@ export const removePhotoFromAlbum = async (photo_id: string, album_id: string) =
     const indexToRemove = currentAlbumIds.indexOf(album_id);
     
     if (indexToRemove === -1) {
-      console.log(`Photo ${photo_id} is not in album ${album_id}`);
       return; // Photo is not in this album
     }
 
@@ -2985,7 +2931,6 @@ export const removePhotoFromAlbum = async (photo_id: string, album_id: string) =
     };
 
     await dynamoDB.send(new UpdateItemCommand(params));
-    console.log(`✅ Photo ${photo_id} removed from album ${album_id}`);
   } catch (error) {
     console.error(`❌ Error removing photo ${photo_id} from album ${album_id}:`, error);
     throw error;
@@ -3133,7 +3078,6 @@ export const removeTagFromPhoto = async (photo_id: string, user_id: string) => {
     const indexToRemove = currentTaggedPeople.findIndex((person: any) => person.M?.id?.S === user_id);
     
     if (indexToRemove === -1) {
-      console.log(`User ${user_id} is not tagged in photo ${photo_id}`);
       return; // User is not tagged in this photo
     }
 
@@ -3147,7 +3091,6 @@ export const removeTagFromPhoto = async (photo_id: string, user_id: string) => {
     };
 
     await dynamoDB.send(new UpdateItemCommand(params));
-    console.log(`✅ User ${user_id} untagged from photo ${photo_id}`);
   } catch (error) {
     console.error(`❌ Error untagging user ${user_id} from photo ${photo_id}:`, error);
     throw error;
@@ -3180,17 +3123,12 @@ export const buildFamilyTreeFromRelationships = async (rootPersonId: string): Pr
     const allRelationships = await getAllFamilyRelationships();
     const allMembers = await getAllFamilyMembers();
     
-    console.log("🔍 Debug: All relationships found:", allRelationships.length);
-    console.log("🔍 Debug: Relationships for root person", rootPersonId, ":", 
-      allRelationships.filter(r => r.person_a_id === rootPersonId || r.person_b_id === rootPersonId));
-    
     // Build relationship graph
     const relationshipGraph = buildRelationshipGraph(allRelationships);
     
     // Generate tree structure starting from root person
     const tree = await generateTreeStructure(rootPersonId, relationshipGraph, allMembers);
     
-    console.log("🔍 Debug: Generated tree for", rootPersonId, ":", tree);
     
     return tree;
   } catch (error) {
@@ -3264,10 +3202,8 @@ const buildRelationshipGraph = (relationships: FamilyRelationship[]) => {
   const graph = new Map<string, Set<string>>();
   const relationshipTypes = new Map<string, Map<string, RelationshipType>>();
   
-  console.log("🔍 Debug: Building relationship graph from", relationships.length, "relationships");
   
   relationships.forEach(rel => {
-    console.log(`🔍 Debug: Processing relationship: ${rel.person_a_id} -> ${rel.person_b_id} (${rel.relationship_type})`);
     
     if (!graph.has(rel.person_a_id)) {
       graph.set(rel.person_a_id, new Set());
@@ -3285,12 +3221,8 @@ const buildRelationshipGraph = (relationships: FamilyRelationship[]) => {
     relationshipTypes.get(rel.person_a_id)!.set(rel.person_b_id, rel.relationship_type);
     relationshipTypes.get(rel.person_b_id)!.set(rel.person_a_id, inverseType);
     
-    console.log(`🔍 Debug: Set ${rel.person_a_id} -> ${rel.person_b_id} as ${rel.relationship_type}`);
-    console.log(`🔍 Debug: Set ${rel.person_b_id} -> ${rel.person_a_id} as ${inverseType}`);
   });
   
-  console.log("🔍 Debug: Final graph:", graph);
-  console.log("🔍 Debug: Final relationship types:", relationshipTypes);
   
   return { graph, relationshipTypes };
 };
@@ -3328,22 +3260,18 @@ const buildNode = async (
   depth: number = 0,
   maxDepth: number = 5
 ): Promise<FamilyTreeNode | null> => {
-  console.log(`🔍 Debug: Building node for ${personId}, depth: ${depth}, visited:`, Array.from(visited));
   
   if (depth > maxDepth) {
-    console.log(`🔍 Debug: Max depth reached for ${personId}`);
     return null;
   }
   
   if (visited.has(personId)) {
-    console.log(`🔍 Debug: ${personId} already visited, returning null`);
     return null;
   }
   visited.add(personId);
 
   const member = allMembers.find(m => m.family_member_id === personId);
   if (!member) {
-    console.log(`🔍 Debug: Member ${personId} not found in allMembers`);
     return null;
   }
 
@@ -3356,7 +3284,6 @@ const buildNode = async (
   };
 
   const connectedPersons = relationshipGraph.graph.get(personId) || new Set();
-  console.log(`🔍 Debug: Connected persons for ${personId}:`, Array.from(connectedPersons));
   
   // Find spouse, parents, children, and siblings
   let spouse: FamilyTreeNode | undefined;
@@ -3366,7 +3293,6 @@ const buildNode = async (
 
   for (const connectedPersonId of connectedPersons) {
     const relationshipType = relationshipGraph.relationshipTypes.get(personId)?.get(connectedPersonId);
-    console.log(`🔍 Debug: Relationship ${personId} -> ${connectedPersonId}: ${relationshipType}`);
     
     if (!relationshipType) continue;
 
@@ -3374,7 +3300,6 @@ const buildNode = async (
     const branchVisited = new Set(visited);
     const connectedPerson = await buildNode(connectedPersonId, relationshipGraph, allMembers, branchVisited, depth + 1, maxDepth);
     if (!connectedPerson) {
-      console.log(`🔍 Debug: Could not build node for ${connectedPersonId}`);
       continue;
     }
 
@@ -3392,7 +3317,6 @@ const buildNode = async (
         break;
       case 'child':
         children.push(connectedPerson);
-        console.log(`🔍 Debug: Added child ${connectedPersonId} to ${personId}`);
         break;
       case 'parent':
         parents.push(connectedPerson);
@@ -3406,12 +3330,10 @@ const buildNode = async (
   if (spouse) node.spouse = spouse;
   if (children.length > 0) {
     node.children = children;
-    console.log(`🔍 Debug: Final children count for ${personId}: ${children.length}`);
   }
   if (parents.length > 0) node.parents = parents;
   if (siblings.length > 0) node.siblings = siblings;
 
-  console.log(`🔍 Debug: Built node for ${personId}:`, node);
   return node;
 };
 
@@ -3554,7 +3476,6 @@ export const createNotification = async (
     };
     
     await dynamoDB.send(new PutItemCommand(params));
-    console.log("✅ Notification created successfully!");
   } catch (error) {
     console.error("❌ Error creating notification:", error);
     throw error;
@@ -3648,7 +3569,6 @@ export const generateEventReminderNotifications = async (events: Array<{ id?: st
       }
     }
     
-    console.log("✅ Event reminder notifications generated successfully!");
   } catch (error) {
     console.error("❌ Error generating event reminder notifications:", error);
     throw error;
@@ -3679,13 +3599,11 @@ export const sendEventCancellationNotifications = async (eventId: string, eventT
           { event_title: eventTitle }
         );
         
-        console.log(`✅ Cancellation notification created for user (${rsvp.userId})`);
       } catch (notificationError) {
         console.error(`❌ Error creating cancellation notification for user ${rsvp.userId}:`, notificationError);
       }
     }
     
-    console.log("✅ Event cancellation notifications sent successfully!");
   } catch (error) {
     console.error("❌ Error sending event cancellation notifications:", error);
     throw error;
@@ -3753,7 +3671,6 @@ export const generateBirthdayNotifications = async (): Promise<void> => {
       }
     }
     
-    console.log("✅ Birthday notifications generated successfully!");
   } catch (error) {
     console.error("❌ Error generating birthday notifications:", error);
     throw error;
@@ -3829,7 +3746,6 @@ export const markNotificationAsRead = async (notificationId: string, userId: str
     };
     
     await dynamoDB.send(new UpdateItemCommand(params));
-    console.log("✅ Notification marked as read!");
   } catch (error) {
     console.error("❌ Error marking notification as read:", error);
     throw error;
@@ -3846,7 +3762,6 @@ export const markAllNotificationsAsRead = async (userId: string): Promise<void> 
       await markNotificationAsRead(notification.notification_id, userId);
     }
     
-    console.log("✅ All notifications marked as read!");
   } catch (error) {
     console.error("❌ Error marking all notifications as read:", error);
     throw error;
@@ -3868,7 +3783,6 @@ export const deleteNotification = async (notificationId: string, userId: string)
     };
     
     await dynamoDB.send(new DeleteItemCommand(params));
-    console.log("✅ Notification deleted successfully!");
   } catch (error) {
     console.error("❌ Error deleting notification:", error);
     throw error;
@@ -3885,7 +3799,6 @@ export const deleteAllReadNotifications = async (userId: string): Promise<void> 
       await deleteNotification(notification.notification_id, userId);
     }
     
-    console.log(`✅ Deleted ${readNotifications.length} read notification(s)!`);
   } catch (error) {
     console.error("❌ Error deleting all read notifications:", error);
     throw error;
@@ -3935,7 +3848,6 @@ export const saveNotificationPreferencesToDB = async (userId: string, preference
     };
 
     await dynamoDB.send(new UpdateItemCommand(params));
-    console.log("✅ Notification preferences saved to DynamoDB!");
   } catch (error) {
     console.error("❌ Error saving notification preferences:", error);
     throw error;
