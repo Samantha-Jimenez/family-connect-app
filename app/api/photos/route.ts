@@ -134,8 +134,10 @@ export async function GET(request: Request) {
     // Filter by family group - only show photos from the user's family group
     // Primary check: family_group field on photo must match user's family group
     // Secondary check: if no family_group set, check if uploaded_by matches family member IDs (backward compatibility)
+    // Note: For real users, getUserFamilyGroup returns '' (falsy). We must not use userFamilyGroup in the
+    // condition—use currentUserId only. Otherwise real users incorrectly get no photos.
     const userFamilyGroup = currentUserId ? getUserFamilyGroup(currentUserId) : null;
-    const filteredItems = currentUserId && userFamilyGroup
+    const filteredItems = currentUserId
       ? response.Items.filter(item => {
           const uploadedBy = item.uploaded_by?.S || '';
           const photoFamilyGroup = item.family_group?.S; // Get family_group from photo (may be undefined for old photos)
@@ -149,9 +151,7 @@ export async function GET(request: Request) {
           // This is for backward compatibility with photos uploaded before family_group was added
           return familyMemberIds.length > 0 && familyMemberIds.includes(uploadedBy);
         })
-      : currentUserId 
-        ? [] // If userId provided but no family group determined, return empty
-        : response.Items; // If no userId, return all (backward compatibility, should be avoided)
+      : response.Items; // If no userId, return all (backward compatibility, should be avoided)
 
     const bucketName = process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME;
     
