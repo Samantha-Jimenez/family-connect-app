@@ -112,7 +112,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="mt-4 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.4s' }}>
-          {activeTab === 'memorials' && <PassedMemberOverview memberData={memberData as FamilyMember} />}
+          {activeTab === 'memorials' && <><ProfileOverview userId={member_id as string}/> <PassedMemberOverview memberData={memberData as FamilyMember} /></>}
           {activeTab === 'tagged' && <TaggedPhotosCard userId={memberData.family_member_id} />}
         </div>
       </div>
