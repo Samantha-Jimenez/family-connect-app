@@ -3,7 +3,7 @@ import { DynamoDBClient, ScanCommand, GetItemCommand } from '@aws-sdk/client-dyn
 import { S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
-import { getUserFamilyGroup, REAL_FAMILY_GROUP } from '@/utils/demoConfig';
+import { getUserFamilyGroup, normalizeFamilyGroup } from '@/utils/demoConfig';
 
 const dynamoDB = new DynamoDBClient({
   region: process.env.NEXT_PUBLIC_AWS_PROJECT_REGION,
@@ -90,11 +90,11 @@ async function getFamilyMemberIds(userId: string | null): Promise<string[]> {
     const filteredMembers = response.Items
       .map(item => ({
         id: item.family_member_id?.S || '',
-        family_group: item.family_group?.S || REAL_FAMILY_GROUP,
+        family_group: normalizeFamilyGroup(item.family_group?.S),
         name: `${item.first_name?.S || ''} ${item.last_name?.S || ''}`.trim(),
       }))
       .filter(member => {
-        const memberGroup = member.family_group || REAL_FAMILY_GROUP;
+        const memberGroup = normalizeFamilyGroup(member.family_group);
         const matches = memberGroup === familyGroup;
         if (!matches) {
           console.log(`🚫 Filtered out family member: ${member.name} (group: ${memberGroup}, expected: ${familyGroup})`);
@@ -199,7 +199,7 @@ export async function GET(request: Request) {
           s3_key: s3Key,
           uploaded_by: item.uploaded_by.S || '',
           upload_date: item.upload_date?.S || '',
-          family_group: item.family_group?.S || REAL_FAMILY_GROUP, // Include family_group
+          family_group: normalizeFamilyGroup(item.family_group?.S), // Include family_group
           metadata: {
             location: item.location?.M ? {
               country: (item.location.M.country?.S || '').trim(),

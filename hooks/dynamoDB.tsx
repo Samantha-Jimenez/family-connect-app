@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { ReturnValue } from "@aws-sdk/client-dynamodb";
-import { getUserFamilyGroup, REAL_FAMILY_GROUP, DEMO_FAMILY_GROUP } from '@/utils/demoConfig';
+import { getUserFamilyGroup, normalizeFamilyGroup, DEMO_FAMILY_GROUP } from '@/utils/demoConfig';
 
 // Set up DynamoDB client
 const dynamoDB = new DynamoDBClient({ 
@@ -266,6 +266,12 @@ export const saveUserToDB = async (
       throw new Error("Missing userId or email.");
     }
 
+    // SECURITY: Always determine family_group from the authenticated current user
+    // Never trust family_group from client (client can be manipulated)
+    // family_group is either 'demo' for demo users or omitted (null/empty) for real users
+    const userFamilyGroup = getUserFamilyGroup(userId);
+    console.log(`🔒 Security: Determined user family_group from authenticated user: "${userFamilyGroup || '(omitted - real user)'}"`);
+
     // Prepare data for DynamoDB
     const item: any = {
       family_member_id: { S: userId },
@@ -288,6 +294,11 @@ export const saveUserToDB = async (
       use_middle_name: { BOOL: use_middle_name ?? false },
       use_nick_name: { BOOL: use_nick_name ?? false }
     };
+
+    // Only include family_group if it's 'demo' (omit for real users)
+    if (userFamilyGroup) {
+      item.family_group = { S: userFamilyGroup };
+    }
 
     // Add social media data if provided
     if (social_media && social_media.length > 0) {
@@ -1069,8 +1080,8 @@ export const getAllFamilyMembers = async (userId?: string, includeAllGroups?: bo
       }
     }
     
-    // Get the family group for the current user (or default to real if no user)
-    const familyGroup = currentUserId ? getUserFamilyGroup(currentUserId) : REAL_FAMILY_GROUP;
+    // Get the family group for the current user (or default to empty string for real users if no user)
+    const familyGroup = currentUserId ? getUserFamilyGroup(currentUserId) : '';
     console.log('🔍 getAllFamilyMembers - userId:', currentUserId, 'familyGroup:', familyGroup, 'includeAllGroups:', includeAllGroups);
     
     const params: any = {
@@ -1085,7 +1096,7 @@ export const getAllFamilyMembers = async (userId?: string, includeAllGroups?: bo
     }
 
     // Map members
-    // For backward compatibility: if family_group is not set, treat as 'real' data
+    // Normalize family_group: missing/empty/'real' all mean real user data (empty string)
     const mappedMembers = response.Items.map(item => ({
       family_member_id: item.family_member_id?.S || '',
       first_name: item.first_name?.S || '',
@@ -1107,7 +1118,7 @@ export const getAllFamilyMembers = async (userId?: string, includeAllGroups?: bo
       use_middle_name: item.use_middle_name?.BOOL ?? false,
       use_nick_name: item.use_nick_name?.BOOL ?? false,
       show_zodiac: item.show_zodiac?.BOOL ?? false,
-      family_group: item.family_group?.S || REAL_FAMILY_GROUP,
+      family_group: normalizeFamilyGroup(item.family_group?.S),
     }));
 
     // If includeAllGroups is true, return all members without filtering
@@ -1118,8 +1129,8 @@ export const getAllFamilyMembers = async (userId?: string, includeAllGroups?: bo
     // Otherwise, filter by family group
     return mappedMembers.filter(member => {
       // Filter by family group
-      // If member has no family_group (existing data), it's real data
-      const memberGroup = member.family_group || REAL_FAMILY_GROUP;
+      // Normalize member's family_group for comparison (missing/empty/'real' -> '')
+      const memberGroup = normalizeFamilyGroup(member.family_group);
       const matches = memberGroup === familyGroup;
       if (!matches) {
         console.log(`🚫 Filtered out member: ${member.first_name} ${member.last_name} (group: ${memberGroup}, expected: ${familyGroup})`);
@@ -1151,7 +1162,7 @@ export const getAllHobbies = async (familyGroup?: string): Promise<string[]> => 
     response.Items.forEach(item => {
       // Filter by family_group if provided
       if (familyGroup) {
-        const memberGroup = item.family_group?.S || REAL_FAMILY_GROUP;
+        const memberGroup = normalizeFamilyGroup(item.family_group?.S);
         if (memberGroup !== familyGroup) {
           return; // Skip members not in the specified family group
         }
@@ -1311,7 +1322,7 @@ export const updateFamilyMember = async (
         ":current_city": { S: data.current_city },
         ":current_state": { S: data.current_state },
         ":death_date": { S: data.death_date },
-        ":family_group": { S: data.family_group || REAL_FAMILY_GROUP },
+        ":family_group": { S: data.family_group || '' },
         ":use_first_name": { BOOL: data.use_first_name ?? true },
         ":use_middle_name": { BOOL: data.use_middle_name ?? false },
         ":use_nick_name": { BOOL: data.use_nick_name ?? false },
@@ -1643,7 +1654,7 @@ export const addFamilyMember = async (memberData: {
         use_first_name: { BOOL: true },
         use_middle_name: { BOOL: false },
         use_nick_name: { BOOL: false },
-        family_group: { S: memberData.family_group || REAL_FAMILY_GROUP }
+        family_group: { S: memberData.family_group || '' }
       }
     };
 
@@ -1776,7 +1787,7 @@ export const getPhotoById = async (photoId: string): Promise<PhotoData | null> =
         s3_key: s3Key,
         uploaded_by: item.uploaded_by?.S || '',
         upload_date: item.upload_date?.S || '',
-        family_group: item.family_group?.S || REAL_FAMILY_GROUP, // Include family_group
+        family_group: normalizeFamilyGroup(item.family_group?.S), // Include family_group
         album_ids: item.album_ids?.L?.map((id: any) => id.S || '') || [],
         url,
         metadata: {
@@ -1843,7 +1854,7 @@ export const getPhotosByAlbum = async (albumId: string) => {
           s3_key: s3Key,
           uploaded_by: item.uploaded_by?.S || '',
           upload_date: item.upload_date?.S || '',
-          family_group: item.family_group?.S || REAL_FAMILY_GROUP, // Include family_group
+          family_group: normalizeFamilyGroup(item.family_group?.S), // Include family_group
           album_ids: item.album_ids?.L?.map((id: any) => id.S || '') || [],
           url,
           metadata: {
@@ -2757,7 +2768,7 @@ export interface CalendarEventData {
 export const saveEventToDynamoDB = async (event: CalendarEventData, userId?: string): Promise<void> => {
   try {
     const eventUserId = event.userId || userId || '';
-    const familyGroup = userId ? getUserFamilyGroup(userId) : REAL_FAMILY_GROUP;
+    const familyGroup = userId ? getUserFamilyGroup(userId) : '';
     
     const item: Record<string, any> = {
       event_id: { S: event.id },
@@ -2803,7 +2814,7 @@ export const saveEventToDynamoDB = async (event: CalendarEventData, userId?: str
 
 export const getEventsFromDynamoDB = async (userId?: string): Promise<CalendarEventData[]> => {
   try {
-    const userFamilyGroup = userId ? getUserFamilyGroup(userId) : REAL_FAMILY_GROUP;
+    const userFamilyGroup = userId ? getUserFamilyGroup(userId) : '';
     
     // For real family members, get all events except demo ones
     // For demo users, only get demo events
@@ -2848,7 +2859,7 @@ export const getEventsFromDynamoDB = async (userId?: string): Promise<CalendarEv
           }
 
           // Filter by family group
-          const eventFamilyGroup = item.family_group?.S || REAL_FAMILY_GROUP;
+          const eventFamilyGroup = normalizeFamilyGroup(item.family_group?.S);
           if (userFamilyGroup === 'demo') {
             // Demo users only see demo events
             return eventFamilyGroup === 'demo' ? event : null;
@@ -3020,7 +3031,7 @@ export const getUserPhotos = async (userId: string): Promise<PhotoData[]> => {
           s3_key: s3Key,
           uploaded_by: item.uploaded_by?.S || '',
           upload_date: item.upload_date?.S || '',
-          family_group: item.family_group?.S || REAL_FAMILY_GROUP, // Include family_group
+          family_group: normalizeFamilyGroup(item.family_group?.S), // Include family_group
           album_ids: item.album_ids?.L?.map((id: any) => id.S || '') || [],
           url,
           metadata: {

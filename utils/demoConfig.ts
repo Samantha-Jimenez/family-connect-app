@@ -16,7 +16,6 @@ export const DEMO_USER_IDS: string[] = demoUserIdsEnv
 
 // Demo family group identifier
 export const DEMO_FAMILY_GROUP = 'demo';
-export const REAL_FAMILY_GROUP = 'real'; // Default for existing real family data
 
 /**
  * Check if a user is a demo user
@@ -28,13 +27,28 @@ export function isDemoUser(userId: string | undefined | null): boolean {
 
 /**
  * Get the family group for a user
- * Demo users see demo data, real users see real data
+ * - Demo users: returns 'demo'
+ * - Real users: returns '' (empty string) - field should be omitted when saving
+ * 
+ * Note: When reading from DB, missing/empty/null family_group means real user data.
  */
 export function getUserFamilyGroup(userId: string | undefined | null): string {
   if (isDemoUser(userId)) {
     return DEMO_FAMILY_GROUP;
   }
-  return REAL_FAMILY_GROUP;
+  return ''; // Empty string for real/non-demo users (field should be omitted when saving)
+}
+
+/**
+ * Normalize family_group value for comparison
+ * Converts missing/null/empty to empty string (real user data)
+ * Only 'demo' remains as-is
+ */
+export function normalizeFamilyGroup(familyGroup: string | undefined | null): string {
+  if (!familyGroup) {
+    return ''; // Real user data
+  }
+  return familyGroup; // 'demo' or any other value
 }
 
 /**
