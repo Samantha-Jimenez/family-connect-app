@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState, useRef, ChangeEvent } from 'react';
 import { useAuthenticator } from "@aws-amplify/ui-react";
-import { getAllFamilyMembers, adminSavePhotoAsDemoMember, addCommentToPhoto, getProfilePhotoById, PhotoData, FamilyMember, adminUpdateMemberHobbies, getAllHobbies, addCommentToHobby, getCommentsForHobby, getUserData, adminUpdateMemberSocialMedia, adminUpdateMemberPets, adminUpdateMemberLanguages, saveEventToDynamoDB, CalendarEventData, getEventsFromDynamoDB, saveRSVPToDynamoDB, deleteRSVPFromDynamoDB, getEventRSVPs, getUserNameById, deleteEventFromDynamoDB, sendEventCancellationNotifications, adminCreateAlbumAsDemoMember, getUserAlbums, AlbumData, adminAddPhotoToAlbum, savePhotoToDB, TaggedPerson, updateAlbum, getPhotosByAlbum } from "@/hooks/dynamoDB";
+import { getAllFamilyMembers, adminSavePhotoAsDemoMember, addCommentToPhoto, getProfilePhotoById, PhotoData, FamilyMember, adminUpdateMemberHobbies, getAllHobbies, addCommentToHobby, getCommentsForHobby, getUserData, adminUpdateMemberSocialMedia, adminUpdateMemberPets, adminUpdateMemberLanguages, saveEventToDynamoDB, CalendarEventData, getEventsFromDynamoDB, saveRSVPToDynamoDB, deleteRSVPFromDynamoDB, getEventRSVPs, getUserNameById, deleteEventFromDynamoDB, sendEventCancellationNotifications, adminCreateAlbumAsDemoMember, getUserAlbums, AlbumData, adminAddPhotoToAlbum, savePhotoToDB, TaggedPerson, updateAlbum, getPhotosByAlbum, addCommentToMember, getCommentsForMember } from "@/hooks/dynamoDB";
 import { DEMO_FAMILY_GROUP, DEMO_USER_IDS } from '@/utils/demoConfig';
 import { useToast } from '@/context/ToastContext';
 import Select from 'react-select';
@@ -10,7 +10,7 @@ import Image from 'next/image';
 import { getFullImageUrl } from '@/utils/imageUtils';
 import ConfirmationModal from '@/components/ConfirmationModal';
 
-type Tab = 'upload-photos' | 'add-comments' | 'manage-hobbies' | 'comment-hobbies' | 'manage-social-media' | 'manage-pets' | 'manage-languages' | 'create-calendar-event' | 'rsvp-to-events' | 'manage-events' | 'create-album' | 'manage-album-photos';
+type Tab = 'upload-photos' | 'add-comments' | 'manage-hobbies' | 'comment-hobbies' | 'manage-social-media' | 'manage-pets' | 'manage-languages' | 'create-calendar-event' | 'rsvp-to-events' | 'manage-events' | 'create-album' | 'manage-album-photos' | 'add-memorials';
 
 const SOCIAL_MEDIA_PLATFORMS = [
   { value: 'facebook', label: 'Facebook' },
@@ -232,6 +232,13 @@ const AdminDemoDataPage = () => {
   const [currentRSVPs, setCurrentRSVPs] = useState<{ userId: string; status: 'yes' | 'no' | 'maybe'; name: string }[]>([]);
   const [isLoadingRSVPs, setIsLoadingRSVPs] = useState(false);
   const [isSavingRSVP, setIsSavingRSVP] = useState(false);
+
+  // Memorial state
+  const [selectedDeceasedMember, setSelectedDeceasedMember] = useState<FamilyMember | null>(null);
+  const [memorialCommentText, setMemorialCommentText] = useState('');
+  const [memorialComments, setMemorialComments] = useState<{ text: string; author: string; userId: string; timestamp: string; profilePhoto: string }[]>([]);
+  const [isLoadingMemorialComments, setIsLoadingMemorialComments] = useState(false);
+  const [isAddingMemorialComment, setIsAddingMemorialComment] = useState(false);
 
   useEffect(() => {
     if (user && user.userId === "f16b1510-0001-705f-8680-28689883e706") {
@@ -471,6 +478,71 @@ const AdminDemoDataPage = () => {
       setRsvpStatus(null);
     }
   }, [selectedMemberForRSVP, currentRSVPs]);
+
+  // Fetch memorial comments when deceased member is selected
+  useEffect(() => {
+    if (selectedDeceasedMember && activeTab === 'add-memorials') {
+      fetchMemorialComments();
+    } else {
+      setMemorialComments([]);
+    }
+  }, [selectedDeceasedMember, activeTab]);
+
+  const fetchMemorialComments = async () => {
+    if (!selectedDeceasedMember) return;
+    setIsLoadingMemorialComments(true);
+    try {
+      const comments = await getCommentsForMember(selectedDeceasedMember.family_member_id);
+      // Reverse to show newest comments first
+      setMemorialComments([...comments].reverse());
+    } catch (error) {
+      console.error('Error fetching memorial comments:', error);
+      showToast('Error fetching memorial comments', 'error');
+      setMemorialComments([]);
+    } finally {
+      setIsLoadingMemorialComments(false);
+    }
+  };
+
+  const handleAddMemorialComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!memorialCommentText.trim() || !selectedDeceasedMember || !selectedMember) {
+      showToast('Please select a demo family member to impersonate and enter a memorial comment', 'error');
+      return;
+    }
+
+    setIsAddingMemorialComment(true);
+    try {
+      // Get the selected member's profile photo
+      const profilePhoto = await getProfilePhotoById(selectedMember.family_member_id);
+      const authorName = `${selectedMember.first_name} ${selectedMember.last_name}`.trim();
+      
+      await addCommentToMember(
+        selectedDeceasedMember.family_member_id,
+        selectedMember.family_member_id,
+        memorialCommentText.trim(),
+        authorName,
+        profilePhoto || ''
+      );
+      
+      // Add the comment to local state (prepend since newest should be first)
+      const newCommentObj = {
+        text: memorialCommentText.trim(),
+        author: authorName,
+        userId: selectedMember.family_member_id,
+        timestamp: new Date().toISOString(),
+        profilePhoto: profilePhoto || ''
+      };
+      setMemorialComments([newCommentObj, ...memorialComments]);
+      setMemorialCommentText('');
+      showToast('Memorial comment added successfully', 'success');
+    } catch (error) {
+      console.error('Error adding memorial comment:', error);
+      showToast('Error adding memorial comment', 'error');
+    } finally {
+      setIsAddingMemorialComment(false);
+    }
+  };
 
   const fetchDemoEvents = async () => {
     try {
@@ -1518,6 +1590,12 @@ const AdminDemoDataPage = () => {
               onClick={() => setActiveTab('manage-album-photos')}
             >
               Add Photos to Albums
+            </a>
+            <a 
+              className={`tab tab-lg ${activeTab === 'add-memorials' ? 'tab-active' : ''}`}
+              onClick={() => setActiveTab('add-memorials')}
+            >
+              Add Memorials
             </a>
           </div>
         </div>
@@ -2995,6 +3073,151 @@ const AdminDemoDataPage = () => {
                 </>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Add Memorials Tab */}
+        {activeTab === 'add-memorials' && (
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">Add Memorials to Deceased Demo Family Members</h2>
+            
+            {!selectedMember ? (
+              <div className="text-center py-8 text-gray-500">
+                <p className="mb-4">Please select a demo family member to impersonate from the dropdown above.</p>
+                <p className="text-sm">Memorial comments will be posted as the selected member.</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Show who is posting */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-800">
+                    <strong>Posting as:</strong> {selectedMember.first_name} {selectedMember.last_name}
+                  </p>
+                </div>
+
+                {/* Select Deceased Member */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Deceased Demo Family Member</label>
+                  {demoMembers.filter(m => m.death_date).length === 0 ? (
+                    <div className="text-gray-500 text-sm mb-4">
+                      No deceased demo family members found. Members with a death_date will appear here.
+                    </div>
+                  ) : (
+                    <Select
+                      options={demoMembers
+                        .filter(m => m.death_date)
+                        .map(member => ({
+                          value: member.family_member_id,
+                          label: `${member.first_name} ${member.last_name}${member.death_date ? ` (${new Date(member.death_date).toLocaleDateString()})` : ''}`
+                        }))}
+                      value={selectedDeceasedMember ? {
+                        value: selectedDeceasedMember.family_member_id,
+                        label: `${selectedDeceasedMember.first_name} ${selectedDeceasedMember.last_name}${selectedDeceasedMember.death_date ? ` (${new Date(selectedDeceasedMember.death_date).toLocaleDateString()})` : ''}`
+                      } : null}
+                      onChange={(option) => {
+                        const member = demoMembers.find(m => m.family_member_id === option?.value);
+                        setSelectedDeceasedMember(member || null);
+                        setMemorialCommentText('');
+                      }}
+                      className="text-black"
+                      placeholder="Select a deceased demo family member..."
+                    />
+                  )}
+                </div>
+
+                {selectedDeceasedMember && (
+                  <>
+                    {/* Member Info */}
+                    <div className="border rounded-lg p-4 bg-gray-50">
+                      <h3 className="text-lg font-semibold mb-2">
+                        In Memory of {selectedDeceasedMember.first_name} {selectedDeceasedMember.last_name}
+                      </h3>
+                      {selectedDeceasedMember.death_date && (
+                        <p className="text-sm text-gray-600">
+                          <strong>Date of Passing:</strong> {new Date(selectedDeceasedMember.death_date).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Memorial Comment Form */}
+                    <div className="border-t pt-6">
+                      <h3 className="text-lg font-semibold mb-4 text-gray-800">Share a Memory</h3>
+                      <form onSubmit={handleAddMemorialComment} className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Memorial Comment</label>
+                          <textarea
+                            value={memorialCommentText}
+                            onChange={(e) => setMemorialCommentText(e.target.value)}
+                            placeholder="Share your favorite memory or message..."
+                            className="textarea textarea-bordered w-full"
+                            rows={6}
+                            required
+                            data-theme="light"
+                          />
+                        </div>
+                        <button
+                          type="submit"
+                          disabled={!memorialCommentText.trim() || isAddingMemorialComment || !selectedMember}
+                          className="btn btn-primary w-full"
+                          data-theme="light"
+                        >
+                          {isAddingMemorialComment ? 'Adding Memorial...' : `Add Memorial Comment as ${selectedMember.first_name} ${selectedMember.last_name}`}
+                        </button>
+                      </form>
+                    </div>
+
+                    {/* Existing Memorial Comments */}
+                    <div className="border-t pt-6">
+                      <h3 className="text-lg font-semibold mb-4 text-gray-800">Existing Memorial Comments</h3>
+                      {isLoadingMemorialComments ? (
+                        <div className="text-center py-4">Loading memorial comments...</div>
+                      ) : memorialComments.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500">
+                          No memorial comments yet. Be the first to share a memory.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {memorialComments.map((comment, index) => (
+                            <div key={index} className="bg-[#E8D4B8]/10 text-black rounded-lg shadow-md p-4">
+                              <div className="flex items-start gap-3 mb-2">
+                                {comment.profilePhoto ? (
+                                  <Image
+                                    src={getFullImageUrl(comment.profilePhoto) || '/fallback-image.jpg'}
+                                    alt="Commenter Profile Photo"
+                                    width={50}
+                                    height={50}
+                                    className="object-cover rounded-full flex-shrink-0 w-[50px] h-[50px]"
+                                  />
+                                ) : (
+                                  <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <span className="icon-[mdi--account] text-xl text-gray-400" />
+                                  </div>
+                                )}
+                                <div className="flex-grow min-w-0">
+                                  <h4 className="text-base font-semibold text-gray-900">{comment.author}</h4>
+                                  <p className="text-xs text-gray-500">
+                                    {new Date(comment.timestamp).toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'long',
+                                      day: 'numeric'
+                                    })}
+                                  </p>
+                                </div>
+                              </div>
+                              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap mt-2">{comment.text}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
