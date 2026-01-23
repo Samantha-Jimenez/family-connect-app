@@ -6,6 +6,7 @@ import { useAuthenticator } from '@aws-amplify/ui-react';
 import { getUserData } from '@/hooks/dynamoDB';
 import Select from 'react-select';
 import emailjs from '@emailjs/browser';
+import { isDemoUser } from '@/utils/demoConfig';
 
 interface ContactModalProps {
   isOpen: boolean;
@@ -73,9 +74,45 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
     { value: 'other', label: 'Other' },
   ];
 
+  // Clear form data when modal closes for demo users
+  useEffect(() => {
+    if (!isOpen && user?.userId && isDemoUser(user.userId)) {
+      // Clear all form data for demo users when modal closes
+      setFormData({
+        name: '',
+        preferredContactMethod: '' as 'email' | 'text' | '',
+        email: '',
+        phone: '',
+        subject: '',
+        message: '',
+      });
+      setSavedEmail('');
+      setSavedPhone('');
+      setSelectedSubjectOption(null);
+    }
+  }, [isOpen, user?.userId]);
+
   // Fetch logged-in user's name and contact info when modal opens
   useEffect(() => {
     if (isOpen && user?.userId) {
+      // Skip loading user info for demo users - they should fill in their own info
+      if (isDemoUser(user.userId)) {
+        setIsLoadingName(false);
+        // Ensure form is cleared when opening for demo users
+        setFormData({
+          name: '',
+          preferredContactMethod: '' as 'email' | 'text' | '',
+          email: '',
+          phone: '',
+          subject: '',
+          message: '',
+        });
+        setSavedEmail('');
+        setSavedPhone('');
+        setSelectedSubjectOption(null);
+        return;
+      }
+
       const loadUserInfo = async () => {
         try {
           setIsLoadingName(true);
@@ -285,17 +322,30 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
               Name
             </label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={formData.name}
-              readOnly
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 cursor-not-allowed"
-              disabled={isSubmitting || isLoadingName}
-              placeholder={isLoadingName ? 'Loading...' : ''}
-            />
-            {isLoadingName && (
+            {isDemoUser(user?.userId) ? (
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                disabled={isSubmitting}
+                placeholder="Enter your name"
+              />
+            ) : (
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
+                readOnly
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 cursor-not-allowed"
+                disabled={isSubmitting || isLoadingName}
+                placeholder={isLoadingName ? 'Loading...' : ''}
+              />
+            )}
+            {isLoadingName && !isDemoUser(user?.userId) && (
               <p className="text-xs text-gray-500 mt-1">Loading your information...</p>
             )}
           </div>
@@ -323,7 +373,7 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
                   <label htmlFor="contact-email" className="text-sm font-medium text-gray-700 cursor-pointer">
                     Email
                   </label>
-                  {savedEmail ? (
+                  {savedEmail && !isDemoUser(user?.userId) ? (
                     <p className="text-xs text-gray-600">Saved: {savedEmail}</p>
                   ) : (
                     <input
@@ -356,7 +406,7 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
                   <label htmlFor="contact-text" className="text-sm font-medium text-gray-700 cursor-pointer">
                     Text
                   </label>
-                  {savedPhone ? (
+                  {savedPhone && !isDemoUser(user?.userId) ? (
                     <p className="text-xs text-gray-600">Saved: {savedPhone}</p>
                   ) : (
                     <input
