@@ -709,6 +709,12 @@ const AlbumsCard = ({ userId, auth }: { userId: string, auth: boolean }) => {
           renderEditForm={renderEditForm}
           onPhotoDeleted={handlePhotoDeleted}
           onPhotoUpdated={handlePhotoUpdated}
+          photos={photos}
+          currentPhotoIndex={photos.findIndex(p => p.photo_id === selectedPhoto.photo_id)}
+          onPhotoChange={(newPhoto) => {
+            setSelectedPhoto(newPhoto);
+            fetchPhotoUploaderName(newPhoto.uploaded_by);
+          }}
         />
       )}
     </>

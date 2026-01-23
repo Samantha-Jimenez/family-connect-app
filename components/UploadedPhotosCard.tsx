@@ -150,6 +150,12 @@ export default function UploadedPhotosCard({ userId }: { userId: string }) {
           renderEditForm={renderEditForm}
           onPhotoDeleted={handlePhotoDeleted}
           onPhotoUpdated={handlePhotoUpdated}
+          photos={userPhotos.slice().sort((a, b) => new Date(b.upload_date).getTime() - new Date(a.upload_date).getTime())}
+          currentPhotoIndex={userPhotos.slice().sort((a, b) => new Date(b.upload_date).getTime() - new Date(a.upload_date).getTime()).findIndex(p => p.photo_id === selectedPhoto.photo_id)}
+          onPhotoChange={(newPhoto) => {
+            setSelectedPhoto(newPhoto);
+            fetchUploaderName(newPhoto.uploaded_by);
+          }}
         />
       )}
     </div>

@@ -1346,6 +1346,15 @@ const Photos = () => {
           renderEditForm={renderEditForm}
           onPhotoDeleted={handlePhotoDeleted}
           onPhotoUpdated={handlePhotoUpdated}
+          photos={filteredImages}
+          currentPhotoIndex={filteredImages.findIndex(p => p.photo_id === selectedPhoto.photo_id)}
+          onPhotoChange={(newPhoto) => {
+            setSelectedPhoto(newPhoto);
+            // Update uploader name for the new photo
+            if (newPhoto.uploaded_by) {
+              fetchUploaderName(newPhoto.uploaded_by);
+            }
+          }}
         />
       )}
     </div>

@@ -102,6 +102,11 @@ export default function FavoritedPhotosCard() {
           renderEditForm={() => <></>}
           onPhotoDeleted={handlePhotoDeleted}
           onPhotoUpdated={handlePhotoUpdated}
+          photos={favoritedPhotos}
+          currentPhotoIndex={favoritedPhotos.findIndex(p => p.photo_id === selectedPhoto.photo_id)}
+          onPhotoChange={(newPhoto) => {
+            setSelectedPhoto(newPhoto);
+          }}
         />
       )}
     </div>

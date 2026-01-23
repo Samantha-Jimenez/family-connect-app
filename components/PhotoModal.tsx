@@ -1,4 +1,4 @@
-import React, { MouseEvent, useState, useEffect } from 'react';
+import React, { MouseEvent, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import Select from 'react-select';
@@ -19,6 +19,9 @@ interface PhotoModalProps {
   renderEditForm: () => JSX.Element;
   onPhotoDeleted?: () => void;
   onPhotoUpdated?: (updatedPhoto: PhotoData) => void;
+  photos?: PhotoData[]; // Optional: array of all photos for navigation
+  currentPhotoIndex?: number; // Optional: current photo index in the array
+  onPhotoChange?: (photo: PhotoData) => void; // Optional: callback when navigating to different photo
 }
 
 const formatDate = (dateString: string): string => {
@@ -63,7 +66,10 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   handleImageError,
   renderEditForm,
   onPhotoDeleted,
-  onPhotoUpdated
+  onPhotoUpdated,
+  photos = [],
+  currentPhotoIndex = -1,
+  onPhotoChange
 }) => {
   const { user } = useAuthenticator();
   const [albums, setAlbums] = useState<AlbumData[]>([]);
@@ -441,11 +447,78 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     }
   };
 
+  // Navigation functions
+  const canNavigate = photos.length > 0 && currentPhotoIndex >= 0;
+  const hasNext = canNavigate && currentPhotoIndex < photos.length - 1;
+  const hasPrevious = canNavigate && currentPhotoIndex > 0;
+
+  const goToNext = useCallback(() => {
+    if (hasNext && photos && onPhotoChange && currentPhotoIndex >= 0) {
+      const nextPhoto = photos[currentPhotoIndex + 1];
+      onPhotoChange(nextPhoto);
+    }
+  }, [hasNext, photos, onPhotoChange, currentPhotoIndex]);
+
+  const goToPrevious = useCallback(() => {
+    if (hasPrevious && photos && onPhotoChange && currentPhotoIndex >= 0) {
+      const prevPhoto = photos[currentPhotoIndex - 1];
+      onPhotoChange(prevPhoto);
+    }
+  }, [hasPrevious, photos, onPhotoChange, currentPhotoIndex]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (!canNavigate) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isEditing) return; // Don't navigate when editing
+      
+      if (e.key === 'ArrowRight' && hasNext) {
+        e.preventDefault();
+        goToNext();
+      } else if (e.key === 'ArrowLeft' && hasPrevious) {
+        e.preventDefault();
+        goToPrevious();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [canNavigate, hasNext, hasPrevious, isEditing, goToNext, goToPrevious]);
+
   if (!mounted) return null;
 
   const modalContent = (
     <div className="fixed inset-0 bg-black bg-opacity-50 md:flex md:items-center md:justify-center z-[100] overflow-y-auto" onClick={handleCloseModal}>
-      <div className="bg-white dark:bg-gray-800 p-6 md:rounded-lg max-w-4xl md:w-full w-full h-full md:h-auto md:m-4 grid grid-cols-1 md:grid-cols-2 grid-rows-[min-content_auto] gap-4 overflow-y-auto md:overflow-y-visible" onClick={handleModalClick}>
+      <div className="relative bg-white dark:bg-gray-800 p-6 md:rounded-lg max-w-4xl md:w-full w-full h-full md:h-auto md:m-4 grid grid-cols-1 md:grid-cols-2 grid-rows-[min-content_auto] gap-4 overflow-y-auto md:overflow-y-visible" onClick={handleModalClick}>
+        {/* Previous Arrow */}
+        {canNavigate && hasPrevious && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              goToPrevious();
+            }}
+            className="absolute left-0 md:-left-20 top-1/2 -translate-y-1/2 z-10 bg-white/70 hover:bg-white/90 rounded-full p-0 md:p-3 transition-all duration-200 flex items-center justify-center text-black"
+            aria-label="Previous photo"
+          >
+            <span className="icon-[mdi--chevron-left] text-2xl md:text-3xl" />
+          </button>
+        )}
+        
+        {/* Next Arrow */}
+        {canNavigate && hasNext && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              goToNext();
+            }}
+            className="absolute right-0 md:-right-20 top-1/2 -translate-y-1/2 z-10 bg-white/70 hover:bg-white/90 rounded-full p-0 md:p-3 transition-all duration-200 flex items-center justify-center text-black"
+            aria-label="Next photo"
+          >
+            <span className="icon-[mdi--chevron-right] text-2xl md:text-3xl" />
+          </button>
+        )}
+
         <div className="relative justify-self-center">
           <Image
             src={photo.url || '/fallback-image.jpg'}

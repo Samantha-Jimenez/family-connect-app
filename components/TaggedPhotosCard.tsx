@@ -166,6 +166,12 @@ export default function TaggedPhotosCard({ userId }: { userId: string }) {
           renderEditForm={renderEditForm}
           onPhotoDeleted={handlePhotoDeleted}
           onPhotoUpdated={handlePhotoUpdated}
+          photos={taggedPhotos}
+          currentPhotoIndex={taggedPhotos.findIndex(p => p.photo_id === selectedPhoto.photo_id)}
+          onPhotoChange={(newPhoto) => {
+            setSelectedPhoto(newPhoto);
+            fetchUploaderName(newPhoto.uploaded_by);
+          }}
         />
       )}
     </div>
