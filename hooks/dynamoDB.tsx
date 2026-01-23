@@ -547,8 +547,8 @@ export const savePhotoToDB = async (photoData: PhotoData) => {
       throw new Error('User must be authenticated to upload photos');
     }
     
-    // Final fallback (should never reach here due to throw above, but TypeScript requires it)
-    if (!photoFamilyGroup) {
+    // Final fallback: only throw if genuinely missing. Real users have family_group '' (falsy but valid).
+    if (photoFamilyGroup === null || photoFamilyGroup === undefined) {
       console.error('❌ Security Error: Could not determine family_group');
       throw new Error('Unable to determine family group for photo');
     }
@@ -622,6 +622,11 @@ export const savePhotoToDB = async (photoData: PhotoData) => {
           }
         }))
       };
+    }
+
+    // Preserve existing comments when updating (PutItem overwrites entire record)
+    if (existingPhotoData.Item?.comments?.L && existingPhotoData.Item.comments.L.length > 0) {
+      item.comments = existingPhotoData.Item.comments;
     }
 
     const command = new PutItemCommand({
@@ -749,6 +754,11 @@ export const adminSavePhotoAsDemoMember = async (photoData: PhotoData, familyGro
           }
         }))
       };
+    }
+
+    // Preserve existing comments when updating (PutItem overwrites entire record)
+    if (existingPhotoData.Item?.comments?.L && existingPhotoData.Item.comments.L.length > 0) {
+      item.comments = existingPhotoData.Item.comments;
     }
 
     const command = new PutItemCommand({

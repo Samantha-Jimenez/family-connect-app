@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState, useRef, ChangeEvent } from 'react';
 import { useAuthenticator } from "@aws-amplify/ui-react";
-import { getAllFamilyMembers, adminSavePhotoAsDemoMember, addCommentToPhoto, getProfilePhotoById, PhotoData, FamilyMember, adminUpdateMemberHobbies, getAllHobbies, addCommentToHobby, getCommentsForHobby, getUserData, adminUpdateMemberSocialMedia, adminUpdateMemberPets, adminUpdateMemberLanguages, saveEventToDynamoDB, CalendarEventData, getEventsFromDynamoDB, saveRSVPToDynamoDB, deleteRSVPFromDynamoDB, getEventRSVPs, getUserNameById, deleteEventFromDynamoDB, sendEventCancellationNotifications, adminCreateAlbumAsDemoMember, getUserAlbums, AlbumData, adminAddPhotoToAlbum, savePhotoToDB, TaggedPerson, updateAlbum, getPhotosByAlbum, addCommentToMember, getCommentsForMember, editCommentInMember, deleteCommentFromMember } from "@/hooks/dynamoDB";
+import { getAllFamilyMembers, adminSavePhotoAsDemoMember, addCommentToPhoto, getProfilePhotoById, PhotoData, FamilyMember, adminUpdateMemberHobbies, getAllHobbies, addCommentToHobby, getCommentsForHobby, getUserData, adminUpdateMemberSocialMedia, adminUpdateMemberPets, adminUpdateMemberLanguages, saveEventToDynamoDB, CalendarEventData, getEventsFromDynamoDB, saveRSVPToDynamoDB, deleteRSVPFromDynamoDB, getEventRSVPs, getUserNameById, deleteEventFromDynamoDB, sendEventCancellationNotifications, adminCreateAlbumAsDemoMember, getUserAlbums, AlbumData, adminAddPhotoToAlbum, TaggedPerson, updateAlbum, getPhotosByAlbum, addCommentToMember, getCommentsForMember, editCommentInMember, deleteCommentFromMember } from "@/hooks/dynamoDB";
 import { DEMO_FAMILY_GROUP, DEMO_USER_IDS } from '@/utils/demoConfig';
 import { useToast } from '@/context/ToastContext';
 import Select from 'react-select';
@@ -1078,7 +1078,8 @@ const AdminDemoDataPage = () => {
         },
       };
 
-      await savePhotoToDB(updatedPhoto);
+      // Use admin API when editing demo photos (admin may be logged in as real user)
+      await adminSavePhotoAsDemoMember(updatedPhoto, DEMO_FAMILY_GROUP);
       showToast('Photo updated successfully', 'success');
       handleCancelEditPhoto();
       fetchPhotos();
