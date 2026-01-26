@@ -965,7 +965,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             ) : (
               <>
                 {photo.metadata?.description && (
-                  <p className="text-xl text-gray-800 dark:text-gray-200 mb-1 pr-[10px]">
+                  <p className="text-xl text-gray-800 dark:text-gray-200 mb-1 pr-[10px] whitespace-pre-wrap break-words">
                     {photo.metadata?.description}
                   </p>
                 )}
