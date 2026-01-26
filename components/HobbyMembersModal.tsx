@@ -354,7 +354,7 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
             {loading ? (
               <p className="text-gray-500 dark:text-gray-400">Loading comments...</p>
             ) : comments.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {comments.map((comment, index) => (
                   <div key={index} className="flex items-start gap-2">
                     {editingCommentIndex === index ? (
@@ -437,7 +437,7 @@ const HobbyMembersModal: React.FC<HobbyMembersModalProps> = ({
                               </div>
                             )}
                             {comment.text && (
-                              <div>{comment.text}</div>
+                              <div className="font-light">{comment.text}</div>
                             )}
                           </div>
                           <time className="chat-footer opacity-50 text-gray-700 font-light text-sm">
