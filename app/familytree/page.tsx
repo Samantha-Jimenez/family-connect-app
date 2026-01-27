@@ -148,7 +148,34 @@ const CoupleBlock = ({
       {children.length > 0 && (
         <div className={`flex justify-center items-start relative mt-4 ${children.length > 1 ? 'space-x-8' : ''}`}>
           {/* horizontal line behind all children */}
-          <div className="absolute left-[95px] right-[63px] top-0 h-0.5 bg-gray-300" />
+          {(() => {
+            const lastChild = children[children.length - 1];
+            const isOnlyChild = children.length === 1;
+            const lastChildHasSpouse = !!lastChild?.spouse;
+            
+            // Check if any child is expanded and has multiple spouses (triggers MultiSpouseLayout)
+            const expandedChild = expandedChildIndex !== null ? children[expandedChildIndex] : null;
+            const expandedChildHasMultipleSpouses = expandedChild && (
+              (expandedChild.spouse && expandedChild.previousSpouses && expandedChild.previousSpouses.length > 0) ||
+              (expandedChild.previousSpouses && expandedChild.previousSpouses.length > 1)
+            );
+            
+            let rightClass = 'right-[63px]';
+            let leftClass = 'left-[95px]';
+            
+            if (expandedChildHasMultipleSpouses) {
+              leftClass = 'left-[184px]';
+            } else if (isOnlyChild && lastChildHasSpouse) {
+              rightClass = 'right-[153px]';
+              leftClass = 'left-[65px]';
+            } else if (lastChildHasSpouse) {
+              rightClass = 'right-[240px]';
+            }
+            
+            return (
+              <div className={`absolute ${leftClass} ${rightClass} top-0 h-0.5 bg-gray-300`} />
+            );
+          })()}
            {children.map((child, index) => (
              <div
                key={index}
@@ -156,13 +183,22 @@ const CoupleBlock = ({
                style={{ animationDelay: `${index * 0.06 + 0.2}s` }}
              >
                {/* vertical connector from the horizontal line to each child card */}
-               <div 
-                 className="w-0.5 h-8 bg-gray-300" 
-                 style={{
-                   position: "relative",
-                   right: child.spouse ? "29%" : undefined,
-                 }}
-               />
+               {(() => {
+                 const isExpanded = expandedChildIndex === index;
+                 const hasMultipleSpouses = (child.spouse && child.previousSpouses && child.previousSpouses.length > 0) ||
+                                          (child.previousSpouses && child.previousSpouses.length > 1);
+                 const shouldRemoveRightOffset = isExpanded && hasMultipleSpouses;
+                 
+                 return (
+                   <div 
+                     className="w-0.5 h-8 bg-gray-300" 
+                     style={{
+                       position: "relative",
+                       right: shouldRemoveRightOffset ? undefined : (child.spouse ? "29%" : undefined),
+                     }}
+                   />
+                 );
+               })()}
                <FamilyMember 
                  member={child} 
                  isExpanded={expandedChildIndex === index}
