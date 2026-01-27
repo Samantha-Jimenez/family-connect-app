@@ -173,7 +173,7 @@ const CoupleBlock = ({
             }
             
             return (
-              <div className={`absolute ${leftClass} ${rightClass} top-0 h-0.5 bg-gray-300`} />
+              <div className={`absolute ${leftClass} ${rightClass} top-0 h-0.5 bg-gray-300 transition-all duration-300 ease-in-out`} />
             );
           })()}
            {children.map((child, index) => (
@@ -191,10 +191,10 @@ const CoupleBlock = ({
                  
                  return (
                    <div 
-                     className="w-0.5 h-8 bg-gray-300" 
+                     className="w-0.5 h-8 bg-gray-300 transition-all duration-300 ease-in-out" 
                      style={{
                        position: "relative",
-                       right: shouldRemoveRightOffset ? undefined : (child.spouse ? "29%" : undefined),
+                       right: shouldRemoveRightOffset ? "0%" : (child.spouse ? "29%" : undefined),
                      }}
                    />
                  );
