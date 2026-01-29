@@ -359,6 +359,12 @@ const Photos = () => {
 
   const reversedImages = useMemo(() => [...filteredImages].reverse(), [filteredImages]);
 
+  // Memoized sorted images for consistent display and navigation (newest first by upload_date)
+  const sortedFilteredImages = useMemo(() => 
+    [...filteredImages].sort((a, b) => new Date(b.upload_date).getTime() - new Date(a.upload_date).getTime()),
+    [filteredImages]
+  );
+
   // Shuffle utility
   function shuffleArray<T>(array: T[]): T[] {
     const arr = [...array];
@@ -1310,7 +1316,7 @@ const Photos = () => {
       </div>
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '1.1s' }}>
-        {[...filteredImages.slice().sort((a, b) => new Date(b.upload_date).getTime() - new Date(a.upload_date).getTime())].map((photo, index) => (
+        {sortedFilteredImages.map((photo, index) => (
           <div 
             key={index} 
             className="relative h-48 cursor-pointer"
@@ -1346,8 +1352,8 @@ const Photos = () => {
           renderEditForm={renderEditForm}
           onPhotoDeleted={handlePhotoDeleted}
           onPhotoUpdated={handlePhotoUpdated}
-          photos={filteredImages}
-          currentPhotoIndex={filteredImages.findIndex(p => p.photo_id === selectedPhoto.photo_id)}
+          photos={sortedFilteredImages}
+          currentPhotoIndex={sortedFilteredImages.findIndex(p => p.photo_id === selectedPhoto.photo_id)}
           onPhotoChange={(newPhoto) => {
             setSelectedPhoto(newPhoto);
             // Update uploader name for the new photo
