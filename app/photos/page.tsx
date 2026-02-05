@@ -4,6 +4,7 @@ import React, { useState, useEffect, MouseEvent, useMemo, useCallback, useTransi
 import Image from 'next/image';
 import PhotoUpload from '@/components/PhotoUpload';
 import LoadSpinner from '@/components/LoadSpinner';
+import Skeleton, { PhotoGridSkeleton } from '@/components/Skeleton';
 import { Range, getTrackBackground } from 'react-range';
 import { FamilyMemberProps } from '../familytree/page'; // Adjust the import path as necessary
 import { familyTreeData } from '../familytree/familyTreeData'; // Import familyTreeData
@@ -878,44 +879,62 @@ const Photos = () => {
       return `${date.toLocaleDateString('en-US', { month: 'long' })} ${date.getFullYear()}`;
     };
   
+    const minDateLabel = formatLabel(currentDateRange[0]);
+    const maxDateLabel = formatLabel(currentDateRange[1]);
+    const sliderLabelId = 'date-range-slider-label';
+
     return (
       <div className="mb-8 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.8s' }}>
-        <div className="mb-2 flex justify-between text-sm text-gray-600 whitespace-nowrap">
-          <span>{formatLabel(currentDateRange[0])}</span>
-          <span>{formatLabel(currentDateRange[1])}</span>
+        <label 
+          id={sliderLabelId}
+          className="block text-sm font-medium text-gray-700 mb-2 poppins-medium"
+        >
+          Filter by Date Range
+        </label>
+        <div className="mb-2 flex justify-between text-sm text-gray-600 whitespace-nowrap" aria-hidden="true">
+          <span>{minDateLabel}</span>
+          <span>{maxDateLabel}</span>
         </div>
-        <Range
-          values={currentDateRange}
-          step={msPerMonth}
-          min={dateRange.min}
-          max={dateRange.max}
-          onChange={handleRangeChange}
-          renderTrack={({ props, children }) => (
-            <div
-              ref={props.ref}
-              onMouseDown={props.onMouseDown}
-              onTouchStart={props.onTouchStart}
-              style={{
-                ...props.style,
-                background: getTrackBackground({
-                  values: currentDateRange,
-                  colors: ["#e5e7eb", "#5CAB68", "#e5e7eb"],
-                  min: dateRange.min,
-                  max: dateRange.max
-                })
-              }}
-              className="h-2 w-full rounded bg-gray-200 px-4"
-            >
-              {children}
-            </div>
-          )}
-          renderThumb={({ props, isDragged }) => (
-            <div
-              {...props}
-              className={`h-4 w-4 rounded-full bg-plantain-green focus:outline-none ${isDragged ? 'shadow-lg' : ''}`}
-            />
-          )}
-        />
+        <div role="group" aria-labelledby={sliderLabelId} aria-label={`Date range filter from ${minDateLabel} to ${maxDateLabel}`}>
+          <Range
+            values={currentDateRange}
+            step={msPerMonth}
+            min={dateRange.min}
+            max={dateRange.max}
+            onChange={handleRangeChange}
+            renderTrack={({ props, children }) => (
+              <div
+                ref={props.ref}
+                onMouseDown={props.onMouseDown}
+                onTouchStart={props.onTouchStart}
+                style={{
+                  ...props.style,
+                  background: getTrackBackground({
+                    values: currentDateRange,
+                    colors: ["#e5e7eb", "#5CAB68", "#e5e7eb"],
+                    min: dateRange.min,
+                    max: dateRange.max
+                  })
+                }}
+                className="h-2 w-full rounded bg-gray-200 px-4"
+              >
+                {children}
+              </div>
+            )}
+            renderThumb={({ props, isDragged, index }) => (
+              <div
+                {...props}
+                role="slider"
+                aria-valuemin={dateRange.min}
+                aria-valuemax={dateRange.max}
+                aria-valuenow={currentDateRange[index]}
+                aria-label={index === 0 ? `Start date: ${minDateLabel}` : `End date: ${maxDateLabel}`}
+                tabIndex={0}
+                className={`h-4 w-4 rounded-full bg-plantain-green focus:outline-none focus:ring-2 focus:ring-plantain-green focus:ring-offset-2 ${isDragged ? 'shadow-lg' : ''}`}
+              />
+            )}
+          />
+        </div>
       </div>
     );
   };
@@ -1047,10 +1066,17 @@ const Photos = () => {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-center items-center h-64">
-          <LoadSpinner size={80} />
+      <div className="container mx-auto px-4 py-8 bg-gray-100">
+        <Skeleton variant="text" width="200px" height="40px" className="mb-6" />
+        <div className="mb-8">
+          <Skeleton variant="text" width="150px" height="20px" className="mb-4" />
+          <div className="flex flex-wrap gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} variant="rectangular" width="100%" height="40px" className="md:w-[calc(50%-0.5rem)]" />
+            ))}
+          </div>
         </div>
+        <PhotoGridSkeleton count={12} />
       </div>
     );
   }
@@ -1086,11 +1112,13 @@ const Photos = () => {
         {/* Location filter dropdown */}
         <div className="flex flex-wrap">
           <div className="md:w-1/2 w-full md:p-2 py-1 px-0 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.2s' }}> {/* First column */}
-            <label htmlFor="country-filter" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
+            <label htmlFor="country-filter" id="country-filter-label" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
               Filter by Country:
             </label>
             <Select
               components={animatedComponents}
+              inputId="country-filter"
+              aria-labelledby="country-filter-label"
               className="basic-multi-select text-black poppins-light"
               options={countries}
               value={selectedCountry}
@@ -1099,19 +1127,22 @@ const Photos = () => {
                 setSelectedCountry(options as LocationOption[]);
                 // Filtering handled automatically by useEffect
               }}
-              placeholder="Country"
+              placeholder="Select countries"
               styles={selectStyles}
               menuPortalTarget={document.body}
               // menuPosition="fixed"
               menuPlacement="bottom"
+              aria-label="Filter photos by country"
             />
           </div>
           <div className="md:w-1/2 w-full md:p-2 py-1 px-0 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.3s' }}> {/* Second column */}
-            <label htmlFor="state-filter" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
+            <label htmlFor="state-filter" id="state-filter-label" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
               Filter by State:
             </label>
             <Select
               components={animatedComponents}
+              inputId="state-filter"
+              aria-labelledby="state-filter-label"
               className="basic-multi-select text-black poppins-light"
               options={states}
               value={selectedState}
@@ -1120,19 +1151,22 @@ const Photos = () => {
                 setSelectedState(options as LocationOption[]);
                 // Filtering handled automatically by useEffect
               }}
-              placeholder="State"
+              placeholder="Select states"
               styles={selectStyles}
               menuPortalTarget={document.body}
               // menuPosition="fixed"
               menuPlacement="bottom"
+              aria-label="Filter photos by state"
             />
           </div>
           <div className="md:w-1/2 w-full md:p-2 py-1 px-0 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.4s' }}> {/* Third column */}
-            <label htmlFor="city-filter" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
+            <label htmlFor="city-filter" id="city-filter-label" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
               Filter by City:
             </label>
             <Select
               components={animatedComponents}
+              inputId="city-filter"
+              aria-labelledby="city-filter-label"
               className="basic-multi-select text-black poppins-light"
               options={cities}
               value={selectedCity}
@@ -1141,19 +1175,22 @@ const Photos = () => {
                 setSelectedCity(options as LocationOption[]);
                 // Filtering handled automatically by useEffect
               }}  
-              placeholder="City"
+              placeholder="Select cities"
               styles={selectStyles}
               menuPortalTarget={document.body}
               // menuPosition="fixed"
               menuPlacement="bottom"
+              aria-label="Filter photos by city"
             />
           </div>
           <div className="md:w-1/2 w-full md:p-2 py-1 px-0 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.5s' }}> {/* Fourth column */}
-            <label htmlFor="neighborhood-filter" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
+            <label htmlFor="neighborhood-filter" id="neighborhood-filter-label" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
               Filter by Neighborhood:
             </label>
             <Select
               components={animatedComponents}
+              inputId="neighborhood-filter"
+              aria-labelledby="neighborhood-filter-label"
               className="basic-multi-select text-black poppins-light"
               options={neighborhoods}
               value={selectedNeighborhood}
@@ -1162,26 +1199,29 @@ const Photos = () => {
                 setSelectedNeighborhood(options as LocationOption[]);
                 // Filtering handled automatically by useEffect
               }}
-              placeholder="Neighborhood"
+              placeholder="Select neighborhoods"
               styles={selectStyles}
               menuPortalTarget={document.body}
               // menuPosition="fixed"
               menuPlacement="bottom"
+              aria-label="Filter photos by neighborhood"
             />
           </div>
         </div>
 
         {/* Person filter dropdown */}
         <div className="mb-4 md:p-2 px-0 py-1 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.6s' }}>
-          <label htmlFor="person-filter" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
+          <label htmlFor="person-filter" id="person-filter-label" className="block text-sm font-medium text-gray-400 poppins-medium whitespace-nowrap">
             Filter by Person:
           </label>
           <Select
             components={animatedComponents}
-            id="person-filter"
+            inputId="person-filter"
+            aria-labelledby="person-filter-label"
             isMulti
             options={personOptions}
             className="basic-multi-select text-black poppins-light"
+            aria-label="Filter photos by tagged people"
             classNamePrefix="select"
             onChange={handlePersonChange}
             value={selectedPeople.map(person => ({ value: person.name, label: person.name }))}
