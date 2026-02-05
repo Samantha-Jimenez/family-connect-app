@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { verifyAuth, createUnauthorizedResponse } from '@/utils/apiAuth';
 
 const s3 = new S3Client({
   region: process.env.NEXT_PUBLIC_AWS_PROJECT_REGION,
@@ -9,7 +11,18 @@ const s3 = new S3Client({
   },
 });
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  // Verify authentication
+  let authenticatedUser;
+  try {
+    authenticatedUser = await verifyAuth(request);
+  } catch (error) {
+    console.error('Authentication failed:', error);
+    return createUnauthorizedResponse(
+      error instanceof Error ? error.message : 'Authentication required'
+    );
+  }
+
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -17,6 +30,9 @@ export async function POST(request: Request) {
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
+
+    // Log upload for audit purposes (optional)
+    console.log(`File upload initiated by user: ${authenticatedUser.userId} (${authenticatedUser.username})`);
 
     const buffer = await file.arrayBuffer();
     const fileName = file.name.replace(/^photos\//g, '');

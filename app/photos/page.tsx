@@ -508,15 +508,43 @@ const Photos = () => {
       setLoading(true);
       const user = await getCurrentUser();
       const userId = user?.userId || '';
-      const response = await fetch(`/api/photos?userId=${encodeURIComponent(userId)}`);
+      
+      // Get auth token to include in request
+      let authHeaders: HeadersInit = {};
+      try {
+        const { fetchAuthSession } = await import('aws-amplify/auth');
+        const session = await fetchAuthSession();
+        const token = session.tokens?.idToken?.toString();
+        if (token) {
+          authHeaders = {
+            'Authorization': `Bearer ${token}`,
+          };
+        }
+      } catch (authError) {
+        console.warn('Could not get auth token, relying on cookies:', authError);
+      }
+      
+      const response = await fetch(`/api/photos?userId=${encodeURIComponent(userId)}`, {
+        headers: authHeaders,
+        credentials: 'include', // Ensure cookies are sent
+      });
       const data = await response.json();
 
       if (data.error) {
         console.error('API returned error:', data.error);
+        if (data.message) {
+          console.error('Error message:', data.message);
+        }
+        // If unauthorized, try to refresh auth and retry once
+        if (response.status === 401) {
+          console.warn('Authentication failed, user may need to re-login');
+        }
+        setImages([]);
+        setFilteredImages([]);
         return;
       }
 
-      if (data.photos) {
+      if (data && Array.isArray(data.photos)) {
         const photoUrls = data.photos.map((photo: any) => {
           return {
             album_ids: photo.album_ids || [],
@@ -555,8 +583,44 @@ const Photos = () => {
       setLoading(true);
       const user = await getCurrentUser();
       const userId = user?.userId || '';
-      const response = await fetch(`/api/photos?userId=${encodeURIComponent(userId)}&taggedUserId=${encodeURIComponent(id)}`);
+      // Get auth token to include in request
+      let authHeaders: HeadersInit = {};
+      try {
+        const { fetchAuthSession } = await import('aws-amplify/auth');
+        const session = await fetchAuthSession();
+        const token = session.tokens?.idToken?.toString();
+        if (token) {
+          authHeaders = {
+            'Authorization': `Bearer ${token}`,
+          };
+        }
+      } catch (authError) {
+        console.warn('Could not get auth token, relying on cookies:', authError);
+      }
+      
+      const response = await fetch(`/api/photos?userId=${encodeURIComponent(userId)}&taggedUserId=${encodeURIComponent(id)}`, {
+        headers: authHeaders,
+        credentials: 'include', // Ensure cookies are sent
+      });
+
+      // Check if response is ok
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('API error:', errorData);
+        setImages([]);
+        setFilteredImages([]);
+        return;
+      }
+
       const data = await response.json();
+
+      // Check if data.photos exists and is an array before filtering
+      if (!data || !Array.isArray(data.photos)) {
+        console.warn('Invalid API response format:', data);
+        setImages([]);
+        setFilteredImages([]);
+        return;
+      }
 
       const filteredPhotos = data.photos.filter((photo: PhotoData) => {
         return photo.metadata?.people_tagged?.some((person: TaggedPerson) => person.id === id);

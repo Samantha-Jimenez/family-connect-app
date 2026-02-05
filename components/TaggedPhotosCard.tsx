@@ -44,17 +44,52 @@ export default function TaggedPhotosCard({ userId }: { userId: string }) {
         console.error('Error getting current user:', error);
       }
 
+      // Get auth token to include in request
+      let authHeaders: HeadersInit = {};
+      try {
+        const { fetchAuthSession } = await import('aws-amplify/auth');
+        const session = await fetchAuthSession();
+        const token = session.tokens?.idToken?.toString();
+        if (token) {
+          authHeaders = {
+            'Authorization': `Bearer ${token}`,
+          };
+        }
+      } catch (authError) {
+        console.warn('Could not get auth token, relying on cookies:', authError);
+      }
+
       // Use the current user's Cognito ID for userId (family group filtering)
       // Use the passed userId (family_member_id) for taggedUserId (to find photos where this member is tagged)
       const url = `/api/photos?userId=${encodeURIComponent(currentUserCognitoId)}&taggedUserId=${encodeURIComponent(userId)}`;
       
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: authHeaders,
+        credentials: 'include', // Ensure cookies are sent
+      });
+
+      // Check if response is ok
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('API error:', errorData);
+        setTaggedPhotos([]);
+        return;
+      }
+
       const data = await response.json();
+      
+      // Check if data.photos exists and is an array
+      if (!data || !Array.isArray(data.photos)) {
+        console.warn('Invalid API response format:', data);
+        setTaggedPhotos([]);
+        return;
+      }
       
       // The API already filters photos by taggedUserId, so we can use the photos directly
       setTaggedPhotos(data.photos || []);
     } catch (error) {
       console.error("Error fetching tagged photos:", error);
+      setTaggedPhotos([]);
     } finally {
       setLoading(false);
     }

@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { DynamoDBClient, ScanCommand, GetItemCommand } from '@aws-sdk/client-dynamodb';
 import { S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getUserFamilyGroup, normalizeFamilyGroup } from '@/utils/demoConfig';
+import { verifyAuth, createUnauthorizedResponse } from '@/utils/apiAuth';
 
 const dynamoDB = new DynamoDBClient({
   region: process.env.NEXT_PUBLIC_AWS_PROJECT_REGION,
@@ -61,10 +63,13 @@ async function getPreferredName(userId: string): Promise<string> {
   }
 }
 
-// Helper function to get family member IDs for a user's family group
-async function getFamilyMemberIds(userId: string | null): Promise<string[]> {
+// Helper function to get family member IDs and Cognito user IDs for a user's family group
+async function getFamilyMemberInfo(userId: string | null): Promise<{
+  familyMemberIds: string[]; // family_member_id values (UUIDs)
+  cognitoUserIds: string[]; // Cognito user IDs (for uploaded_by matching)
+}> {
   if (!userId) {
-    return [];
+    return { familyMemberIds: [], cognitoUserIds: [] };
   }
   
   try {
@@ -78,13 +83,18 @@ async function getFamilyMemberIds(userId: string | null): Promise<string[]> {
     const response = await dynamoDB.send(command);
     
     if (!response.Items) {
-      return [];
+      return { familyMemberIds: [], cognitoUserIds: [] };
     }
     
-    // Filter by family group and return IDs
+    // Filter by family group and return both types of IDs
     const filteredMembers = response.Items
       .map(item => ({
-        id: item.family_member_id?.S || '',
+        family_member_id: item.family_member_id?.S || '',
+        // Check if family_member_id matches Cognito ID pattern (UUID) or if it IS the Cognito ID
+        // Also check username/email fields which might contain Cognito info
+        cognitoId: item.family_member_id?.S || '', // For now, assume family_member_id might be Cognito ID
+        username: item.username?.S || '',
+        email: item.email?.S || '',
         family_group: normalizeFamilyGroup(item.family_group?.S),
         name: `${item.first_name?.S || ''} ${item.last_name?.S || ''}`.trim(),
       }))
@@ -93,28 +103,52 @@ async function getFamilyMemberIds(userId: string | null): Promise<string[]> {
         return memberGroup === familyGroup;
       });
     
-    const memberIds = filteredMembers.map(member => member.id);
+    const familyMemberIds = filteredMembers.map(member => member.family_member_id);
     
-    return memberIds;
+    // IMPORTANT: In this system, family_member_id IS the Cognito user ID
+    // So familyMemberIds contains Cognito user IDs, and uploaded_by also stores Cognito user IDs
+    // We need both lists for different purposes:
+    // - familyMemberIds: for filtering people_tagged (which uses family_member_id)
+    // - cognitoUserIds: for filtering uploaded_by (which uses Cognito ID, same as family_member_id)
+    const cognitoUserIds = [userId, ...familyMemberIds]; // Include authenticated user + all family members
+    
+    // Also ensure the user's own family_member_id is in the list (in case they're not in Family table yet)
+    if (!familyMemberIds.includes(userId)) {
+      familyMemberIds.push(userId);
+    }
+    
+    return { familyMemberIds, cognitoUserIds };
   } catch (error) {
-    console.error('❌ Error fetching family member IDs:', error);
-    return [];
+    console.error('❌ Error fetching family member info:', error);
+    return { familyMemberIds: [], cognitoUserIds: [userId] }; // At least include the current user
   }
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  // Verify authentication
+  let authenticatedUser;
+  try {
+    authenticatedUser = await verifyAuth(request);
+  } catch (error) {
+    console.error('Authentication failed:', error);
+    return createUnauthorizedResponse(
+      error instanceof Error ? error.message : 'Authentication required'
+    );
+  }
+
   const url = new URL(request.url);
   const taggedUserId = url.searchParams.get('taggedUserId');
-  const currentUserId = url.searchParams.get('userId'); // Get current user ID for family group filtering
+  // Use authenticated user ID instead of query parameter for security
+  const currentUserId = authenticatedUser.userId;
 
   try {
-    // Get family member IDs for the current user's family group
-    const familyMemberIds = currentUserId ? await getFamilyMemberIds(currentUserId) : [];
+    // Get family member info for the current user's family group
+    const { familyMemberIds, cognitoUserIds } = currentUserId 
+      ? await getFamilyMemberInfo(currentUserId) 
+      : { familyMemberIds: [], cognitoUserIds: [] };
     
-    // If we have a userId but no family members found, return empty (user has no family group data)
-    if (currentUserId && familyMemberIds.length === 0) {
-      return NextResponse.json({ photos: [] });
-    }
+    // If we have a userId but no family members found, still allow the user to see their own photos
+    // Don't return empty - let the filtering logic handle it
     
     const params: any = {
       TableName: 'Photos',
@@ -133,25 +167,101 @@ export async function GET(request: Request) {
     
     // Filter by family group - only show photos from the user's family group
     // Primary check: family_group field on photo must match user's family group
-    // Secondary check: if no family_group set, check if uploaded_by matches family member IDs (backward compatibility)
-    // Note: For real users, getUserFamilyGroup returns '' (falsy). We must not use userFamilyGroup in the
-    // condition—use currentUserId only. Otherwise real users incorrectly get no photos.
+    // Secondary check: if no family_group set, check if uploaded_by matches Cognito user IDs (backward compatibility)
+    // Note: uploaded_by stores Cognito user IDs, not family_member_ids
     const userFamilyGroup = currentUserId ? getUserFamilyGroup(currentUserId) : null;
+    const normalizedUserFamilyGroup = normalizeFamilyGroup(userFamilyGroup);
+    
     const filteredItems = currentUserId
       ? response.Items.filter(item => {
           const uploadedBy = item.uploaded_by?.S || '';
-          const photoFamilyGroup = item.family_group?.S; // Get family_group from photo (may be undefined for old photos)
+          const photoFamilyGroup = normalizeFamilyGroup(item.family_group?.S); // Normalize: empty/null/undefined -> ''
           
-          // Primary check: if photo has family_group, it must match user's family group
-          if (photoFamilyGroup) {
-            return photoFamilyGroup === userFamilyGroup;
+          // ALWAYS include authenticated user's own photos (uploaded_by matches their Cognito ID)
+          // This ensures users always see their uploads regardless of family_group status
+          if (uploadedBy === currentUserId) {
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`Photo ${item.photo_id?.S} included: uploaded_by (${uploadedBy}) matches currentUserId`);
+            }
+            return true;
           }
           
-          // Secondary check: if no family_group set (old photos), check if uploaded_by is in family member IDs
-          // This is for backward compatibility with photos uploaded before family_group was added
-          return familyMemberIds.length > 0 && familyMemberIds.includes(uploadedBy);
+          // Check if user (or the requested taggedUserId) is tagged in this photo
+          // This ensures tagged photos are included even if uploaded_by doesn't match
+          // Check both: the specific taggedUserId (if provided) OR the current user's family_member_id
+          if (item.people_tagged?.L) {
+            const isUserTagged = item.people_tagged.L.some((person: any) => {
+              const taggedId = person.M?.id?.S?.trim();
+              if (!taggedId) return false;
+              
+              // If taggedUserId is provided, check if it matches
+              if (taggedUserId && taggedId === taggedUserId) {
+                // Verify the tagged person is in the family
+                return familyMemberIds.includes(taggedId) || taggedId === currentUserId;
+              }
+              
+              // Also check if current user is tagged (for general photo view)
+              // Find current user's family_member_id by checking if their Cognito ID matches a family_member_id
+              // Since family_member_id = Cognito ID, check if taggedId matches currentUserId
+              if (!taggedUserId && taggedId === currentUserId) {
+                return true; // User is tagged in this photo
+              }
+              
+              // Check if tagged person is in the family
+              return familyMemberIds.includes(taggedId);
+            });
+            
+            if (isUserTagged) {
+              if (process.env.NODE_ENV === 'development') {
+                console.log(`Photo ${item.photo_id?.S} included: user is tagged in photo`);
+              }
+              return true;
+            }
+          }
+          
+          // Primary check: if photo has family_group, it must match user's family group
+          // For real users: both will be '' (empty string)
+          // For demo users: both will be 'demo'
+          const familyGroupMatches = photoFamilyGroup === normalizedUserFamilyGroup;
+          
+          if (familyGroupMatches) {
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`Photo ${item.photo_id?.S} included: family_group matches (${photoFamilyGroup} === ${normalizedUserFamilyGroup})`);
+            }
+            return true;
+          }
+          
+          // Secondary check: if family_group doesn't match or is missing, check if uploaded_by matches any family member
+          // This handles backward compatibility for photos uploaded before family_group was implemented
+          // Since family_member_id = Cognito ID in this system, check cognitoUserIds (which includes all family members)
+          const matches = cognitoUserIds.includes(uploadedBy);
+          
+          if (process.env.NODE_ENV === 'development') {
+            if (matches) {
+              console.log(`Photo ${item.photo_id?.S} included: uploaded_by (${uploadedBy}) matches family member (backward compatibility)`);
+            } else {
+              console.log(`Photo ${item.photo_id?.S} filtered out: family_group (${photoFamilyGroup}) !== userGroup (${normalizedUserFamilyGroup}) and uploaded_by (${uploadedBy}) not in family`);
+            }
+          }
+          return matches;
         })
       : response.Items; // If no userId, return all (backward compatibility, should be avoided)
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`📸 Photo Filtering Summary:`);
+      console.log(`  - Total photos in DB: ${response.Items.length}`);
+      console.log(`  - Filtered photos: ${filteredItems.length}`);
+      console.log(`  - User ID: ${currentUserId}`);
+      console.log(`  - User Family Group: "${normalizedUserFamilyGroup}" (normalized)`);
+      console.log(`  - Cognito User IDs in family: ${cognitoUserIds.length}`);
+      console.log(`  - Family Member IDs: ${familyMemberIds.length}`);
+      console.log(`  - Sample photo family_groups:`, response.Items.slice(0, 5).map(item => ({
+        photo_id: item.photo_id?.S?.substring(0, 20),
+        uploaded_by: item.uploaded_by?.S?.substring(0, 20),
+        family_group: item.family_group?.S || '(missing)',
+        normalized: normalizeFamilyGroup(item.family_group?.S)
+      })));
+    }
 
     const bucketName = process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME;
     
@@ -184,14 +294,21 @@ export async function GET(request: Request) {
             date_taken: item.date_taken?.S || '',
             people_tagged: item.people_tagged?.L 
               ? (await Promise.all(item.people_tagged.L.map(async (person: any) => {
-                  const userId = person.M.id.S.trim();
-                  // Only include tagged people who are in the user's family group
-                  if (currentUserId && familyMemberIds.length > 0 && !familyMemberIds.includes(userId)) {
+                  const taggedPersonId = person.M.id?.S?.trim();
+                  if (!taggedPersonId) {
+                    return null; // Skip invalid entries
+                  }
+                  
+                  // Only filter out tagged people if we have family member IDs AND they're not in the list
+                  // If familyMemberIds is empty, include all (user might not have family data yet)
+                  if (currentUserId && familyMemberIds.length > 0 && !familyMemberIds.includes(taggedPersonId)) {
                     return null; // Filter out people not in the family group
                   }
-                  const preferredName = await getPreferredName(userId);
+                  
+                  // Get preferred name for the tagged person
+                  const preferredName = await getPreferredName(taggedPersonId);
                   return {
-                    id: userId,
+                    id: taggedPersonId,
                     name: preferredName
                   };
                 }))).filter((person): person is { id: string; name: string } => person !== null)

@@ -37,9 +37,43 @@ export default function UploadedPhotosCard({ userId }: { userId: string }) {
     if (!currentUserId) return;
     
     try {
+      // Get auth token to include in request
+      let authHeaders: HeadersInit = {};
+      try {
+        const { fetchAuthSession } = await import('aws-amplify/auth');
+        const session = await fetchAuthSession();
+        const token = session.tokens?.idToken?.toString();
+        if (token) {
+          authHeaders = {
+            'Authorization': `Bearer ${token}`,
+          };
+        }
+      } catch (authError) {
+        console.warn('Could not get auth token, relying on cookies:', authError);
+      }
+
       // Use the logged-in user's ID to determine family group, not the viewed member's ID
-      const response = await fetch(`/api/photos?userId=${encodeURIComponent(currentUserId)}`);
+      const response = await fetch(`/api/photos?userId=${encodeURIComponent(currentUserId)}`, {
+        headers: authHeaders,
+        credentials: 'include', // Ensure cookies are sent
+      });
+
+      // Check if response is ok
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('API error:', errorData);
+        setUserPhotos([]);
+        return;
+      }
+
       const data = await response.json();
+      
+      // Check if data.photos exists and is an array before filtering
+      if (!data || !Array.isArray(data.photos)) {
+        console.warn('Invalid API response format:', data);
+        setUserPhotos([]);
+        return;
+      }
       
       // Filter to show only photos uploaded by the viewed member (userId)
       const filteredPhotos = data.photos.filter((photo: PhotoData) => 
@@ -49,6 +83,7 @@ export default function UploadedPhotosCard({ userId }: { userId: string }) {
       setUserPhotos(filteredPhotos);
     } catch (error) {
       console.error("Error fetching user photos:", error);
+      setUserPhotos([]);
     } finally {
       setLoading(false);
     }
