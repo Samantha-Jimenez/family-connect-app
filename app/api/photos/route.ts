@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { NextRequest } from 'next/server';
-import { DynamoDBClient, ScanCommand, GetItemCommand } from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient, ScanCommand, GetItemCommand, BatchGetItemCommand } from '@aws-sdk/client-dynamodb';
 import { S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
@@ -23,44 +23,64 @@ const s3Client = new S3Client({
   },
 });
 
-// Helper function to get preferred name for a user
-async function getPreferredName(userId: string): Promise<string> {
-  try {
-    const params = {
-      TableName: 'Family',
-      Key: {
-        family_member_id: { S: userId }
-      }
+const BATCH_GET_MAX = 100; // DynamoDB limit per BatchGetItem request
+
+/** Build preferred display name from a Family item (raw DynamoDB attribute map). */
+function preferredNameFromItem(item: Record<string, { S?: string; BOOL?: boolean }>): string {
+  const first_name = item.first_name?.S || '';
+  const last_name = item.last_name?.S || '';
+  const middle_name = item.middle_name?.S || '';
+  const nick_name = item.nick_name?.S || '';
+  const use_middle_name = item.use_middle_name?.BOOL ?? false;
+  const use_nick_name = item.use_nick_name?.BOOL ?? false;
+
+  let preferredFirstName = first_name;
+  if (use_nick_name && nick_name) {
+    preferredFirstName = nick_name;
+  } else if (use_middle_name && middle_name) {
+    preferredFirstName = middle_name;
+  }
+  return `${preferredFirstName} ${last_name}`.trim() || 'Unknown User';
+}
+
+/** Batch fetch preferred names for many user IDs (avoids N+1 GetItem calls). */
+async function getPreferredNamesBatch(userIds: string[]): Promise<Map<string, string>> {
+  const uniqueIds = [...new Set(userIds)].filter(Boolean);
+  const result = new Map<string, string>();
+
+  for (let i = 0; i < uniqueIds.length; i += BATCH_GET_MAX) {
+    const chunk = uniqueIds.slice(i, i + BATCH_GET_MAX);
+    const RequestItems = {
+      Family: {
+        Keys: chunk.map(id => ({ family_member_id: { S: id } })),
+      },
     };
 
-    const data = await dynamoDB.send(new GetItemCommand(params));
-
-    if (!data.Item) {
-      return 'Unknown User';
+    try {
+      const response = await dynamoDB.send(new BatchGetItemCommand({ RequestItems }));
+      const items = response.Responses?.Family ?? [];
+      for (const item of items) {
+        const id = item.family_member_id?.S;
+        if (id) result.set(id, preferredNameFromItem(item as Record<string, { S?: string; BOOL?: boolean }>));
+      }
+      // Handle unprocessed keys (retry once if needed)
+      const unprocessed = response.UnprocessedKeys?.Family?.Keys;
+      if (unprocessed?.length) {
+        const retry = await dynamoDB.send(new BatchGetItemCommand({
+          RequestItems: { Family: { Keys: unprocessed } },
+        }));
+        const retryItems = retry.Responses?.Family ?? [];
+        for (const item of retryItems) {
+          const id = item.family_member_id?.S;
+          if (id) result.set(id, preferredNameFromItem(item as Record<string, { S?: string; BOOL?: boolean }>));
+        }
+      }
+    } catch (error) {
+      console.error('Error in getPreferredNamesBatch:', error);
     }
-
-    // Get all name fields and preferences
-    const first_name = data.Item.first_name?.S || '';
-    const last_name = data.Item.last_name?.S || '';
-    const middle_name = data.Item.middle_name?.S || '';
-    const nick_name = data.Item.nick_name?.S || '';
-    const use_first_name = data.Item.use_first_name?.BOOL ?? true;
-    const use_middle_name = data.Item.use_middle_name?.BOOL ?? false;
-    const use_nick_name = data.Item.use_nick_name?.BOOL ?? false;
-
-    // Determine preferred first name based on user settings
-    let preferredFirstName = first_name;
-    if (use_nick_name && nick_name) {
-      preferredFirstName = nick_name;
-    } else if (use_middle_name && middle_name) {
-      preferredFirstName = middle_name;
-    }
-
-    return `${preferredFirstName} ${last_name}`;
-  } catch (error) {
-    console.error('Error fetching preferred name for user:', userId, error);
-    return 'Unknown User';
   }
+
+  return result;
 }
 
 // Helper function to get family member IDs and Cognito user IDs for a user's family group
@@ -75,10 +95,11 @@ async function getFamilyMemberInfo(userId: string | null): Promise<{
   try {
     const familyGroup = getUserFamilyGroup(userId);
     
+    // TODO: Replace with QueryCommand on a GSI (e.g. family_group-index) when available.
+    // Scan reads the entire table and is expensive as data grows.
     const params = {
       TableName: 'Family',
     };
-    
     const command = new ScanCommand(params);
     const response = await dynamoDB.send(command);
     
@@ -156,8 +177,8 @@ export async function GET(request: NextRequest) {
     
     // Note: We don't filter by taggedUserId in DynamoDB because people_tagged is a List of Maps,
     // and DynamoDB's contains() function doesn't work correctly with nested structures.
-    // Instead, we'll filter in JavaScript after processing the photos.
-
+    // Instead, we filter in JavaScript after processing the photos.
+    // TODO: Replace with QueryCommand on a GSI (e.g. family_group-index or uploaded_by-index) when available.
     const command = new ScanCommand(params);
     const response = await dynamoDB.send(command);
 
@@ -264,7 +285,19 @@ export async function GET(request: NextRequest) {
     }
 
     const bucketName = process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME;
-    
+
+    // Collect all unique tagged person IDs and batch-fetch preferred names (avoids N+1 GetItem calls)
+    const taggedPersonIds = new Set<string>();
+    for (const item of filteredItems) {
+      for (const person of item.people_tagged?.L ?? []) {
+        const id = person.M?.id?.S?.trim();
+        if (!id) continue;
+        if (currentUserId && familyMemberIds.length > 0 && !familyMemberIds.includes(id)) continue;
+        taggedPersonIds.add(id);
+      }
+    }
+    const preferredNamesMap = await getPreferredNamesBatch([...taggedPersonIds]);
+
     const photos = await Promise.all(filteredItems.map(async (item) => {
       const s3Key = item.s3_key.S?.replace(/^photos\/photos\//g, 'photos/') || '';
       
@@ -292,26 +325,13 @@ export async function GET(request: NextRequest) {
             } : { country: '', state: '', city: '', neighborhood: '' },
             description: (item.description?.S || '').trim(),
             date_taken: item.date_taken?.S || '',
-            people_tagged: item.people_tagged?.L 
-              ? (await Promise.all(item.people_tagged.L.map(async (person: any) => {
-                  const taggedPersonId = person.M.id?.S?.trim();
-                  if (!taggedPersonId) {
-                    return null; // Skip invalid entries
-                  }
-                  
-                  // Only filter out tagged people if we have family member IDs AND they're not in the list
-                  // If familyMemberIds is empty, include all (user might not have family data yet)
-                  if (currentUserId && familyMemberIds.length > 0 && !familyMemberIds.includes(taggedPersonId)) {
-                    return null; // Filter out people not in the family group
-                  }
-                  
-                  // Get preferred name for the tagged person
-                  const preferredName = await getPreferredName(taggedPersonId);
-                  return {
-                    id: taggedPersonId,
-                    name: preferredName
-                  };
-                }))).filter((person): person is { id: string; name: string } => person !== null)
+            people_tagged: item.people_tagged?.L
+              ? item.people_tagged.L.map((person: any) => {
+                  const taggedPersonId = person.M?.id?.S?.trim();
+                  if (!taggedPersonId) return null;
+                  if (currentUserId && familyMemberIds.length > 0 && !familyMemberIds.includes(taggedPersonId)) return null;
+                  return { id: taggedPersonId, name: preferredNamesMap.get(taggedPersonId) ?? 'Unknown User' };
+                }).filter((p): p is { id: string; name: string } => p !== null)
               : [],
           },
           lastModified: item.upload_date?.S,
