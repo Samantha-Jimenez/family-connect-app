@@ -1146,14 +1146,14 @@ const Photos = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 bg-gray-100 opacity-0 animate-[fadeIn_0.6s_ease-in_forwards]">
+    <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 bg-gray-100 opacity-0 animate-[fadeIn_0.6s_ease-in_forwards]">
       {refreshing && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <LoadSpinner size={80} />
         </div>
       )}
 
-      <h1 className="text-4xl mb-6 text-gray-800">Family Photos</h1>
+      <h1 className="text-2xl sm:text-3xl md:text-4xl mb-4 sm:mb-6 text-gray-800">Family Photos</h1>
 
       {/* Gallery section with transition */}
       <div 
@@ -1300,8 +1300,9 @@ const Photos = () => {
         {/* Clear Filters Button */}
         <div className="mb-4 md:px-2 px-0 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.7s' }}>
           <button
+            type="button"
             onClick={resetFilters}
-            className="px-4 py-2 bg-plantain-green text-white rounded hover:bg-plantain-green/70 poppins-light w-full md:w-auto"
+            className="min-h-[2.75rem] px-4 py-3 sm:py-2 bg-plantain-green text-white rounded hover:bg-plantain-green/70 active:bg-plantain-green/80 poppins-light w-full md:w-auto touch-target-min"
           >
             Clear Filters
           </button>
@@ -1353,7 +1354,7 @@ const Photos = () => {
         </div>
 
         <div id="default-carousel" className="relative w-full opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" data-carousel="slide" style={{ animationDelay: '1.0s' }}>
-          <div className="relative h-56 overflow-hidden rounded-lg md:h-96">
+          <div className="relative h-48 sm:h-56 overflow-hidden rounded-lg md:h-96">
             {shuffledImages.slice(0, 6).map((photo, index) => (
               <div
                 key={photo.photo_id || index}
@@ -1374,12 +1375,12 @@ const Photos = () => {
               </div>
             ))}
           </div>
-          <div className="absolute z-30 flex -translate-x-1/2 bottom-8 left-1/2 space-x-3 rtl:space-x-reverse">
+          <div className="absolute z-30 flex -translate-x-1/2 bottom-4 sm:bottom-8 left-1/2 space-x-3 rtl:space-x-reverse">
             {shuffledImages.slice(0, 6).map((_, index) => (
               <button
                 key={index}
                 type="button"
-                className={`w-3 h-3 rounded-full ${
+                className={`w-3 h-3 rounded-full flex items-center justify-center ${
                   currentIndex === index
                     ? 'bg-white dark:bg-gray-800'
                     : 'bg-white/50 dark:bg-gray-800/50'
@@ -1393,10 +1394,11 @@ const Photos = () => {
           <div className="flex justify-center items-center pt-4">
             <button
               type="button"
-              className="absolute top-0 start-0 z-30 flex items-center justify-center h-full px-4 cursor-pointer group focus:outline-none"
+              className="absolute top-0 start-0 z-30 flex items-center justify-center h-full min-w-[2.75rem] px-2 sm:px-4 cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-gray-800"
               onClick={handlePrev}
+              aria-label="Previous photo"
             >
-              <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-800/30 group-hover:bg-gray-800/60 group-focus:ring-4 group-focus:ring-white dark:group-focus:ring-gray-800/70 group-focus:outline-none">
+              <span className="inline-flex items-center justify-center w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-gray-800/30 group-hover:bg-gray-800/60 group-focus:ring-4 group-focus:ring-white dark:group-focus:ring-gray-800/70 group-focus:outline-none">
                 <svg className="w-4 h-4 text-white dark:text-gray-800 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
                   <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 1 1 5l4 4"/>
                 </svg>
@@ -1405,10 +1407,11 @@ const Photos = () => {
             </button>
             <button
               type="button"
-              className="absolute top-0 end-0 z-30 flex items-center justify-center h-full px-4 cursor-pointer group focus:outline-none"
+              className="absolute top-0 end-0 z-30 flex items-center justify-center h-full min-w-[2.75rem] px-2 sm:px-4 cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-gray-800"
               onClick={handleNext}
+              aria-label="Next photo"
             >
-              <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-800/30 group-hover:bg-gray-800/60 group-focus:ring-4 group-focus:ring-white dark:group-focus:ring-gray-800/70 group-focus:outline-none">
+              <span className="inline-flex items-center justify-center w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-gray-800/30 group-hover:bg-gray-800/60 group-focus:ring-4 group-focus:ring-white dark:group-focus:ring-gray-800/70 group-focus:outline-none">
                 <svg className="w-4 h-4 text-white dark:text-gray-800 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
                   <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 9 4-4-4-4"/>
                 </svg>
@@ -1419,11 +1422,11 @@ const Photos = () => {
         </div>
       </div>
       
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '1.1s' }}>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '1.1s' }}>
         {sortedFilteredImages.map((photo, index) => (
           <div 
             key={index} 
-            className="relative h-48 cursor-pointer"
+            className="relative h-40 sm:h-48 min-h-[8rem] cursor-pointer rounded-lg overflow-hidden"
             onClick={() => handleImageClick(photo)}
           >
             <Image

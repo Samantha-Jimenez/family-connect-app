@@ -94,11 +94,15 @@ export default function Navbar({
     <nav className="bg-white border-b border-gray-200">
       <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
         <div className="relative flex h-16 items-center justify-between">
-          <div className="absolute inset-y-0 left-0 flex items-center sm:hidden pl-4" ref={mobileMenuButtonRef}>
-            {/* Mobile menu button */}
+          <div className="absolute inset-y-0 left-0 flex items-center sm:hidden pl-2" ref={mobileMenuButtonRef}>
+            {/* Mobile menu button: min 44px touch target */}
             <button
-              className="btn btn-square bg-transparent border-0 text-gray-700 hover:text-black shadow-none hover:bg-transparent"
+              type="button"
+              className="min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center rounded-md text-gray-700 hover:text-black hover:bg-gray-100 active:bg-gray-200 px-3 py-2 text-base font-medium"
               onClick={toggleMobileMenu}
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-nav-menu"
+              aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
             >
               Menu
             </button>
@@ -128,14 +132,14 @@ export default function Navbar({
           </div>
 
           <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
-            {/* Notification bell button */}
+            {/* Notification bell: min 44px touch target on mobile */}
             <button
               type="button"
               onClick={onNotificationClick}
-              className="relative btn btn-ghost rounded-btn hover:bg-transparent hover:border-0 hover:shadow-none border-0 shadow-none bg-transparent !px-2"
+              className="relative min-w-[2.75rem] min-h-[2.75rem] sm:min-w-0 sm:min-h-0 flex items-center justify-center rounded-md hover:bg-gray-100 active:bg-gray-200 text-gray-600 hover:text-black p-2"
               aria-label="Notifications"
             >
-              <Icon icon="mdi:bell" className="w-[1.4rem] h-[1.4rem] text-gray-600 hover:text-black" />
+              <Icon icon="mdi:bell" className="w-6 h-6 sm:w-[1.4rem] sm:h-[1.4rem] text-current" />
               {unreadNotificationCount > 0 && (
                 <span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full border-2 border-white">
                   {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
@@ -151,9 +155,9 @@ export default function Navbar({
                 aria-haspopup="menu"
                 aria-expanded={isProfileOpen}
                 onClick={() => setProfileOpen((v) => !v)}
-                className="btn btn-ghost rounded-btn hover:bg-transparent hover:border-0 hover:shadow-none border-0 shadow-none bg-transparent"
+                className="min-w-[2.75rem] min-h-[2.75rem] sm:min-w-0 sm:min-h-0 flex items-center justify-center rounded-full hover:bg-gray-100 active:bg-gray-200 p-1"
               >
-                <span className="h-8 w-8 rounded-full flex items-center justify-center text-white hover:bg-black bg-gray-400">
+                <span className="h-9 w-9 sm:h-8 sm:w-8 rounded-full flex items-center justify-center text-white hover:bg-black bg-gray-400">
                   {username?.charAt(0)?.toUpperCase()}
                 </span>
               </button>
@@ -221,12 +225,13 @@ export default function Navbar({
         </div>
       </div>
 
-      {/* Mobile Nav */}
+      {/* Mobile Nav: min 44px tap targets for links */}
       <div
+        id="mobile-nav-menu"
         ref={mobileMenuRef}
         className={`sm:hidden ${isMobileMenuOpen ? 'block' : 'hidden'} absolute w-full bg-white z-[20] rounded-b-lg border border-gray-200 shadow-lg`}
       >
-        <div className="space-y-1 px-2 pt-2 pb-3">
+        <div className="space-y-0 px-2 pt-2 pb-3">
           {updatedNavigation.map((item) => (
             <a
               key={item.name}
@@ -235,8 +240,8 @@ export default function Navbar({
               className={`${
                 item.current
                   ? 'bg-golden-sand text-white'
-                  : 'text-gray-500 hover:bg-golden-sand/80 hover:text-white'
-              } block rounded-md px-3 py-2 text-base font-medium`}
+                  : 'text-gray-500 hover:bg-golden-sand/80 hover:text-white active:bg-golden-sand/90'
+              } block rounded-md px-4 py-3 min-h-[2.75rem] flex items-center text-base font-medium`}
             >
               {item.name}
             </a>

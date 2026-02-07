@@ -148,7 +148,7 @@ const HomePage = () => {
               isOpen={showDemoNotice} 
               onClose={handleCloseDemoNotice}
             />
-            <div className="min-h-screen bg-gray-100 p-2 sm:p-6 opacity-0 animate-[fadeIn_0.6s_ease-in_forwards]">
+            <div className="min-h-screen bg-gray-100 px-3 py-4 sm:p-6 opacity-0 animate-[fadeIn_0.6s_ease-in_forwards]">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_14rem] xl:grid-cols-[1fr_1fr_16rem] gap-4 max-w-7xl mx-auto">
                 <div className="col-span-1 sm:col-span-2 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.2s' }}>
                   <ProfileUserInfoCard userId={user.userId}/>
@@ -160,10 +160,10 @@ const HomePage = () => {
                   <CallToAction />
                 </div>
                 
-                <div className="col-span-1 sm:col-span-2">
+                <div className="col-span-1 sm:col-span-2 min-w-0">
                   <div 
                     data-theme="light" 
-                    className="tabs tabs-bordered bg-white rounded-lg shadow-lg opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" 
+                    className="tabs tabs-bordered bg-white rounded-lg shadow-lg opacity-0 animate-[fadeIn_0.4s_ease-in_forwards] overflow-x-auto flex-nowrap sm:flex-wrap" 
                     style={{ animationDelay: '0.5s' }}
                     role="tablist"
                     aria-label="Photo categories"
