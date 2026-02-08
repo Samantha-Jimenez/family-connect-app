@@ -1,4 +1,4 @@
-import React, { MouseEvent, useState, useEffect, useCallback } from 'react';
+import React, { MouseEvent, useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import Select from 'react-select';
@@ -111,6 +111,9 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const [isDownloadAnimating, setIsDownloadAnimating] = useState(false);
   const [hasDownloaded, setHasDownloaded] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const SWIPE_THRESHOLD = 50;
 
   useEffect(() => {
     setMounted(true);
@@ -466,13 +469,37 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     }
   }, [hasPrevious, photos, onPhotoChange, currentPhotoIndex]);
 
-  // Keyboard navigation
-  useEffect(() => {
-    if (!canNavigate) return;
+  // Touch swipe for prev/next (mobile)
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartRef.current = {
+      x: e.targetTouches[0].clientX,
+      y: e.targetTouches[0].clientY,
+    };
+  }, []);
 
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current || !canNavigate || isEditing) return;
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - touchStartRef.current.x;
+    const deltaY = touch.clientY - touchStartRef.current.y;
+    touchStartRef.current = null;
+    // Require mostly horizontal swipe (avoid accidental nav when scrolling)
+    if (Math.abs(deltaX) < SWIPE_THRESHOLD || Math.abs(deltaY) > Math.abs(deltaX)) return;
+    if (deltaX > SWIPE_THRESHOLD && hasPrevious) goToPrevious();
+    else if (deltaX < -SWIPE_THRESHOLD && hasNext) goToNext();
+  }, [canNavigate, isEditing, hasPrevious, hasNext, goToPrevious, goToNext]);
+
+  // Keyboard navigation (arrows + Escape to close or exit fullscreen)
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isEditing) return; // Don't navigate when editing
-      
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (isFullscreen) setIsFullscreen(false);
+        else handleCloseModal();
+        return;
+      }
+      if (!canNavigate || isEditing) return;
+
       if (e.key === 'ArrowRight' && hasNext) {
         e.preventDefault();
         goToNext();
@@ -484,12 +511,63 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [canNavigate, hasNext, hasPrevious, isEditing, goToNext, goToPrevious]);
+  }, [canNavigate, hasNext, hasPrevious, isEditing, isFullscreen, goToNext, goToPrevious]);
 
   if (!mounted) return null;
 
   const modalContent = (
     <div className="fixed inset-0 bg-black bg-opacity-50 md:flex md:items-center md:justify-center z-[100] overflow-y-auto" onClick={handleCloseModal}>
+      {/* Fullscreen overlay: image only with prev/next and exit */}
+      {isFullscreen && (
+        <div
+          className="fixed inset-0 z-[101] bg-black flex items-center justify-center"
+          onClick={() => setIsFullscreen(false)}
+          role="dialog"
+          aria-label="Photo fullscreen view"
+        >
+          <div
+            className="relative w-full h-full flex items-center justify-center p-1"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={photo.url || '/fallback-image.jpg'}
+              alt="Selected photo"
+              className="max-w-full max-h-full object-contain select-none"
+              draggable={false}
+              onError={handleImageError as React.ReactEventHandler<HTMLImageElement>}
+            />
+            {canNavigate && hasPrevious && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); goToPrevious(); }}
+                className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-white/20 hover:bg-white/40 rounded-full p-[0.3rem] transition-all text-white h-14 w-14 flex items-center justify-center"
+                aria-label="Previous photo"
+              >
+                <span className="icon-[mdi--chevron-left] text-3xl" />
+              </button>
+            )}
+            {canNavigate && hasNext && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); goToNext(); }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-white/20 hover:bg-white/40 rounded-full transition-all text-white h-14 w-14 flex items-center justify-center "
+                aria-label="Next photo"
+              >
+                <span className="icon-[mdi--chevron-right] text-2xl md:text-3xl" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setIsFullscreen(false); }}
+              className="absolute top-4 right-4 z-10 bg-white/20 hover:bg-white/40 rounded-full text-white p-2 h-10 w-10 flex items-center justify-center"
+              aria-label="Exit fullscreen"
+            >
+              <span className="icon-[mdi--fullscreen-exit] text-2xl md:text-3xl" />
+            </button>
+          </div>
+        </div>
+      )}
       <div className="relative bg-white dark:bg-gray-800 p-6 md:rounded-lg max-w-4xl md:w-full w-full h-full md:h-auto md:m-4 grid grid-cols-1 md:grid-cols-2 grid-rows-[min-content_auto] gap-4 overflow-y-auto md:overflow-y-visible" onClick={handleModalClick}>
         {/* Previous Arrow */}
         {canNavigate && hasPrevious && (
@@ -519,7 +597,12 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           </button>
         )}
 
-        <div className="relative justify-self-center">
+        <div
+          className="relative justify-self-center touch-pan-y"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          aria-label="Photo; swipe left or right to change photo"
+        >
           <Image
             src={photo.url || '/fallback-image.jpg'}
             alt="Selected photo"
@@ -529,6 +612,19 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             onError={handleImageError}
           />
           <div className="absolute top-[0.6rem] right-[0.7rem] flex items-center bg-gray-400/40 rounded-full px-2 py-0.5 gap-2 shadow-sm hover:bg-gray-400/60">
+            <div className="tooltip" data-tip="Fullscreen">
+              <button
+                type="button"
+                className="h-5 w-5 flex items-center justify-center text-white hover:scale-110 transition-transform"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsFullscreen(true);
+                }}
+                aria-label="View fullscreen"
+              >
+                <span className="icon-[mdi--fullscreen] h-5 w-5" />
+              </button>
+            </div>
             <div className="tooltip" data-tip="Favorite">
               <div
                 className={`cursor-pointer transition-transform duration-300 h-5 hover:scale-[1.15] active:scale-[1.5] ${isAnimating ? 'scale-150' : ''}`}
