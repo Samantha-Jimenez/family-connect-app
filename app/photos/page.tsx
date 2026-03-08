@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, MouseEvent, useMemo, useCallback, useTransition } from 'react'
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import PhotoUpload from '@/components/PhotoUpload';
 import LoadSpinner from '@/components/LoadSpinner';
@@ -13,6 +14,8 @@ import { getCurrentUser } from 'aws-amplify/auth'; // Import your auth function
 import PhotoModal from '@/components/PhotoModal';
 import Select from 'react-select';
 import makeAnimated from 'react-select/animated';
+
+const PhotoMap = dynamic(() => import('@/components/PhotoMap'), { ssr: false });
 
 interface DateRange {
   min: number;
@@ -319,6 +322,8 @@ const Photos = () => {
   const [selectedState, setSelectedState] = useState<LocationOption[]>([]);
   const [selectedCity, setSelectedCity] = useState<LocationOption[]>([]);
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<LocationOption[]>([]);
+
+  const [viewMode, setViewMode] = useState<'gallery' | 'map'>('gallery');
 
   const [isPending, startTransition] = useTransition();
 
@@ -985,18 +990,22 @@ const Photos = () => {
                 {children}
               </div>
             )}
-            renderThumb={({ props, isDragged, index }) => (
-              <div
-                {...props}
-                role="slider"
-                aria-valuemin={dateRange.min}
-                aria-valuemax={dateRange.max}
-                aria-valuenow={currentDateRange[index]}
-                aria-label={index === 0 ? `Start date: ${minDateLabel}` : `End date: ${maxDateLabel}`}
-                tabIndex={0}
-                className={`h-4 w-4 rounded-full bg-plantain-green focus:outline-none focus:ring-2 focus:ring-plantain-green focus:ring-offset-2 ${isDragged ? 'shadow-lg' : ''}`}
-              />
-            )}
+            renderThumb={({ props, isDragged, index }) => {
+              const { key: thumbKey, ...restProps } = props;
+              return (
+                <div
+                  key={thumbKey}
+                  {...restProps}
+                  role="slider"
+                  aria-valuemin={dateRange.min}
+                  aria-valuemax={dateRange.max}
+                  aria-valuenow={currentDateRange[index]}
+                  aria-label={index === 0 ? `Start date: ${minDateLabel}` : `End date: ${maxDateLabel}`}
+                  tabIndex={0}
+                  className={`h-4 w-4 rounded-full bg-plantain-green focus:outline-none focus:ring-2 focus:ring-plantain-green focus:ring-offset-2 ${isDragged ? 'shadow-lg' : ''}`}
+                />
+              );
+            }}
           />
         </div>
       </div>
@@ -1155,7 +1164,34 @@ const Photos = () => {
 
       <h1 className="text-2xl sm:text-3xl md:text-4xl mb-4 sm:mb-6 text-gray-800">Family Photos</h1>
 
-      {/* Gallery section with transition */}
+      {/* Gallery / Map view toggle */}
+      {/* <div className="flex items-center gap-2 mb-4 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.1s' }}>
+        <span className="text-sm font-medium text-gray-500 poppins-medium">View:</span>
+        <div className="inline-flex rounded-lg border border-gray-300 bg-gray-100 p-0.5">
+          <button
+            type="button"
+            onClick={() => setViewMode('gallery')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors poppins-medium ${
+              viewMode === 'gallery'
+                ? 'bg-white text-plantain-green shadow-sm'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            Gallery
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('map')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors poppins-medium ${
+              viewMode === 'map'
+                ? 'bg-white text-plantain-green shadow-sm'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            Map
+          </button>
+        </div>
+      </div> */}
       <div 
         // className={`transition-all duration-500 linear transform ${
         //   isUploadOpen ? 'translate-y-4' : 'translate-y-0'
@@ -1353,6 +1389,14 @@ const Photos = () => {
           </div>
         </div>
 
+        {viewMode === 'map' ? (
+          <PhotoMap
+            photos={filteredImages}
+            onPhotoClick={handleImageClick}
+            className="mt-2"
+          />
+        ) : (
+          <>
         <div id="default-carousel" className="relative w-full opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" data-carousel="slide" style={{ animationDelay: '1.0s' }}>
           <div className="relative h-48 sm:h-56 overflow-hidden rounded-lg md:h-96">
             {shuffledImages.slice(0, 6).map((photo, index) => (
@@ -1420,7 +1464,6 @@ const Photos = () => {
             </button>
           </div>
         </div>
-      </div>
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '1.1s' }}>
         {sortedFilteredImages.map((photo, index) => (
@@ -1444,6 +1487,10 @@ const Photos = () => {
 
       <div className="flex justify-center mb-4 mt-10">
           <PhotoCount filtered={filteredImages.length} total={images.length} />
+      </div>
+          </>
+        )}
+
       </div>
 
       {/* Photo Modal */}
