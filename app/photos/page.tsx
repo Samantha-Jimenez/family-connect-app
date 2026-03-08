@@ -1171,7 +1171,7 @@ const Photos = () => {
           <button
             type="button"
             onClick={() => setViewMode('gallery')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors poppins-medium ${
+            className={`px-4 py-1 rounded-md text-sm font-medium transition-colors poppins-medium ${
               viewMode === 'gallery'
                 ? 'bg-white text-plantain-green shadow-sm'
                 : 'text-gray-600 hover:text-gray-800'
@@ -1182,7 +1182,7 @@ const Photos = () => {
           <button
             type="button"
             onClick={() => setViewMode('map')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors poppins-medium ${
+            className={`px-4 py-1 rounded-md text-sm font-medium transition-colors poppins-medium ${
               viewMode === 'map'
                 ? 'bg-white text-plantain-green shadow-sm'
                 : 'text-gray-600 hover:text-gray-800'

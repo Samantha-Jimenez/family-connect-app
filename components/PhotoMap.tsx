@@ -40,7 +40,7 @@ if (typeof document !== 'undefined' && !document.getElementById(MARKER_PIN_STYLE
 }
 
 // Font Awesome 6 solid location-pin via Iconify API (no white circle; clean pin)
-const LOCATION_PIN_ICON_URL = 'https://api.iconify.design/fa6-solid/location-pin.svg?width=28&height=40&color=%23EA9010';
+const LOCATION_PIN_ICON_URL = 'https://api.iconify.design/fa6-solid/location-pin.svg?width=28&height=40&color=%23E03616';
 
 /** Creates a pin icon with the photo count in the center of the pin. */
 function createCountIcon(count: number): L.DivIcon {
