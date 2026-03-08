@@ -385,14 +385,14 @@ export default function PhotoMap({ photos, onPhotoClick, className = '' }: Photo
 
   if (photosWithLocation.length === 0) {
     return (
-      <div className={`rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center min-h-[300px] ${className}`}>
+      <div className={`rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center min-h-[300px] opacity-0 animate-[fadeIn_0.4s_ease-in_forwards] ${className}`}>
         <p className="text-gray-500 poppins-light">No photos with location data to show on the map.</p>
       </div>
     );
   }
 
   return (
-    <div className={`relative rounded-lg overflow-hidden border border-gray-200 ${className}`}>
+    <div className={`relative rounded-lg overflow-hidden border border-gray-200 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards] ${className}`}>
       <div ref={containerRef} className="h-[400px] w-full" />
       {geocodeLoading && (
         <div className="absolute inset-0 bg-white/70 flex items-center justify-center rounded-lg pointer-events-none">

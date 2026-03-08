@@ -1165,15 +1165,22 @@ const Photos = () => {
       <h1 className="text-2xl sm:text-3xl md:text-4xl mb-4 sm:mb-6 text-gray-800">Family Photos</h1>
 
       {/* Gallery / Map view toggle */}
-      {/* <div className="flex items-center gap-2 mb-4 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.1s' }}>
+      <div className="flex items-center gap-2 mb-4 opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" style={{ animationDelay: '0.1s' }}>
         <span className="text-sm font-medium text-gray-500 poppins-medium">View:</span>
-        <div className="inline-flex rounded-lg border border-gray-300 bg-gray-100 p-0.5">
+        <div className="inline-flex rounded-lg border border-gray-300 bg-gray-100 p-0.5 relative">
+          {/* Sliding pill indicator */}
+          <div
+            className="absolute top-0.5 bottom-0.5 rounded-md bg-white shadow-sm transition-[left] duration-200 ease-out pointer-events-none w-[calc(50%-2px)]"
+            style={{
+              left: viewMode === 'gallery' ? '2px' : 'calc(50% + 0px)',
+            }}
+          />
           <button
             type="button"
             onClick={() => setViewMode('gallery')}
-            className={`px-4 py-1 rounded-md text-sm font-medium transition-colors poppins-medium ${
+            className={`relative z-10 flex-1 min-w-0 px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200 ease-out poppins-medium ${
               viewMode === 'gallery'
-                ? 'bg-white text-plantain-green shadow-sm'
+                ? 'text-plantain-green'
                 : 'text-gray-600 hover:text-gray-800'
             }`}
           >
@@ -1182,16 +1189,16 @@ const Photos = () => {
           <button
             type="button"
             onClick={() => setViewMode('map')}
-            className={`px-4 py-1 rounded-md text-sm font-medium transition-colors poppins-medium ${
+            className={`relative z-10 flex-1 min-w-0 px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200 ease-out poppins-medium ${
               viewMode === 'map'
-                ? 'bg-white text-plantain-green shadow-sm'
+                ? 'text-plantain-green'
                 : 'text-gray-600 hover:text-gray-800'
             }`}
           >
             Map
           </button>
         </div>
-      </div> */}
+      </div>
       <div 
         // className={`transition-all duration-500 linear transform ${
         //   isUploadOpen ? 'translate-y-4' : 'translate-y-0'
@@ -1390,11 +1397,13 @@ const Photos = () => {
         </div>
 
         {viewMode === 'map' ? (
-          <PhotoMap
-            photos={filteredImages}
-            onPhotoClick={handleImageClick}
-            className="mt-2"
-          />
+          <div className="opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]">
+            <PhotoMap
+              photos={filteredImages}
+              onPhotoClick={handleImageClick}
+              className="mt-2"
+            />
+          </div>
         ) : (
           <>
         <div id="default-carousel" className="relative w-full opacity-0 animate-[fadeIn_0.4s_ease-in_forwards]" data-carousel="slide" style={{ animationDelay: '1.0s' }}>
