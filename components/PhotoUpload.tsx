@@ -5,8 +5,11 @@ import Image from 'next/image';
 import { savePhotoToDB, getAllFamilyMembers } from '@/hooks/dynamoDB';
 import { getCurrentUser } from 'aws-amplify/auth';
 import Select from 'react-select';
+import CreatableSelect from 'react-select/creatable';
+import AsyncCreatableSelect from 'react-select/async-creatable';
 import { useToast } from '@/context/ToastContext';
 import LoadSpinner from '@/components/LoadSpinner';
+import { countryOptions, stateOptions, cityOptions } from '@/utils/locationData';
 
 interface PhotoUploadProps {
   onUploadComplete: () => void;
@@ -38,8 +41,6 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
   const [dateDay, setDateDay] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<UserOption[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadUrl, setUploadUrl] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -49,6 +50,47 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
     value: member.family_member_id,
     label: `${member.first_name} ${member.last_name}`
   }));
+
+  // Shared styles for location autocomplete selects (match existing Select UX)
+  const locationSelectStyles = {
+    placeholder: (base: object) => ({
+      ...base,
+      fontFamily: "'Poppins', sans-serif",
+      fontWeight: 300,
+      color: '#9BA3AF',
+    }),
+    menu: (provided: object) => ({
+      ...provided,
+      zIndex: 9999,
+    }),
+    menuPortal: (provided: object) => ({
+      ...provided,
+      zIndex: 9999,
+    }),
+    control: (base: object, state: { isFocused?: boolean; menuIsOpen?: boolean }) => ({
+      ...base,
+      borderWidth: '1.5px',
+      borderColor: state.isFocused
+        ? '#C8D5B9'
+        : state.menuIsOpen
+        ? '#D2FF28'
+        : '#d1d5db',
+      boxShadow: state.isFocused ? '0 0 0 1px #5CAB68' : 'none',
+      '&:hover': {
+        borderColor: '#D2FF28',
+      },
+      minHeight: '2.75rem',
+    }),
+    option: (provided: object, state: { isFocused?: boolean }) => ({
+      ...provided,
+      backgroundColor: state.isFocused ? '#E8D4B8' : 'transparent',
+      color: state.isFocused ? '#000' : '#000',
+      '&:active': {
+        backgroundColor: '#F4C47A',
+        color: '#fff',
+      },
+    }),
+  };
 
   useEffect(() => {
     const loadFamilyMembers = async () => {
@@ -94,7 +136,6 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
     if (!selectedFile) return;
 
     setIsUploading(true);
-    setError(null);
 
     try {
       // Get the current user ID
@@ -189,7 +230,6 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
       console.error('Upload error:', error);
       // Add error toast
       showToast(error instanceof Error ? error.message : 'Failed to upload photo', 'error');
-      setError(error instanceof Error ? error.message : 'Failed to upload photo');
     } finally {
       setIsUploading(false);
     }
@@ -248,12 +288,21 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
             <label className="block text-sm font-medium text-gray-500">
               Country
             </label>
-            <input
-              type="text"
-              value={location.country}
-              onChange={(e) => setLocation({ ...location, country: e.target.value })}
-              className="mt-1 block w-full min-h-[2.75rem] rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2.5 sm:p-2 transition-colors"
+            <CreatableSelect
+              options={countryOptions}
+              value={location.country ? { value: location.country, label: location.country } : null}
+              onChange={(selected) => setLocation({ ...location, country: selected?.value ?? '' })}
+              onCreateOption={(value) => setLocation({ ...location, country: value })}
               placeholder="Country"
+              isClearable
+              className="mt-1 text-black poppins-light"
+              classNamePrefix="select"
+              menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+              menuPlacement="auto"
+              styles={locationSelectStyles}
+              filterOption={(option, inputValue) =>
+                option.label.toLowerCase().includes(inputValue.toLowerCase())
+              }
             />
           </div>
 
@@ -261,12 +310,21 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
             <label className="block text-sm font-medium text-gray-500">
               State/Province
             </label>
-            <input
-              type="text"
-              value={location.state}
-              onChange={(e) => setLocation({ ...location, state: e.target.value })}
-              className="mt-1 block w-full min-h-[2.75rem] rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2.5 sm:p-2 transition-colors"
+            <CreatableSelect
+              options={stateOptions}
+              value={location.state ? { value: location.state, label: location.state } : null}
+              onChange={(selected) => setLocation({ ...location, state: selected?.value ?? '' })}
+              onCreateOption={(value) => setLocation({ ...location, state: value })}
               placeholder="State/Province"
+              isClearable
+              className="mt-1 text-black poppins-light"
+              classNamePrefix="select"
+              menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+              menuPlacement="auto"
+              styles={locationSelectStyles}
+              filterOption={(option, inputValue) =>
+                option.label.toLowerCase().includes(inputValue.toLowerCase())
+              }
             />
           </div>
 
@@ -274,12 +332,21 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
             <label className="block text-sm font-medium text-gray-500">
               City
             </label>
-            <input
-              type="text"
-              value={location.city}
-              onChange={(e) => setLocation({ ...location, city: e.target.value })}
-              className="mt-1 block w-full min-h-[2.75rem] rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2.5 sm:p-2 transition-colors"
+            <CreatableSelect
+              options={cityOptions}
+              value={location.city ? { value: location.city, label: location.city } : null}
+              onChange={(selected) => setLocation({ ...location, city: selected?.value ?? '' })}
+              onCreateOption={(value) => setLocation({ ...location, city: value })}
               placeholder="City"
+              isClearable
+              className="mt-1 text-black poppins-light"
+              classNamePrefix="select"
+              menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+              menuPlacement="auto"
+              styles={locationSelectStyles}
+              filterOption={(option, inputValue) =>
+                option.label.toLowerCase().includes(inputValue.toLowerCase())
+              }
             />
           </div>
 
@@ -287,12 +354,29 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
             <label className="block text-sm font-medium text-gray-500">
               Neighborhood
             </label>
-            <input
-              type="text"
-              value={location.neighborhood}
-              onChange={(e) => setLocation({ ...location, neighborhood: e.target.value })}
-              className="mt-1 block w-full min-h-[2.75rem] rounded-md border-[1.5px] border-gray-300 focus:outline-none focus:border-[#C8D5B9] focus:ring-1 focus:ring-[#5CAB68] hover:border-[#D2FF28] bg-white dark:bg-gray-800 dark:border-gray-600 p-2.5 sm:p-2 transition-colors"
-              placeholder="Neighborhood"
+            <AsyncCreatableSelect
+              loadOptions={async (inputValue) => {
+                if (!inputValue || inputValue.length < 2) return [];
+                const params = new URLSearchParams({ q: inputValue });
+                if (location.city) params.set('city', location.city);
+                if (location.state) params.set('state', location.state);
+                if (location.country) params.set('country', location.country);
+                const res = await fetch(`/api/places/autocomplete?${params.toString()}`);
+                const data = await res.json();
+                return (data.options ?? []) as { value: string; label: string }[];
+              }}
+              value={location.neighborhood ? { value: location.neighborhood, label: location.neighborhood } : null}
+              onChange={(selected) => setLocation({ ...location, neighborhood: selected?.value ?? '' })}
+              onCreateOption={(value) => setLocation({ ...location, neighborhood: value })}
+              placeholder="Neighborhood (e.g. Brooklyn, SoHo)"
+              isClearable
+              defaultOptions={[]}
+              className="mt-1 text-black poppins-light"
+              classNamePrefix="select"
+              menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+              menuPlacement="auto"
+              styles={locationSelectStyles}
+              cacheOptions={false}
             />
           </div>
         </div>
@@ -548,21 +632,6 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete }) => {
           'Upload Photo'
         )}
       </button>
-
-      {uploadUrl && (
-        <div className="mt-4">
-          <h3 className="text-lg font-medium mb-2">Uploaded Photo:</h3>
-          <div className="relative w-full h-[300px]">
-            <Image
-              src={uploadUrl}
-              alt="Uploaded photo"
-              fill
-              className="object-contain rounded-lg"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
-          </div>
-        </div>
-      )}
     </form>
   );
 };
